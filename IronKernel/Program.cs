@@ -1,16 +1,22 @@
-﻿using IronKernel;
-using IronKernel.Logging;
+﻿using IronKernel.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.CommandLine;
 
-namespace Adventure;
+namespace IronKernel;
 
-public class Bootstrap
+internal sealed class Program
 {
-	public async Task<int> Start(string[] args)
+	private IServiceProvider HostServices = null!;
+
+	public static async Task<int> Main(params string[] args)
+	{
+		return await new Program().BootstrapAsync(args);
+	}
+
+	private async Task<int> BootstrapAsync(string[] args)
 	{
 		// Define command-line options.
 		var configFileOption = new Option<string>(
@@ -42,6 +48,8 @@ public class Bootstrap
 				using var host = CreateHostBuilder(props).Build();
 				await host.StartAsync();
 
+				HostServices = host.Services;
+
 				// Start the app.
 				await StartAsync(props);
 			}
@@ -59,8 +67,18 @@ public class Bootstrap
 
 	private async Task StartAsync(CommandLineProps props)
 	{
-		Console.WriteLine("Hey!");
-		await Task.CompletedTask;
+		Console.WriteLine("Starting IronKernel...");
+
+		if (HostServices == null) throw new NullReferenceException("Host services are not initialized.");
+
+		using var scope = HostServices.CreateScope();
+		var kernel = scope.ServiceProvider.GetRequiredService<Kernel.KernelService>();
+
+		// Register demo module
+		kernel.RegisterModule(new Demos.HelloModule());
+
+		// Keep the process alive
+		await Task.Delay(Timeout.Infinite);
 	}
 
 	private IHostBuilder CreateHostBuilder(CommandLineProps props)
@@ -111,11 +129,15 @@ public class Bootstrap
 		logging.AddProvider(new FileLoggerProvider(logFile, minLevel));
 	}
 
-	protected virtual void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
+	private void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
 	{
 		// Register configuration.
 		services.Configure<AppSettings>(hostContext.Configuration);
 
 		services.AddSingleton<HttpClient>();
+
+		// Kernel
+		services.AddSingleton<Kernel.KernelService>();
+		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<Kernel.KernelService>());
 	}
 }
