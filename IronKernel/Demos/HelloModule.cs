@@ -1,28 +1,99 @@
 using IronKernel.Kernel;
+using IronKernel.Kernel.Bus;
+using IronKernel.Kernel.Messages;
+using IronKernel.Kernel.State;
+using IronKernel.Modules.Clock;
 using Microsoft.Extensions.Logging;
 
-namespace IronKernel.Demos;
-
-public sealed class HelloModule : IModule
+public sealed class HelloModule : IKernelModule
 {
-	public string Name => "HelloDemo";
+	private readonly ILogger<HelloModule> _logger;
+	private readonly IMessageBus _bus;
 
-	private int _counter;
+	private readonly List<IDisposable> _subscriptions = new();
 
-	public void Initialize(IKernel kernel)
+	public HelloModule(
+		ILogger<HelloModule> logger,
+		IMessageBus bus)
 	{
-		kernel.Logger.LogInformation("HelloModule initialized");
+		_logger = logger;
+		_bus = bus;
 	}
 
-	public void Tick()
+	public Task StartAsync(IKernelState state, IModuleRuntime runtime, CancellationToken stoppingToken)
 	{
-		_counter++;
-		Console.WriteLine($"Hello from kernel tick {_counter}");
+		_subscriptions.Add(_bus.Subscribe<Tick>(OnTick));
+
+		_subscriptions.Add(_bus.Subscribe<KernelStarting>(OnKernelStarting));
+		_subscriptions.Add(_bus.Subscribe<KernelStarted>(OnKernelStarted));
+		_subscriptions.Add(_bus.Subscribe<KernelStopping>(OnKernelStopping));
+		_subscriptions.Add(_bus.Subscribe<KernelStopped>(OnKernelStopped));
+
+		_subscriptions.Add(_bus.Subscribe<ModuleStarted>(OnModuleStarted));
+		_subscriptions.Add(_bus.Subscribe<ModuleStopped>(OnModuleStopped));
+
+		_logger.LogInformation("HelloModule started");
+
+		return Task.CompletedTask;
 	}
+
+	#region Message Handlers
+
+	private Task OnTick(Tick tick, CancellationToken ct)
+	{
+		_logger.LogInformation("Hello! The time is {Time}", tick.UtcNow);
+		return Task.CompletedTask;
+	}
+
+	private Task OnKernelStarting(KernelStarting _, CancellationToken ct)
+	{
+		_logger.LogInformation("Kernel is starting");
+		return Task.CompletedTask;
+	}
+
+	private Task OnKernelStarted(KernelStarted _, CancellationToken ct)
+	{
+		_logger.LogInformation("Kernel has started");
+		return Task.CompletedTask;
+	}
+
+	private Task OnKernelStopping(KernelStopping _, CancellationToken ct)
+	{
+		_logger.LogInformation("Kernel is stopping");
+		return Task.CompletedTask;
+	}
+
+	private Task OnKernelStopped(KernelStopped _, CancellationToken ct)
+	{
+		_logger.LogInformation("Kernel has stopped");
+		return Task.CompletedTask;
+	}
+
+	private Task OnModuleStarted(ModuleStarted msg, CancellationToken ct)
+	{
+		_logger.LogDebug("Module started: {Module}", msg.Module.Name);
+		return Task.CompletedTask;
+	}
+
+	private Task OnModuleStopped(ModuleStopped msg, CancellationToken ct)
+	{
+		_logger.LogDebug("Module stopped: {Module}", msg.Module.Name);
+		return Task.CompletedTask;
+	}
+
+	#endregion
 
 	public ValueTask DisposeAsync()
 	{
-		Console.WriteLine("HelloModule disposed");
+		foreach (var sub in _subscriptions)
+		{
+			sub.Dispose();
+		}
+
+		_subscriptions.Clear();
+
+		_logger.LogInformation("HelloModule disposed");
+
 		return ValueTask.CompletedTask;
 	}
 }

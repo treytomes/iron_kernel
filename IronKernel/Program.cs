@@ -1,24 +1,27 @@
 ﻿using IronKernel.Logging;
+using IronKernel.Kernel;
+using IronKernel.Kernel.State;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.CommandLine;
+using IronKernel.State;
+using IronKernel.Kernel.Bus;
+using IronKernel.Modules.Clock;
 
 namespace IronKernel;
 
 internal sealed class Program
 {
-	private IServiceProvider HostServices = null!;
-
-	public static async Task<int> Main(params string[] args)
+	public static async Task<int> Main(string[] args)
 	{
-		return await new Program().BootstrapAsync(args);
+		return await BuildCommandLine()
+			.InvokeAsync(args);
 	}
 
-	private async Task<int> BootstrapAsync(string[] args)
+	private static RootCommand BuildCommandLine()
 	{
-		// Define command-line options.
 		var configFileOption = new Option<string>(
 			name: "--config",
 			description: "Path to the configuration file",
@@ -28,116 +31,97 @@ internal sealed class Program
 			name: "--debug",
 			description: "Enable debug mode");
 
-		// Create root command.
-		var rootCommand = new RootCommand("AI NPC Example");
-		rootCommand.AddOption(configFileOption);
-		rootCommand.AddOption(debugOption);
+		var root = new RootCommand("IronKernel Demo Host");
+		root.AddOption(configFileOption);
+		root.AddOption(debugOption);
 
-		// Set handler for processing the command.
-		rootCommand.SetHandler(async (configFile, debug) =>
+		root.SetHandler(async (configFile, debug) =>
 		{
-			try
+			var props = new CommandLineProps
 			{
-				var props = new CommandLineProps()
-				{
-					ConfigFile = configFile,
-					Debug = debug,
-				};
+				ConfigFile = configFile,
+				Debug = debug
+			};
 
-				// Build host with DI container.
-				using var host = CreateHostBuilder(props).Build();
-				await host.StartAsync();
+			using var host = CreateHostBuilder(props).Build();
 
-				HostServices = host.Services;
+			Console.WriteLine("Starting IronKernel...");
+			await host.RunAsync();
+		}, configFileOption, debugOption);
 
-				// Start the app.
-				await StartAsync(props);
-			}
-			catch (Exception ex)
-			{
-				Console.Error.WriteLine($"Error starting the app: {ex.Message}");
-				Environment.Exit(1);
-			}
-		},
-		configFileOption, debugOption);
-
-		// Parse the command line.
-		return await rootCommand.InvokeAsync(args);
+		return root;
 	}
 
-	private async Task StartAsync(CommandLineProps props)
-	{
-		Console.WriteLine("Starting IronKernel...");
-
-		if (HostServices == null) throw new NullReferenceException("Host services are not initialized.");
-
-		using var scope = HostServices.CreateScope();
-		var kernel = scope.ServiceProvider.GetRequiredService<Kernel.KernelService>();
-
-		// Register demo module
-		kernel.RegisterModule(new Demos.HelloModule());
-
-		// Keep the process alive
-		await Task.Delay(Timeout.Infinite);
-	}
-
-	private IHostBuilder CreateHostBuilder(CommandLineProps props)
+	private static IHostBuilder CreateHostBuilder(CommandLineProps props)
 	{
 		return Host.CreateDefaultBuilder()
-			.ConfigureAppConfiguration((hostContext, config) => ConfigureAppConfiguration(config, props))
-			.ConfigureLogging(ConfigureLogging)
-			.ConfigureServices(ConfigureServices);
+			.ConfigureAppConfiguration((ctx, config) =>
+				ConfigureAppConfiguration(config, props))
+			.ConfigureLogging((ctx, logging) =>
+				ConfigureLogging(ctx, logging))
+			.ConfigureServices((ctx, services) =>
+				ConfigureServices(ctx, services));
 	}
 
-	private void ConfigureAppConfiguration(IConfigurationBuilder config, CommandLineProps props)
+	private static void ConfigureAppConfiguration(
+		IConfigurationBuilder config,
+		CommandLineProps props)
 	{
 		config.Sources.Clear();
-		// config.SetBasePath(Directory.GetCurrentDirectory());
 		config.SetBasePath(AppContext.BaseDirectory);
-		config.AddJsonFile(props.ConfigFile, optional: false, reloadOnChange: false);
 
-		// Add command line overrides.
-		var commandLineConfig = new Dictionary<string, string?>();
-		if (props.Debug)
+		config.AddJsonFile(
+			props.ConfigFile,
+			optional: false,
+			reloadOnChange: false);
+
+		var overrides = new Dictionary<string, string?>
 		{
-			commandLineConfig["Debug"] = "true";
-		}
+			["Debug"] = props.Debug.ToString()
+		};
 
-		config.AddInMemoryCollection(commandLineConfig);
+		config.AddInMemoryCollection(overrides);
 	}
 
-	private void ConfigureLogging(HostBuilderContext hostContext, ILoggingBuilder logging)
+	private static void ConfigureLogging(
+		HostBuilderContext ctx,
+		ILoggingBuilder logging)
 	{
 		logging.ClearProviders();
 
-		// Disable console logging.
-		// logging.AddConsole();
+		logging.AddConsole();
 
-		// Set minimum log level based on debug setting.
-		var debugEnabled = hostContext.Configuration.GetValue<bool>("Debug");
-		var minLevel = debugEnabled ? LogLevel.Debug : LogLevel.Information;
+		var debug = ctx.Configuration.GetValue<bool>("Debug");
+		var minLevel = debug ? LogLevel.Debug : LogLevel.Information;
 		logging.SetMinimumLevel(minLevel);
 
-		// Create log directory.
 		var logDir = Path.Combine(AppContext.BaseDirectory, "logs");
 		Directory.CreateDirectory(logDir);
 
-		// Timestamped log file (daily rotation).
-		var logFile = Path.Combine(logDir, $"app-{DateTime.Now:yyyy-MM-dd}.log");
+		var logFile = Path.Combine(
+			logDir,
+			$"app-{DateTime.UtcNow:yyyy-MM-dd}.log");
 
-		// Add file logger.
-		logging.AddProvider(new FileLoggerProvider(logFile, minLevel));
+		logging.AddProvider(
+			new FileLoggerProvider(logFile, minLevel));
 	}
 
-	private void ConfigureServices(HostBuilderContext hostContext, IServiceCollection services)
+	private static void ConfigureServices(
+		HostBuilderContext ctx,
+		IServiceCollection services)
 	{
-		// Register configuration.
-		services.Configure<AppSettings>(hostContext.Configuration);
+		// Configuration
+		services.Configure<AppSettings>(ctx.Configuration);
 
-		services.AddSingleton<HttpClient>();
+		// Kernel infrastructure
+		services.AddSingleton<IKernelState, KernelStateStore>();
+		services.AddSingleton<KernelService>();
+		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
 
-		// Kernel
-		services.AddSingleton<Kernel.KernelService>();
-		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<Kernel.KernelService>());
+		services.AddSingleton<IMessageBus, MessageBus>();
+
+		services.AddSingleton<IKernelModule, ClockModule>();
+		services.AddSingleton<IKernelModule, HelloModule>();
+		services.AddSingleton<IKernelModule, ChaosModule>();
 	}
 }
