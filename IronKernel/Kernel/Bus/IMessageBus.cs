@@ -14,6 +14,11 @@ public interface IMessageBus
 		string handlerName,
 		Func<T, CancellationToken, Task> handler)
 		where T : notnull;
+
+	IDisposable SubscribeApplication<T>(
+		string handlerName,
+		Func<T, CancellationToken, Task> handler)
+		where T : notnull;
 }
 
 public interface IKernelMessageBus : IMessageBus

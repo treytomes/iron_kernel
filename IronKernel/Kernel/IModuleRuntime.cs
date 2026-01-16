@@ -7,4 +7,10 @@ public interface IModuleRuntime
 		ModuleTaskKind kind,
 		Func<CancellationToken, Task> work,
 		CancellationToken stoppingToken);
+
+	void RunDetached(
+		string name,
+		ModuleTaskKind kind,
+		Func<CancellationToken, Task> work,
+		CancellationToken stoppingToken);
 }

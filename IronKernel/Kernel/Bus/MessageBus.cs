@@ -16,30 +16,43 @@ public sealed class MessageBus : IKernelMessageBus
 	{
 		var messageType = typeof(T);
 
-		// Attribute publisher (if any)
+		// Identify publisher (module if inside a module runtime)
 		var moduleType = ModuleContext.CurrentModule.Value;
 
+		// Flood detection applies only to kernel-managed modules
 		if (moduleType != null)
 		{
 			if (IsFlooding(moduleType, messageType))
 			{
-				// Drop message silently after kernel signal
+				// Flood already reported to kernel; drop message
 				return;
 			}
 		}
 
+		// Fast exit if no subscribers
 		if (!_handlers.TryGetValue(messageType, out var list))
 			return;
 
 		ISubscription[] snapshot;
 		lock (list)
 		{
+			// Snapshot to avoid reentrancy + mutation issues
 			snapshot = list.ToArray();
 		}
 
+		// Dispatch without awaiting — handlers decide their own execution model
 		foreach (var sub in snapshot)
 		{
-			sub.Dispatch(message);
+			try
+			{
+				sub.Dispatch(message);
+			}
+			catch (Exception ex)
+			{
+				// Dispatch must never crash the kernel
+				Console.Error.WriteLine(
+					$"MessageBus dispatch failure for {messageType.Name}: {ex}");
+			}
 		}
 	}
 
@@ -143,6 +156,28 @@ public sealed class MessageBus : IKernelMessageBus
 		return sub;
 	}
 
+	public IDisposable SubscribeApplication<T>(
+	string handlerName,
+	Func<T, CancellationToken, Task> handler)
+	where T : notnull
+	{
+		var sub = new ApplicationSubscription<T>(
+			handlerName,
+			handler,
+			this);
+
+		var list = _handlers.GetOrAdd(
+			typeof(T),
+			_ => new List<ISubscription>());
+
+		lock (list)
+		{
+			list.Add(sub);
+		}
+
+		return sub;
+	}
+
 	private void Unsubscribe(Type type, ISubscription sub)
 	{
 		if (_handlers.TryGetValue(type, out var list))
@@ -232,6 +267,53 @@ public sealed class MessageBus : IKernelMessageBus
 			{
 				Console.Error.WriteLine(
 					$"Kernel message handler faulted: {ex}");
+			}
+		}
+
+		public void Dispose()
+		{
+			if (_disposed) return;
+			_disposed = true;
+			_bus.Unsubscribe(typeof(T), this);
+		}
+	}
+
+	private sealed class ApplicationSubscription<T> : ISubscription, IDisposable
+		where T : notnull
+	{
+		private readonly string _handlerName;
+		private readonly Func<T, CancellationToken, Task> _handler;
+		private readonly MessageBus _bus;
+		private bool _disposed;
+
+		public ApplicationSubscription(
+			string handlerName,
+			Func<T, CancellationToken, Task> handler,
+			MessageBus bus)
+		{
+			_handlerName = handlerName;
+			_handler = handler;
+			_bus = bus;
+		}
+
+		public void Dispatch(object message)
+		{
+			if (_disposed) return;
+
+			// Application code is NOT kernel supervised
+			_ = InvokeSafely((T)message);
+		}
+
+		private async Task InvokeSafely(T message)
+		{
+			try
+			{
+				await _handler(message, CancellationToken.None);
+			}
+			catch (Exception ex)
+			{
+				Console.Error.WriteLine(
+					$"Application handler '{_handlerName}' faulted: {ex}");
 			}
 		}
 

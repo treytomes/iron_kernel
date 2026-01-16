@@ -9,6 +9,8 @@ using System.CommandLine;
 using IronKernel.State;
 using IronKernel.Kernel.Bus;
 using IronKernel.Modules.Clock;
+using IronKernel.Modules.ApplicationHost;
+using IronKernel.Applications.DemoApp;
 
 namespace IronKernel;
 
@@ -122,7 +124,11 @@ internal sealed class Program
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
 		services.AddSingleton<IKernelModule, ClockModule>();
-		services.AddSingleton<IKernelModule, HelloModule>();
-		services.AddSingleton<IKernelModule, ChaosModule>();
+		// services.AddSingleton<IKernelModule, HelloModule>();
+		// services.AddSingleton<IKernelModule, ChaosModule>();
+		services.AddSingleton<IKernelModule, ApplicationHostModule>();
+
+		services.AddSingleton<DemoUserApplication>();
+		services.AddSingleton<IUserApplicationFactory>(sp => new DiUserApplicationFactory<DemoUserApplication>(sp));
 	}
 }

@@ -31,6 +31,15 @@ public sealed class ModuleRuntime : IModuleRuntime
 		_logger = logger;
 	}
 
+	public void RunDetached(
+		string name,
+		ModuleTaskKind kind,
+		Func<CancellationToken, Task> work,
+		CancellationToken stoppingToken)
+	{
+		_ = RunAsync(name, kind, work, stoppingToken);
+	}
+
 	public Task RunAsync(
 		string name,
 		ModuleTaskKind kind,

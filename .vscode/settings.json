@@ -21,6 +21,7 @@
 	"cSpell.words": [
 		"appsettings",
 		"microkernel",
+		"reentrancy",
 		"waitables"
 	]
 }
