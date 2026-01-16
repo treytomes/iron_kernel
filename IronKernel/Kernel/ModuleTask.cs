@@ -3,7 +3,7 @@ namespace IronKernel.Kernel;
 public sealed class ModuleTask
 {
 	public string Name { get; }
-	public Task Task { get; }
+	public Task Task { get; set; } = null!;
 	public ModuleTaskKind Kind { get; }
 	public CancellationTokenSource WatchdogCts { get; }
 
@@ -11,12 +11,11 @@ public sealed class ModuleTask
 
 	public ModuleTask(
 		string name,
-		Task task,
 		ModuleTaskKind kind,
-		CancellationTokenSource watchdogCts)
+		CancellationTokenSource watchdogCts
+	)
 	{
 		Name = name;
-		Task = task;
 		Kind = kind;
 		WatchdogCts = watchdogCts;
 		State = ModuleTaskState.Running;

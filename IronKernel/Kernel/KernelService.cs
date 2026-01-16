@@ -7,55 +7,49 @@ using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Kernel;
 
-public sealed class KernelService : BackgroundService
+public sealed class KernelService
 {
-	#region Fields
-
-	private readonly IHostApplicationLifetime _appLifetime;
 	private readonly ILogger<KernelService> _logger;
+	private readonly IServiceProvider _services;
 	private readonly IKernelState _state;
 	private readonly IKernelMessageBus _bus;
-	private readonly IServiceProvider _services;
-	private readonly List<ModuleHost> _modules = new();
-	private int _fatalFaulted;
+	private readonly IHostApplicationLifetime _lifetime;
 
-	private readonly CancellationTokenSource _kernelCts = new();
+	private readonly List<ModuleHost> _modules = new();
 	private readonly List<IDisposable> _subscriptions = new();
 
-	#endregion
-
-	#region Constructors
+	private readonly CancellationTokenSource _kernelCts = new();
+	private int _shutdownRequested;
+	private volatile bool _isShuttingDown;
+	private int _fatalFaulted;
 
 	public KernelService(
 		ILogger<KernelService> logger,
 		IServiceProvider services,
 		IKernelState state,
 		IKernelMessageBus bus,
-		IHostApplicationLifetime appLifetime)
+		IHostApplicationLifetime lifetime)
 	{
 		_logger = logger;
 		_services = services;
 		_state = state;
 		_bus = bus;
-		_appLifetime = appLifetime;
+		_lifetime = lifetime;
 	}
 
-	#endregion
+	/* ============================================================
+     * Public entry point
+     * ============================================================ */
 
-	#region Execution
-
-	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+	public async Task StartAsync(CancellationToken externalToken)
 	{
 		using var linkedCts =
 			CancellationTokenSource.CreateLinkedTokenSource(
-				stoppingToken,
+				externalToken,
 				_kernelCts.Token);
 
-		_subscriptions.Add(_bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted));
-		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskSlow>(OnModuleTaskSlow));
-		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskHung>(OnModuleTaskHung));
-		_subscriptions.Add(_bus.SubscribeKernel<ModuleMessageFlooded>(OnModuleMessageFlooded));
-		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskAbandoned>(OnModuleTaskAbandoned));
+		HookShutdownSignals(externalToken);
+		SubscribeKernelEvents();
 
 		_logger.LogInformation("Kernel starting");
 		_bus.Publish(new KernelStarting());
@@ -64,21 +58,40 @@ public sealed class KernelService : BackgroundService
 		{
 			foreach (var moduleType in DiscoverModules())
 			{
-				var host = await StartModuleAsync(
-					moduleType,
-					linkedCts.Token);
-
+				var host = await StartModuleAsync(moduleType, linkedCts.Token);
 				_modules.Add(host);
 			}
 
 			_bus.Publish(new KernelStarted());
 
-			// Kernel stays alive until cancelled (fault or host shutdown)
-			await Task.Delay(Timeout.Infinite, linkedCts.Token);
+			var primaries = _modules
+				.Select(m => m.Module)
+				.OfType<IPrimaryKernelModule>()
+				.ToList();
+
+			if (primaries.Count > 1)
+				throw new InvalidOperationException(
+					$"Expected at most one primary module, found {primaries.Count}");
+
+			var primary = primaries.SingleOrDefault();
+
+			if (primary != null)
+			{
+				_logger.LogInformation(
+					"Transferring control to primary module {Module}",
+					primary.GetType().Name);
+
+				// Blocks until the primary module exits
+				primary.Run();
+			}
+			else
+			{
+				await Task.Delay(Timeout.Infinite, linkedCts.Token);
+			}
 		}
 		catch (OperationCanceledException)
 		{
-			// Normal shutdown path
+			// expected during shutdown
 		}
 		catch (Exception ex)
 		{
@@ -87,32 +100,80 @@ public sealed class KernelService : BackgroundService
 		}
 		finally
 		{
-			_logger.LogInformation("Kernel stopping");
-
-			_bus.Publish(new KernelStopping());
-
-			foreach (var module in _modules)
-			{
-				await StopModuleAsync(module);
-			}
-
-			_modules.Clear();
-
-			_bus.Publish(new KernelStopped());
-
-			DisposeSubscriptions();
+			await ShutdownAsync("Kernel exit");
 		}
 	}
 
-	private IEnumerable<Type> DiscoverModules()
+	/* ============================================================
+     * Shutdown orchestration
+     * ============================================================ */
+
+	private void HookShutdownSignals(CancellationToken externalToken)
 	{
-		return _services
+		Console.CancelKeyPress += (_, e) =>
+		{
+			e.Cancel = true;
+			RequestShutdown("Ctrl+C");
+		};
+
+		_lifetime.ApplicationStopping.Register(() =>
+			RequestShutdown("Host lifetime stopping"));
+
+		externalToken.Register(() =>
+			RequestShutdown("External cancellation"));
+	}
+
+	private void RequestShutdown(string reason)
+	{
+		if (Interlocked.Exchange(ref _shutdownRequested, 1) != 0)
+			return;
+
+		_logger.LogWarning("Kernel shutdown requested: {Reason}", reason);
+
+		_bus.Publish(new KernelShutdownRequested(reason));
+		_kernelCts.Cancel();
+	}
+
+	private async Task ShutdownAsync(string reason)
+	{
+		_logger.LogInformation("Kernel stopping: {Reason}", reason);
+
+		_bus.Publish(new KernelStopping());
+		_isShuttingDown = true;
+
+		foreach (var module in _modules)
+		{
+			try
+			{
+				await module.Runtime.WaitAllAsync();
+			}
+			catch { }
+
+			module.Scope.Dispose();
+			_bus.Publish(new ModuleStopped(module.ModuleType));
+		}
+
+		_modules.Clear();
+
+		_bus.Publish(new KernelStopped());
+
+		DisposeSubscriptions();
+		_kernelCts.Dispose();
+	}
+
+	/* ============================================================
+     * Module lifecycle
+     * ============================================================ */
+
+	private IEnumerable<Type> DiscoverModules() =>
+		_services
 			.GetServices<IKernelModule>()
 			.Select(m => m.GetType())
 			.Distinct();
-	}
 
-	private async Task<ModuleHost> StartModuleAsync(Type moduleType, CancellationToken token)
+	private async Task<ModuleHost> StartModuleAsync(
+		Type moduleType,
+		CancellationToken token)
 	{
 		var scope = _services.CreateScope();
 
@@ -125,53 +186,43 @@ public sealed class KernelService : BackgroundService
 			_bus,
 			_logger);
 
-		await module.StartAsync(
-			_state,
-			runtime,
-			token);
+		await module.StartAsync(_state, runtime, token);
 
-		var host = new ModuleHost(
+		_bus.Publish(new ModuleStarted(moduleType));
+
+		return new ModuleHost(
 			moduleType,
 			scope,
 			module,
 			runtime);
-
-		_bus.Publish(new ModuleStarted(moduleType));
-
-		return host;
 	}
 
-	private async Task StopModuleAsync(ModuleHost host)
+	/* ============================================================
+     * Kernel supervision (THIS is the microkernel)
+     * ============================================================ */
+
+	private void SubscribeKernelEvents()
 	{
-		try
-		{
-			await host.Runtime.WaitAllAsync();
-		}
-		catch { }
-
-		host.Scope.Dispose();
-
-		_bus.Publish(new ModuleStopped(host.ModuleType));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskSlow>(OnModuleTaskSlow));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskHung>(OnModuleTaskHung));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleMessageFlooded>(OnModuleMessageFlooded));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskAbandoned>(OnModuleTaskAbandoned));
 	}
 
-	#endregion
-
-	#region Fault Handling
-
-	private Task OnModuleFaulted(ModuleFaulted fault, CancellationToken ct)
+	private Task OnModuleFaulted(ModuleFaulted msg, CancellationToken _)
 	{
 		if (Interlocked.Exchange(ref _fatalFaulted, 1) != 0)
 			return Task.CompletedTask;
 
 		_logger.LogError(
-			fault.Exception,
+			msg.Exception,
 			"Module {Module} task '{Task}' faulted",
-			fault.ModuleType.Name,
-			fault.TaskName);
+			msg.ModuleType.Name,
+			msg.TaskName);
 
-		// Default microkernel policy: fatal fault
-		_kernelCts.Cancel();
-		_appLifetime.StopApplication();
+		RequestShutdown($"Module fault: {msg.ModuleType.Name}");
+		_lifetime.StopApplication();
 
 		return Task.CompletedTask;
 	}
@@ -193,14 +244,13 @@ public sealed class KernelService : BackgroundService
 			return Task.CompletedTask;
 
 		_logger.LogCritical(
-			"Module {Module} task '{Task}' is hung after {Duration}",
+			"Module {Module} task '{Task}' hung after {Duration}",
 			msg.ModuleType.Name,
 			msg.TaskName,
 			msg.Duration);
 
-		// Hung task is unrecoverable in-process
-		_kernelCts.Cancel();
-		_appLifetime.StopApplication();
+		RequestShutdown($"Hung task in {msg.ModuleType.Name}");
+		_lifetime.StopApplication();
 
 		return Task.CompletedTask;
 	}
@@ -217,58 +267,41 @@ public sealed class KernelService : BackgroundService
 			msg.Count,
 			msg.Window);
 
-		_kernelCts.Cancel();
-		_appLifetime.StopApplication();
+		RequestShutdown($"Message flood in {msg.ModuleType.Name}");
+		_lifetime.StopApplication();
 
 		return Task.CompletedTask;
 	}
 
-	private Task OnModuleTaskAbandoned(
-		ModuleTaskAbandoned msg,
-		CancellationToken _)
+	private Task OnModuleTaskAbandoned(ModuleTaskAbandoned msg, CancellationToken _)
 	{
-		_logger.LogWarning(
-			"Module {Module} task '{Task}' was abandoned during shutdown",
-			msg.ModuleType.Name,
-			msg.TaskName);
-
-		// Default policy: informational, not fatal
-		// Future policies could escalate or quarantine modules
-
-		return Task.CompletedTask;
-	}
-
-	#endregion
-
-	#region Shutdown
-
-	public override async Task StopAsync(CancellationToken cancellationToken)
-	{
-		_logger.LogInformation("Kernel stopping");
-		_bus.Publish(new KernelStopping());
-
-		// Modules will be disposed by DI container
-		foreach (var module in _modules)
+		if (_isShuttingDown)
 		{
-			_bus.Publish(new ModuleStopped(module.GetType()));
+			_logger.LogInformation(
+				"Module {Module} task '{Task}' abandoned during shutdown",
+				msg.ModuleType.Name,
+				msg.TaskName);
+		}
+		else
+		{
+			_logger.LogWarning(
+				"Module {Module} task '{Task}' abandoned unexpectedly",
+				msg.ModuleType.Name,
+				msg.TaskName);
 		}
 
-		_bus.Publish(new KernelStopped());
-
-		DisposeSubscriptions();
-		_kernelCts.Dispose();
-
-		await base.StopAsync(cancellationToken);
+		return Task.CompletedTask;
 	}
+
+	/* ============================================================
+     * Cleanup
+     * ============================================================ */
 
 	private void DisposeSubscriptions()
 	{
 		foreach (var sub in _subscriptions)
-		{
 			sub.Dispose();
-		}
+
 		_subscriptions.Clear();
 	}
-
-	#endregion
 }

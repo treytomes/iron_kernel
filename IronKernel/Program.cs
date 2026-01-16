@@ -11,6 +11,7 @@ using IronKernel.Kernel.Bus;
 using IronKernel.Modules.Clock;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Applications.DemoApp;
+using IronKernel.Modules.OpenTKHost;
 
 namespace IronKernel;
 
@@ -46,9 +47,19 @@ internal sealed class Program
 			};
 
 			using var host = CreateHostBuilder(props).Build();
+			var logger = host.Services.GetRequiredService<ILogger<Program>>();
+			var kernel = host.Services.GetRequiredService<KernelService>();
+			var cts = new CancellationTokenSource();
+			var ct = cts.Token;
 
-			Console.WriteLine("Starting IronKernel...");
-			await host.RunAsync();
+			Console.CancelKeyPress += (sender, e) =>
+			{
+				e.Cancel = true;        // prevent hard process kill
+				cts.Cancel();           // signal kernel shutdown
+			};
+
+			Console.WriteLine($"Starting {nameof(IronKernel)}...");
+			await kernel.StartAsync(cts.Token);
 		}, configFileOption, debugOption);
 
 		return root;
@@ -118,11 +129,12 @@ internal sealed class Program
 		// Kernel infrastructure
 		services.AddSingleton<IKernelState, KernelStateStore>();
 		services.AddSingleton<KernelService>();
-		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
+		// services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
 
 		services.AddSingleton<IKernelMessageBus, MessageBus>();
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
+		services.AddSingleton<IKernelModule, OpenTKHostModule>();
 		services.AddSingleton<IKernelModule, ClockModule>();
 		// services.AddSingleton<IKernelModule, HelloModule>();
 		// services.AddSingleton<IKernelModule, ChaosModule>();
