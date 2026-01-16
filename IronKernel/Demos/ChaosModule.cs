@@ -30,9 +30,9 @@ public sealed class ChaosModule : IKernelModule
 		// Uncomment ONE at a time during testing
 
 		// 1. Crash during startup
-		// throw new InvalidOperationException("Chaos: crash during StartAsync");
+		throw new InvalidOperationException("Chaos: crash during StartAsync");
 
-		_subscription = _bus.Subscribe<ChaosTrigger>(runtime, "ChaosHandler", OnChaos);
+		// _subscription = _bus.Subscribe<ChaosTrigger>(runtime, "ChaosHandler", OnChaos);
 
 		// runtime.RunAsync(
 		// 	"DelayedCrash",
@@ -44,9 +44,9 @@ public sealed class ChaosModule : IKernelModule
 		// 	},
 		// 	stoppingToken);
 
-		_bus.Publish(new ChaosTrigger("flood"));
+		// _bus.Publish(new ChaosTrigger("cancel"));
 
-		return Task.CompletedTask;
+		// return Task.CompletedTask;
 	}
 
 	private async Task OnChaos(ChaosTrigger msg, CancellationToken ct)
@@ -72,7 +72,7 @@ public sealed class ChaosModule : IKernelModule
 				}
 
 			case "flood":
-				// 6. Message flood
+				// 6. Message flood (handled)
 				for (int i = 0; i < 100_000; i++)
 				{
 					_bus.Publish(new Tick(DateTime.UtcNow));
@@ -80,7 +80,7 @@ public sealed class ChaosModule : IKernelModule
 				break;
 
 			case "cancel":
-				// 7. Ignore cancellation explicitly
+				// 7. Ignore cancellation explicitly (handled)
 				await Task.Delay(TimeSpan.FromMinutes(5), CancellationToken.None);
 				break;
 

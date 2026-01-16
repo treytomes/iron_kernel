@@ -20,6 +20,7 @@
 	"dotnet.defaultSolution": "IronKernel.sln",
 	"cSpell.words": [
 		"appsettings",
-		"microkernel"
+		"microkernel",
+		"waitables"
 	]
 }

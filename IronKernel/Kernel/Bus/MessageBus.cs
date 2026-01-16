@@ -186,6 +186,7 @@ public sealed class MessageBus : IKernelMessageBus
 
 			_runtime.RunAsync(
 				_handlerName,
+				ModuleTaskKind.Finite,
 				ct => _handler((T)message, ct),
 				CancellationToken.None);
 		}

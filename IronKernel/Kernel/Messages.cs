@@ -15,6 +15,7 @@ public sealed record ModuleTaskCompleted(Type Module, string Task);
 public sealed record ModuleTaskCancelled(Type Module, string Task);
 public sealed record ModuleTaskSlow(Type ModuleType, string TaskName, TimeSpan Duration);
 public sealed record ModuleTaskHung(Type ModuleType, string TaskName, TimeSpan Duration);
+public sealed record ModuleTaskAbandoned(Type ModuleType, string TaskName);
 
 public sealed record ModuleMessageFlooded(Type ModuleType, Type MessageType, int Count, TimeSpan Window);
 

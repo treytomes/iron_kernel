@@ -20,6 +20,7 @@ public sealed class ClockModule : IKernelModule
 	{
 		runtime.RunAsync(
 			"ClockLoop",
+			ModuleTaskKind.Resident,
 			async ct =>
 			{
 				while (!ct.IsCancellationRequested)

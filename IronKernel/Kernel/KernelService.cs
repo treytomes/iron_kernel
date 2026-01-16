@@ -55,6 +55,7 @@ public sealed class KernelService : BackgroundService
 		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskSlow>(OnModuleTaskSlow));
 		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskHung>(OnModuleTaskHung));
 		_subscriptions.Add(_bus.SubscribeKernel<ModuleMessageFlooded>(OnModuleMessageFlooded));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskAbandoned>(OnModuleTaskAbandoned));
 
 		_logger.LogInformation("Kernel starting");
 		_bus.Publish(new KernelStarting());
@@ -218,6 +219,21 @@ public sealed class KernelService : BackgroundService
 
 		_kernelCts.Cancel();
 		_appLifetime.StopApplication();
+
+		return Task.CompletedTask;
+	}
+
+	private Task OnModuleTaskAbandoned(
+		ModuleTaskAbandoned msg,
+		CancellationToken _)
+	{
+		_logger.LogWarning(
+			"Module {Module} task '{Task}' was abandoned during shutdown",
+			msg.ModuleType.Name,
+			msg.TaskName);
+
+		// Default policy: informational, not fatal
+		// Future policies could escalate or quarantine modules
 
 		return Task.CompletedTask;
 	}

@@ -6,7 +6,9 @@ using System.Diagnostics;
 namespace IronKernel.Kernel;
 
 /// <remarks>
-/// ModuleRuntime is a kernel internal supervisor, not a module utility.
+/// ModuleRuntime is a kernel-internal supervisor.
+/// It enforces task lifecycle policy and protects the kernel
+/// from misbehaving modules.
 /// </remarks>
 public sealed class ModuleRuntime : IModuleRuntime
 {
@@ -31,6 +33,7 @@ public sealed class ModuleRuntime : IModuleRuntime
 
 	public Task RunAsync(
 		string name,
+		ModuleTaskKind kind,
 		Func<CancellationToken, Task> work,
 		CancellationToken stoppingToken)
 	{
@@ -39,6 +42,8 @@ public sealed class ModuleRuntime : IModuleRuntime
 
 		var startedAt = DateTime.UtcNow;
 		var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+
+		ModuleTask? entry = null;
 
 		var task = Task.Run(async () =>
 		{
@@ -50,29 +55,24 @@ public sealed class ModuleRuntime : IModuleRuntime
 				await work(stoppingToken);
 				sw.Stop();
 
-				if (sw.Elapsed > SlowTaskThreshold)
+				if (kind == ModuleTaskKind.Finite)
 				{
-					_bus.Publish(new ModuleTaskSlow(
-						_moduleType,
-						name,
-						sw.Elapsed));
-				}
+					MarkSlowIfNeeded(entry!, sw.Elapsed);
 
-				_bus.Publish(new ModuleTaskCompleted(
-					_moduleType,
-					name));
+					entry!.State = ModuleTaskState.Completed;
+
+					_bus.Publish(new ModuleTaskCompleted(
+						_moduleType,
+						name));
+				}
 			}
 			catch (OperationCanceledException)
 			{
 				sw.Stop();
 
-				if (sw.Elapsed > SlowTaskThreshold)
-				{
-					_bus.Publish(new ModuleTaskSlow(
-						_moduleType,
-						name,
-						sw.Elapsed));
-				}
+				MarkSlowIfNeeded(entry!, sw.Elapsed);
+
+				entry!.State = ModuleTaskState.Cancelled;
 
 				_bus.Publish(new ModuleTaskCancelled(
 					_moduleType,
@@ -82,13 +82,9 @@ public sealed class ModuleRuntime : IModuleRuntime
 			{
 				sw.Stop();
 
-				if (sw.Elapsed > SlowTaskThreshold)
-				{
-					_bus.Publish(new ModuleTaskSlow(
-						_moduleType,
-						name,
-						sw.Elapsed));
-				}
+				MarkSlowIfNeeded(entry!, sw.Elapsed);
+
+				entry!.State = ModuleTaskState.Faulted;
 
 				_logger.LogError(
 					ex,
@@ -103,33 +99,52 @@ public sealed class ModuleRuntime : IModuleRuntime
 			}
 			finally
 			{
-				// Stop watchdog once task exits
 				watchdogCts.Cancel();
 				ModuleContext.CurrentModule.Value = null;
 			}
-		}, stoppingToken);
+		}, CancellationToken.None);
 
-		// Start watchdog
-		_ = WatchdogAsync(
+		entry = new ModuleTask(
 			name,
 			task,
-			startedAt,
-			watchdogCts.Token);
+			kind,
+			watchdogCts)
+		{
+			State = ModuleTaskState.Running
+		};
+
+		if (kind == ModuleTaskKind.Finite)
+		{
+			_ = WatchdogAsync(
+				entry,
+				startedAt,
+				watchdogCts.Token);
+		}
 
 		lock (_tasks)
 		{
-			_tasks.Add(new ModuleTask(
-				name,
-				task,
-				watchdogCts));
+			_tasks.Add(entry);
 		}
 
 		return task;
 	}
 
+	private void MarkSlowIfNeeded(ModuleTask entry, TimeSpan elapsed)
+	{
+		if (elapsed > SlowTaskThreshold &&
+			entry.State == ModuleTaskState.Running)
+		{
+			entry.State = ModuleTaskState.Slow;
+
+			_bus.Publish(new ModuleTaskSlow(
+				_moduleType,
+				entry.Name,
+				elapsed));
+		}
+	}
+
 	private async Task WatchdogAsync(
-		string name,
-		Task task,
+		ModuleTask entry,
 		DateTime startedAt,
 		CancellationToken ct)
 	{
@@ -137,12 +152,18 @@ public sealed class ModuleRuntime : IModuleRuntime
 		{
 			await Task.Delay(HungTaskThreshold, ct);
 
-			if (!task.IsCompleted)
+			if (!entry.Task.IsCompleted &&
+				entry.State is ModuleTaskState.Running or ModuleTaskState.Slow)
 			{
+				entry.State = ModuleTaskState.Hung;
+
 				_bus.Publish(new ModuleTaskHung(
 					_moduleType,
-					name,
+					entry.Name,
 					DateTime.UtcNow - startedAt));
+
+				// Kernel must never wait for this task again
+				entry.State = ModuleTaskState.Detached;
 			}
 		}
 		catch (OperationCanceledException)
@@ -151,7 +172,7 @@ public sealed class ModuleRuntime : IModuleRuntime
 		}
 	}
 
-	public async Task WaitAllAsync()
+	public async Task WaitAllAsync(TimeSpan? grace = null)
 	{
 		ModuleTask[] snapshot;
 
@@ -160,20 +181,40 @@ public sealed class ModuleRuntime : IModuleRuntime
 			snapshot = _tasks.ToArray();
 		}
 
+		var waitables = snapshot
+			.Where(t =>
+				t.Kind == ModuleTaskKind.Finite &&
+				t.State is ModuleTaskState.Running or ModuleTaskState.Slow)
+			.Select(t => t.Task)
+			.ToArray();
+
+		if (waitables.Length != 0)
+		{
+			if (grace is null)
+			{
+				await Task.WhenAll(waitables);
+			}
+			else
+			{
+				await Task.WhenAny(
+					Task.WhenAll(waitables),
+					Task.Delay(grace.Value));
+			}
+		}
+
 		foreach (var entry in snapshot)
 		{
-			try
+			if (!entry.Task.IsCompleted &&
+				entry.State != ModuleTaskState.Detached)
 			{
-				await entry.Task;
+				entry.State = ModuleTaskState.Detached;
+
+				_bus.Publish(new ModuleTaskAbandoned(
+					_moduleType,
+					entry.Name));
 			}
-			catch
-			{
-				// Fault already observed and reported
-			}
-			finally
-			{
-				entry.WatchdogCts.Dispose();
-			}
+
+			entry.WatchdogCts.Dispose();
 		}
 	}
 }
