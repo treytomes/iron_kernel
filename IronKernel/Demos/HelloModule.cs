@@ -22,15 +22,13 @@ public sealed class HelloModule : IKernelModule
 
 	public Task StartAsync(IKernelState state, IModuleRuntime runtime, CancellationToken stoppingToken)
 	{
-		_subscriptions.Add(_bus.Subscribe<Tick>(OnTick));
-
-		_subscriptions.Add(_bus.Subscribe<KernelStarting>(OnKernelStarting));
-		_subscriptions.Add(_bus.Subscribe<KernelStarted>(OnKernelStarted));
-		_subscriptions.Add(_bus.Subscribe<KernelStopping>(OnKernelStopping));
-		_subscriptions.Add(_bus.Subscribe<KernelStopped>(OnKernelStopped));
-
-		_subscriptions.Add(_bus.Subscribe<ModuleStarted>(OnModuleStarted));
-		_subscriptions.Add(_bus.Subscribe<ModuleStopped>(OnModuleStopped));
+		_subscriptions.Add(_bus.Subscribe<Tick>(runtime, "TickHandler", OnTick));
+		_subscriptions.Add(_bus.Subscribe<KernelStarting>(runtime, "KernelStartingHandler", OnKernelStarting));
+		_subscriptions.Add(_bus.Subscribe<KernelStarted>(runtime, "KernelStartedHandler", OnKernelStarted));
+		_subscriptions.Add(_bus.Subscribe<KernelStopping>(runtime, "KernelStoppingHandler", OnKernelStopping));
+		_subscriptions.Add(_bus.Subscribe<KernelStopped>(runtime, "KernelStoppedHandler", OnKernelStopped));
+		_subscriptions.Add(_bus.Subscribe<ModuleStarted>(runtime, "ModuleStartedHandler", OnModuleStarted));
+		_subscriptions.Add(_bus.Subscribe<ModuleStopped>(runtime, "ModuleStoppedHandler", OnModuleStopped));
 
 		_logger.LogInformation("HelloModule started");
 

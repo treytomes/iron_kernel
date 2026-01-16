@@ -7,7 +7,6 @@ namespace IronKernel.Modules.Clock;
 public sealed class ClockModule : IKernelModule
 {
 	private readonly IMessageBus _bus;
-	private PeriodicTimer? _timer;
 
 	public ClockModule(IMessageBus bus)
 	{
@@ -36,7 +35,6 @@ public sealed class ClockModule : IKernelModule
 
 	public ValueTask DisposeAsync()
 	{
-		_timer?.Dispose();
 		return ValueTask.CompletedTask;
 	}
 }

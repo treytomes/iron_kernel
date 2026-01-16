@@ -8,11 +8,18 @@ public interface IMessageBus
 	void Publish<T>(T message)
 		where T : notnull;
 
-	/// <summary>
-	/// Subscribe to messages of type T.
-	/// Returns an IDisposable that unsubscribes.
-	/// </summary>
+	// Module subscription (supervised)
 	IDisposable Subscribe<T>(
+		IModuleRuntime runtime,
+		string handlerName,
+		Func<T, CancellationToken, Task> handler)
+		where T : notnull;
+}
+
+public interface IKernelMessageBus : IMessageBus
+{
+	// Kernel-only subscription
+	IDisposable SubscribeKernel<T>(
 		Func<T, CancellationToken, Task> handler)
 		where T : notnull;
 }

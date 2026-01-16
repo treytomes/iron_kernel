@@ -7,7 +7,7 @@ namespace IronKernel.Kernel;
 /// <remarks>
 /// ModuleRuntime is a kernel internal supervisor, not a module utility.
 /// </remarks>
-internal sealed class ModuleRuntime : IModuleRuntime
+public sealed class ModuleRuntime : IModuleRuntime
 {
 	private readonly Type _moduleType;
 	private readonly IMessageBus _bus;

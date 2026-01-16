@@ -118,7 +118,8 @@ internal sealed class Program
 		services.AddSingleton<KernelService>();
 		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
 
-		services.AddSingleton<IMessageBus, MessageBus>();
+		services.AddSingleton<IKernelMessageBus, MessageBus>();
+		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
 		services.AddSingleton<IKernelModule, ClockModule>();
 		services.AddSingleton<IKernelModule, HelloModule>();

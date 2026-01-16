@@ -14,7 +14,7 @@ public sealed class KernelService : BackgroundService
 	private readonly IHostApplicationLifetime _appLifetime;
 	private readonly ILogger<KernelService> _logger;
 	private readonly IKernelState _state;
-	private readonly IMessageBus _bus;
+	private readonly IKernelMessageBus _bus;
 	private readonly IServiceProvider _services;
 	private readonly List<ModuleHost> _modules = new();
 	private int _fatalFaulted;
@@ -30,7 +30,7 @@ public sealed class KernelService : BackgroundService
 		ILogger<KernelService> logger,
 		IServiceProvider services,
 		IKernelState state,
-		IMessageBus bus,
+		IKernelMessageBus bus,
 		IHostApplicationLifetime appLifetime)
 	{
 		_logger = logger;
@@ -51,8 +51,7 @@ public sealed class KernelService : BackgroundService
 				stoppingToken,
 				_kernelCts.Token);
 
-		_faultSubscription =
-			_bus.Subscribe<ModuleFaulted>(OnModuleFaulted);
+		_faultSubscription = _bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted);
 
 		_logger.LogInformation("Kernel starting");
 		_bus.Publish(new KernelStarting());
