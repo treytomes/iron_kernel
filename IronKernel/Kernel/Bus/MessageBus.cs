@@ -1,15 +1,34 @@
 using System.Collections.Concurrent;
+using IronKernel.Kernel.Messages;
 
 namespace IronKernel.Kernel.Bus;
 
 public sealed class MessageBus : IKernelMessageBus
 {
+	private const int FloodThreshold = 10_000;
+	private static readonly TimeSpan FloodWindow = TimeSpan.FromSeconds(1);
+
 	private readonly ConcurrentDictionary<Type, List<ISubscription>> _handlers = new();
+	private readonly ConcurrentDictionary<(Type module, Type message), FloodCounter> _floodCounters = new();
 
 	public void Publish<T>(T message)
 		where T : notnull
 	{
-		if (!_handlers.TryGetValue(typeof(T), out var list))
+		var messageType = typeof(T);
+
+		// Attribute publisher (if any)
+		var moduleType = ModuleContext.CurrentModule.Value;
+
+		if (moduleType != null)
+		{
+			if (IsFlooding(moduleType, messageType))
+			{
+				// Drop message silently after kernel signal
+				return;
+			}
+		}
+
+		if (!_handlers.TryGetValue(messageType, out var list))
 			return;
 
 		ISubscription[] snapshot;
@@ -21,6 +40,61 @@ public sealed class MessageBus : IKernelMessageBus
 		foreach (var sub in snapshot)
 		{
 			sub.Dispatch(message);
+		}
+	}
+
+	private bool IsFlooding(Type moduleType, Type messageType)
+	{
+		var now = DateTime.UtcNow;
+
+		var counter = _floodCounters.GetOrAdd(
+			(moduleType, messageType),
+			_ => new FloodCounter
+			{
+				WindowStart = now,
+				Count = 0
+			});
+
+		lock (counter)
+		{
+			if (now - counter.WindowStart > FloodWindow)
+			{
+				counter.WindowStart = now;
+				counter.Count = 0;
+			}
+
+			counter.Count++;
+
+			if (counter.Count > FloodThreshold)
+			{
+				PublishKernel(new ModuleMessageFlooded(
+					moduleType,
+					messageType,
+					counter.Count,
+					now - counter.WindowStart));
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private void PublishKernel<T>(T message)
+		where T : notnull
+	{
+		if (_handlers.TryGetValue(typeof(T), out var list))
+		{
+			ISubscription[] snapshot;
+			lock (list)
+			{
+				snapshot = list.ToArray();
+			}
+
+			foreach (var sub in snapshot)
+			{
+				sub.Dispatch(message);
+			}
 		}
 	}
 
@@ -166,5 +240,11 @@ public sealed class MessageBus : IKernelMessageBus
 			_disposed = true;
 			_bus.Unsubscribe(typeof(T), this);
 		}
+	}
+
+	private sealed class FloodCounter
+	{
+		public int Count;
+		public DateTime WindowStart;
 	}
 }

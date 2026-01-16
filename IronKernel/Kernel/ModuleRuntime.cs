@@ -1,6 +1,7 @@
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.Messages;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace IronKernel.Kernel;
 
@@ -10,6 +11,7 @@ namespace IronKernel.Kernel;
 public sealed class ModuleRuntime : IModuleRuntime
 {
 	private static readonly TimeSpan SlowTaskThreshold = TimeSpan.FromSeconds(1);
+	private static readonly TimeSpan HungTaskThreshold = TimeSpan.FromSeconds(5);
 
 	private readonly Type _moduleType;
 	private readonly IMessageBus _bus;
@@ -35,9 +37,13 @@ public sealed class ModuleRuntime : IModuleRuntime
 		if (work is null)
 			throw new ArgumentNullException(nameof(work));
 
+		var startedAt = DateTime.UtcNow;
+		var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
+
 		var task = Task.Run(async () =>
 		{
-			var sw = System.Diagnostics.Stopwatch.StartNew();
+			ModuleContext.CurrentModule.Value = _moduleType;
+			var sw = Stopwatch.StartNew();
 
 			try
 			{
@@ -94,37 +100,79 @@ public sealed class ModuleRuntime : IModuleRuntime
 					_moduleType,
 					name,
 					ex));
-
-				// Intentionally do NOT rethrow
+			}
+			finally
+			{
+				// Stop watchdog once task exits
+				watchdogCts.Cancel();
+				ModuleContext.CurrentModule.Value = null;
 			}
 		}, stoppingToken);
 
+		// Start watchdog
+		_ = WatchdogAsync(
+			name,
+			task,
+			startedAt,
+			watchdogCts.Token);
+
 		lock (_tasks)
 		{
-			_tasks.Add(new(name, task));
+			_tasks.Add(new ModuleTask(
+				name,
+				task,
+				watchdogCts));
 		}
 
 		return task;
 	}
 
+	private async Task WatchdogAsync(
+		string name,
+		Task task,
+		DateTime startedAt,
+		CancellationToken ct)
+	{
+		try
+		{
+			await Task.Delay(HungTaskThreshold, ct);
+
+			if (!task.IsCompleted)
+			{
+				_bus.Publish(new ModuleTaskHung(
+					_moduleType,
+					name,
+					DateTime.UtcNow - startedAt));
+			}
+		}
+		catch (OperationCanceledException)
+		{
+			// Normal: task completed or kernel shutting down
+		}
+	}
+
 	public async Task WaitAllAsync()
 	{
-		Task[] snapshot;
+		ModuleTask[] snapshot;
 
 		lock (_tasks)
 		{
-			snapshot = _tasks.Select(t => t.Task).ToArray();
+			snapshot = _tasks.ToArray();
 		}
 
-		foreach (var task in snapshot)
+		foreach (var entry in snapshot)
 		{
 			try
 			{
-				await task;
+				await entry.Task;
 			}
 			catch
 			{
-				// Fault already reported
+				// Fault already observed and reported
+			}
+			finally
+			{
+				entry.WatchdogCts.Dispose();
 			}
 		}
 	}

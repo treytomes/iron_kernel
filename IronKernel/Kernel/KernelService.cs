@@ -53,6 +53,8 @@ public sealed class KernelService : BackgroundService
 
 		_subscriptions.Add(_bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted));
 		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskSlow>(OnModuleTaskSlow));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskHung>(OnModuleTaskHung));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleMessageFlooded>(OnModuleMessageFlooded));
 
 		_logger.LogInformation("Kernel starting");
 		_bus.Publish(new KernelStarting());
@@ -180,6 +182,42 @@ public sealed class KernelService : BackgroundService
 			msg.ModuleType.Name,
 			msg.TaskName,
 			msg.Duration);
+
+		return Task.CompletedTask;
+	}
+
+	private Task OnModuleTaskHung(ModuleTaskHung msg, CancellationToken _)
+	{
+		if (Interlocked.Exchange(ref _fatalFaulted, 1) != 0)
+			return Task.CompletedTask;
+
+		_logger.LogCritical(
+			"Module {Module} task '{Task}' is hung after {Duration}",
+			msg.ModuleType.Name,
+			msg.TaskName,
+			msg.Duration);
+
+		// Hung task is unrecoverable in-process
+		_kernelCts.Cancel();
+		_appLifetime.StopApplication();
+
+		return Task.CompletedTask;
+	}
+
+	private Task OnModuleMessageFlooded(ModuleMessageFlooded msg, CancellationToken _)
+	{
+		if (Interlocked.Exchange(ref _fatalFaulted, 1) != 0)
+			return Task.CompletedTask;
+
+		_logger.LogCritical(
+			"Module {Module} flooded {Message} ({Count} messages in {Window})",
+			msg.ModuleType.Name,
+			msg.MessageType.Name,
+			msg.Count,
+			msg.Window);
+
+		_kernelCts.Cancel();
+		_appLifetime.StopApplication();
 
 		return Task.CompletedTask;
 	}

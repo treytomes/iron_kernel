@@ -34,17 +34,17 @@ public sealed class ChaosModule : IKernelModule
 
 		_subscription = _bus.Subscribe<ChaosTrigger>(runtime, "ChaosHandler", OnChaos);
 
-		runtime.RunAsync(
-			"DelayedCrash",
-			async ct =>
-			{
-				await Task.Delay(2000, ct);
+		// runtime.RunAsync(
+		// 	"DelayedCrash",
+		// 	async ct =>
+		// 	{
+		// 		await Task.Delay(2000, ct);
 
-				throw new Exception("Chaos: background task crashed");
-			},
-			stoppingToken);
+		// 		throw new Exception("Chaos: background task crashed");
+		// 	},
+		// 	stoppingToken);
 
-		_bus.Publish(new ChaosTrigger("slow"));
+		_bus.Publish(new ChaosTrigger("flood"));
 
 		return Task.CompletedTask;
 	}
@@ -56,16 +56,16 @@ public sealed class ChaosModule : IKernelModule
 		switch (msg.Mode)
 		{
 			case "throw":
-				// 3. Crash in message handler
+				// 3. Crash in message handler (handled)
 				throw new Exception("Chaos: handler threw");
 
 			case "slow":
-				// 4. Starvation / slow handler
+				// 4. Starvation / slow handler (handled)
 				await Task.Delay(TimeSpan.FromSeconds(10), ct);
 				break;
 
 			case "loop":
-				// 5. Infinite loop ignoring cancellation
+				// 5. Infinite loop ignoring cancellation (handled)
 				while (true)
 				{
 					await Task.Delay(1000);
