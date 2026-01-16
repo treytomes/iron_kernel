@@ -1,6 +1,7 @@
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.Messages;
 using IronKernel.Kernel.State;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -12,9 +13,11 @@ public sealed class KernelService : BackgroundService
 
 	private readonly IHostApplicationLifetime _appLifetime;
 	private readonly ILogger<KernelService> _logger;
-	private readonly IEnumerable<IKernelModule> _modules;
 	private readonly IKernelState _state;
 	private readonly IMessageBus _bus;
+	private readonly IServiceProvider _services;
+	private readonly List<ModuleHost> _modules = new();
+	private int _fatalFaulted;
 
 	private readonly CancellationTokenSource _kernelCts = new();
 	private IDisposable? _faultSubscription;
@@ -24,17 +27,17 @@ public sealed class KernelService : BackgroundService
 	#region Constructors
 
 	public KernelService(
-	IHostApplicationLifetime appLifetime,
 		ILogger<KernelService> logger,
-		IEnumerable<IKernelModule> modules,
+		IServiceProvider services,
 		IKernelState state,
-		IMessageBus bus)
+		IMessageBus bus,
+		IHostApplicationLifetime appLifetime)
 	{
-		_appLifetime = appLifetime;
 		_logger = logger;
-		_modules = modules;
+		_services = services;
 		_state = state;
 		_bus = bus;
+		_appLifetime = appLifetime;
 	}
 
 	#endregion
@@ -48,8 +51,6 @@ public sealed class KernelService : BackgroundService
 				stoppingToken,
 				_kernelCts.Token);
 
-		var runtimes = new List<ModuleRuntime>();
-
 		_faultSubscription =
 			_bus.Subscribe<ModuleFaulted>(OnModuleFaulted);
 
@@ -58,34 +59,19 @@ public sealed class KernelService : BackgroundService
 
 		try
 		{
-			foreach (var module in _modules)
+			foreach (var moduleType in DiscoverModules())
 			{
-				var moduleType = module.GetType();
-
-				var runtime = new ModuleRuntime(
+				var host = await StartModuleAsync(
 					moduleType,
-					_bus,
-					_logger);
-
-				runtimes.Add(runtime);
-
-				_logger.LogDebug(
-					"Starting module {Module}",
-					moduleType.Name);
-
-				_bus.Publish(new ModuleStarted(moduleType));
-
-				await module.StartAsync(
-					_state,
-					runtime,
 					linkedCts.Token);
+
+				_modules.Add(host);
 			}
 
 			_bus.Publish(new KernelStarted());
 
-			// Block until all supervised tasks complete
-			await Task.WhenAll(
-				runtimes.Select(r => r.WaitAllAsync()));
+			// Kernel stays alive until cancelled (fault or host shutdown)
+			await Task.Delay(Timeout.Infinite, linkedCts.Token);
 		}
 		catch (OperationCanceledException)
 		{
@@ -98,8 +84,71 @@ public sealed class KernelService : BackgroundService
 		}
 		finally
 		{
-			_logger.LogInformation("Kernel execution loop exited");
+			_logger.LogInformation("Kernel stopping");
+
+			_bus.Publish(new KernelStopping());
+
+			foreach (var module in _modules)
+			{
+				await StopModuleAsync(module);
+			}
+
+			_modules.Clear();
+
+			_bus.Publish(new KernelStopped());
+
+			_faultSubscription?.Dispose();
 		}
+	}
+
+	private IEnumerable<Type> DiscoverModules()
+	{
+		return _services
+			.GetServices<IKernelModule>()
+			.Select(m => m.GetType())
+			.Distinct();
+	}
+
+	private async Task<ModuleHost> StartModuleAsync(Type moduleType, CancellationToken token)
+	{
+		var scope = _services.CreateScope();
+
+		var module = scope.ServiceProvider
+			.GetServices<IKernelModule>()
+			.First(m => m.GetType() == moduleType);
+
+		var runtime = new ModuleRuntime(
+			moduleType,
+			_bus,
+			_logger);
+
+		await module.StartAsync(
+			_state,
+			runtime,
+			token);
+
+		var host = new ModuleHost(
+			moduleType,
+			scope,
+			module,
+			runtime);
+
+		_bus.Publish(new ModuleStarted(moduleType));
+
+		return host;
+	}
+
+	private async Task StopModuleAsync(ModuleHost host)
+	{
+		try
+		{
+			await host.Runtime.WaitAllAsync();
+		}
+		catch { }
+
+		host.Scope.Dispose();
+
+		_bus.Publish(new ModuleStopped(host.ModuleType));
 	}
 
 	#endregion
@@ -108,16 +157,17 @@ public sealed class KernelService : BackgroundService
 
 	private Task OnModuleFaulted(ModuleFaulted fault, CancellationToken ct)
 	{
-		_logger.LogCritical(
+		if (Interlocked.Exchange(ref _fatalFaulted, 1) != 0)
+			return Task.CompletedTask;
+
+		_logger.LogError(
 			fault.Exception,
-			"Module {Module} task '{Task}' faulted — shutting down kernel",
+			"Module {Module} task '{Task}' faulted",
 			fault.ModuleType.Name,
 			fault.TaskName);
 
-		// Stop kernel execution
+		// Default microkernel policy: fatal fault
 		_kernelCts.Cancel();
-
-		// Stop the host (this ends the app)
 		_appLifetime.StopApplication();
 
 		return Task.CompletedTask;

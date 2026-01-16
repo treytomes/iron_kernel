@@ -19,6 +19,7 @@
 	"csharp.debug.expressionEvaluationOptions.allowImplicitFuncEval": true,
 	"dotnet.defaultSolution": "IronKernel.sln",
 	"cSpell.words": [
-		"appsettings"
+		"appsettings",
+		"microkernel"
 	]
 }
