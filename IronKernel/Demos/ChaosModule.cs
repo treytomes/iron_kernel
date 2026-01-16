@@ -30,9 +30,9 @@ public sealed class ChaosModule : IKernelModule
 		// Uncomment ONE at a time during testing
 
 		// 1. Crash during startup
-		throw new InvalidOperationException("Chaos: crash during StartAsync");
+		// throw new InvalidOperationException("Chaos: crash during StartAsync");
 
-		// _subscription = _bus.Subscribe<ChaosTrigger>(runtime, "ChaosHandler", OnChaos);
+		_subscription = _bus.Subscribe<ChaosTrigger>(runtime, "ChaosHandler", OnChaos);
 
 		// runtime.RunAsync(
 		// 	"DelayedCrash",
@@ -46,7 +46,7 @@ public sealed class ChaosModule : IKernelModule
 
 		// _bus.Publish(new ChaosTrigger("cancel"));
 
-		// return Task.CompletedTask;
+		return Task.CompletedTask;
 	}
 
 	private async Task OnChaos(ChaosTrigger msg, CancellationToken ct)
