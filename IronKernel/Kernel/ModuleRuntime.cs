@@ -9,6 +9,8 @@ namespace IronKernel.Kernel;
 /// </remarks>
 public sealed class ModuleRuntime : IModuleRuntime
 {
+	private static readonly TimeSpan SlowTaskThreshold = TimeSpan.FromSeconds(1);
+
 	private readonly Type _moduleType;
 	private readonly IMessageBus _bus;
 	private readonly ILogger _logger;
@@ -35,17 +37,53 @@ public sealed class ModuleRuntime : IModuleRuntime
 
 		var task = Task.Run(async () =>
 		{
+			var sw = System.Diagnostics.Stopwatch.StartNew();
+
 			try
 			{
 				await work(stoppingToken);
-				_bus.Publish(new ModuleTaskCompleted(_moduleType, name));
+				sw.Stop();
+
+				if (sw.Elapsed > SlowTaskThreshold)
+				{
+					_bus.Publish(new ModuleTaskSlow(
+						_moduleType,
+						name,
+						sw.Elapsed));
+				}
+
+				_bus.Publish(new ModuleTaskCompleted(
+					_moduleType,
+					name));
 			}
 			catch (OperationCanceledException)
 			{
-				_bus.Publish(new ModuleTaskCancelled(_moduleType, name));
+				sw.Stop();
+
+				if (sw.Elapsed > SlowTaskThreshold)
+				{
+					_bus.Publish(new ModuleTaskSlow(
+						_moduleType,
+						name,
+						sw.Elapsed));
+				}
+
+				_bus.Publish(new ModuleTaskCancelled(
+					_moduleType,
+					name));
 			}
 			catch (Exception ex)
 			{
+				sw.Stop();
+
+				if (sw.Elapsed > SlowTaskThreshold)
+				{
+					_bus.Publish(new ModuleTaskSlow(
+						_moduleType,
+						name,
+						sw.Elapsed));
+				}
+
 				_logger.LogError(
 					ex,
 					"Module {Module} task '{Task}' faulted",
@@ -57,7 +95,7 @@ public sealed class ModuleRuntime : IModuleRuntime
 					name,
 					ex));
 
-				// Do NOT rethrow
+				// Intentionally do NOT rethrow
 			}
 		}, stoppingToken);
 

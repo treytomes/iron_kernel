@@ -20,7 +20,7 @@ public sealed class KernelService : BackgroundService
 	private int _fatalFaulted;
 
 	private readonly CancellationTokenSource _kernelCts = new();
-	private IDisposable? _faultSubscription;
+	private readonly List<IDisposable> _subscriptions = new();
 
 	#endregion
 
@@ -51,7 +51,8 @@ public sealed class KernelService : BackgroundService
 				stoppingToken,
 				_kernelCts.Token);
 
-		_faultSubscription = _bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted);
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleFaulted>(OnModuleFaulted));
+		_subscriptions.Add(_bus.SubscribeKernel<ModuleTaskSlow>(OnModuleTaskSlow));
 
 		_logger.LogInformation("Kernel starting");
 		_bus.Publish(new KernelStarting());
@@ -96,7 +97,7 @@ public sealed class KernelService : BackgroundService
 
 			_bus.Publish(new KernelStopped());
 
-			_faultSubscription?.Dispose();
+			DisposeSubscriptions();
 		}
 	}
 
@@ -172,6 +173,17 @@ public sealed class KernelService : BackgroundService
 		return Task.CompletedTask;
 	}
 
+	private Task OnModuleTaskSlow(ModuleTaskSlow msg, CancellationToken _)
+	{
+		_logger.LogWarning(
+			"Module {Module} task '{Task}' is slow ({Duration})",
+			msg.ModuleType.Name,
+			msg.TaskName,
+			msg.Duration);
+
+		return Task.CompletedTask;
+	}
+
 	#endregion
 
 	#region Shutdown
@@ -189,10 +201,19 @@ public sealed class KernelService : BackgroundService
 
 		_bus.Publish(new KernelStopped());
 
-		_faultSubscription?.Dispose();
+		DisposeSubscriptions();
 		_kernelCts.Dispose();
 
 		await base.StopAsync(cancellationToken);
+	}
+
+	private void DisposeSubscriptions()
+	{
+		foreach (var sub in _subscriptions)
+		{
+			sub.Dispose();
+		}
+		_subscriptions.Clear();
 	}
 
 	#endregion

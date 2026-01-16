@@ -40,11 +40,11 @@ public sealed class ChaosModule : IKernelModule
 			{
 				await Task.Delay(2000, ct);
 
-				// throw new Exception("Chaos: background task crashed");
-
-				_bus.Publish(new ChaosTrigger("throw"));
+				throw new Exception("Chaos: background task crashed");
 			},
 			stoppingToken);
+
+		_bus.Publish(new ChaosTrigger("slow"));
 
 		return Task.CompletedTask;
 	}

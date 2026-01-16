@@ -87,7 +87,6 @@ public sealed class HelloModule : IKernelModule
 		{
 			sub.Dispose();
 		}
-
 		_subscriptions.Clear();
 
 		_logger.LogInformation("HelloModule disposed");
