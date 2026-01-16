@@ -11,4 +11,7 @@ public sealed record ModuleStarted(Type Module) : IMessage;
 public sealed record ModuleStopped(Type Module) : IMessage;
 public sealed record ModuleFaulted(Type ModuleType, string TaskName, Exception Exception) : IMessage;
 
+public sealed record ModuleTaskCompleted(Type Module, string Task);
+public sealed record ModuleTaskCancelled(Type Module, string Task);
+
 public sealed record ChaosTrigger(string Mode);

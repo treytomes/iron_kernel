@@ -4,13 +4,16 @@ using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Kernel;
 
+/// <remarks>
+/// ModuleRuntime is a kernel internal supervisor, not a module utility.
+/// </remarks>
 internal sealed class ModuleRuntime : IModuleRuntime
 {
 	private readonly Type _moduleType;
 	private readonly IMessageBus _bus;
 	private readonly ILogger _logger;
 
-	private readonly List<Task> _tasks = new();
+	private readonly List<ModuleTask> _tasks = new();
 
 	public ModuleRuntime(
 		Type moduleType,
@@ -35,10 +38,11 @@ internal sealed class ModuleRuntime : IModuleRuntime
 			try
 			{
 				await work(stoppingToken);
+				_bus.Publish(new ModuleTaskCompleted(_moduleType, name));
 			}
 			catch (OperationCanceledException)
 			{
-				// Normal shutdown path
+				_bus.Publish(new ModuleTaskCancelled(_moduleType, name));
 			}
 			catch (Exception ex)
 			{
@@ -53,13 +57,13 @@ internal sealed class ModuleRuntime : IModuleRuntime
 					name,
 					ex));
 
-				throw;
+				// Do NOT rethrow
 			}
 		}, stoppingToken);
 
 		lock (_tasks)
 		{
-			_tasks.Add(task);
+			_tasks.Add(new(name, task));
 		}
 
 		return task;
@@ -71,9 +75,19 @@ internal sealed class ModuleRuntime : IModuleRuntime
 
 		lock (_tasks)
 		{
-			snapshot = _tasks.ToArray();
+			snapshot = _tasks.Select(t => t.Task).ToArray();
 		}
 
-		await Task.WhenAll(snapshot);
+		foreach (var task in snapshot)
+		{
+			try
+			{
+				await task;
+			}
+			catch
+			{
+				// Fault already reported
+			}
+		}
 	}
 }
