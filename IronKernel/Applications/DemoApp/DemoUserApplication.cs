@@ -1,4 +1,5 @@
 using IronKernel.Modules.ApplicationHost;
+using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Applications.DemoApp;
@@ -36,6 +37,16 @@ public sealed class DemoUserApplication : IUserApplication
 				context.Bus.Publish(
 					new PongMessage(msg.Value + 1));
 
+				await Task.CompletedTask;
+			});
+
+		context.Bus.Subscribe<ApplicationKeyboardEvent>(
+			"KeyboardHandler",
+			async (msg, ct) =>
+			{
+				_logger.LogInformation(
+					"Received keyboard event: {Key}, pressed: {}",
+					msg.Key, msg.Action == InputAction.Press);
 				await Task.CompletedTask;
 			});
 

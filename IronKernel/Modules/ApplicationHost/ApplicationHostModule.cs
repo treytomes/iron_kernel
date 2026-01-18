@@ -1,6 +1,7 @@
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -8,48 +9,59 @@ namespace IronKernel.Modules.ApplicationHost;
 /// <summary>
 /// Kernel module responsible for hosting a single user application.
 /// </summary>
-public sealed class ApplicationHostModule : IKernelModule
+public sealed class ApplicationHostModule(
+	IUserApplicationFactory factory,
+	IMessageBus kernelBus,
+	ILogger<ApplicationHostModule> logger
+) : IKernelModule
 {
-	private readonly IUserApplicationFactory _factory;
-	private readonly ILogger<ApplicationHostModule> _logger;
-	private readonly IMessageBus _kernelBus;
+	#region Fields
+
+	private readonly IUserApplicationFactory _factory = factory;
+	private readonly ILogger<ApplicationHostModule> _logger = logger;
+	private readonly IMessageBus _kernelBus = kernelBus;
 
 	private IUserApplication? _application;
 	private ApplicationRuntime? _runtime;
 	private ApplicationBus? _bus;
 	private ApplicationState? _state;
+	private ApplicationBusBridge? _bridge;
 
-	public ApplicationHostModule(
-		IUserApplicationFactory factory,
-		IMessageBus kernelBus,
-		ILogger<ApplicationHostModule> logger)
-	{
-		_factory = factory;
-		_kernelBus = kernelBus;
-		_logger = logger;
-	}
+	#endregion
+
+	#region Methods
 
 	public Task StartAsync(
 		IKernelState kernelState,
-		IModuleRuntime kernelRuntime,
+		IModuleRuntime runtime,
 		CancellationToken stoppingToken)
 	{
 		_application = _factory.Create();
 
-		_logger.LogInformation(
-			"Starting application {Application}",
-			_application.GetType().Name);
+		_logger.LogInformation("Starting application {Application}", _application.GetType().Name);
 
 		_state = new ApplicationState();
-		_bus = new ApplicationBus(kernelRuntime, _kernelBus);
-		_runtime = new ApplicationRuntime(kernelRuntime);
+		_bus = new ApplicationBus(runtime, _kernelBus);
+		_runtime = new ApplicationRuntime(runtime);
+		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
+
+		_bridge.Forward<HostKeyboardEvent, ApplicationKeyboardEvent>(
+			"KeyboardHandler",
+			(e, ct) => new ApplicationKeyboardEvent(
+				e.Action,
+				e.Modifiers,
+				e.Key,
+				ct
+			)
+		);
 
 		var context = new ApplicationContext(
 			_bus,
 			_runtime,
-			_state);
+			_state
+		);
 
-		kernelRuntime.RunDetached(
+		runtime.RunDetached(
 			"ApplicationMain",
 			ModuleTaskKind.Resident,
 			ct => _application.RunAsync(context, ct),
@@ -60,6 +72,8 @@ public sealed class ApplicationHostModule : IKernelModule
 
 	public ValueTask DisposeAsync()
 	{
+		_bridge?.Dispose();
+
 		if (_application is not null)
 		{
 			_logger.LogInformation(
@@ -70,4 +84,6 @@ public sealed class ApplicationHostModule : IKernelModule
 		_bus?.Dispose();
 		return ValueTask.CompletedTask;
 	}
+
+	#endregion
 }
