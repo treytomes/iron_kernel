@@ -7,11 +7,11 @@ namespace IronKernel.Applications.DemoApp;
 /// <summary>
 /// Simple demo user application.
 /// </summary>
-public sealed class DemoUserApplication : IUserApplication
+public sealed class SimpleUserApplication : IUserApplication
 {
-	private readonly ILogger<DemoUserApplication> _logger;
+	private readonly ILogger<SimpleUserApplication> _logger;
 
-	public DemoUserApplication(ILogger<DemoUserApplication> logger)
+	public SimpleUserApplication(ILogger<SimpleUserApplication> logger)
 	{
 		_logger = logger;
 	}
@@ -20,12 +20,12 @@ public sealed class DemoUserApplication : IUserApplication
 		IApplicationContext context,
 		CancellationToken stoppingToken)
 	{
-		_logger.LogInformation("DemoUserApplication starting");
+		_logger.LogInformation("SimpleUserApplication starting");
 
-		// Initialize application state.
+		// Initialize application state
 		context.State.Set("tickCount", 0);
 
-		// Subscribe to some messages.
+		// Subscribe to a message
 		context.Bus.Subscribe<PingMessage>(
 			"PingHandler",
 			async (msg, ct) =>
@@ -50,27 +50,34 @@ public sealed class DemoUserApplication : IUserApplication
 				await Task.CompletedTask;
 			});
 
-		context.Bus.Subscribe<ApplicationUpdateTick>(
-			"UpdateTickHandler",
-			async (e, ct) =>
+		// Start a periodic task
+		await context.Scheduler.RunAsync(
+			"Ticker",
+			ApplicationTaskKind.LongRunning,
+			async ct =>
 			{
-				context.State.TryGet("tickCount", out int ticks);
-				ticks++;
-
-				context.State.Set("tickCount", ticks);
-
-				_logger.LogInformation(
-					"Tick {TickCount}",
-					ticks);
-
-				context.Bus.Publish(new TickMessage(ticks));
-
-				if (ticks % 5 == 0)
+				while (!ct.IsCancellationRequested)
 				{
-					context.Bus.Publish(new PingMessage(ticks));
+					await Task.Delay(1000, ct);
+
+					context.State.TryGet("tickCount", out int ticks);
+					ticks++;
+
+					context.State.Set("tickCount", ticks);
+
+					_logger.LogInformation(
+						"Tick {TickCount}",
+						ticks);
+
+					context.Bus.Publish(new TickMessage(ticks));
+
+					if (ticks % 5 == 0)
+					{
+						context.Bus.Publish(new PingMessage(ticks));
+					}
 				}
-			}
-		);
+			},
+			stoppingToken);
 
 		// Keep main alive until shutdown
 		await Task.Delay(Timeout.Infinite, stoppingToken);

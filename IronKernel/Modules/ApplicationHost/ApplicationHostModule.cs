@@ -45,13 +45,81 @@ public sealed class ApplicationHostModule(
 		_runtime = new ApplicationRuntime(runtime);
 		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
 
+		_bridge.Forward<HostUpdateTick, ApplicationUpdateTick>(
+			"UpdateTickHandler",
+			(e, ct) => new(
+				e.TotalTime,
+				e.ElapsedTime
+			)
+		);
+
+		_bridge.Forward<HostRenderTick, ApplicationRenderTick>(
+			"RenderTickHandler",
+			(e, ct) => new(
+				e.TotalTime,
+				e.ElapsedTime
+			)
+		);
+
+		_bridge.Forward<HostResizeEvent, ApplicationResizeEvent>(
+			"ResizeEventHandler",
+			(e, ct) => new(
+				e.Width,
+				e.Height
+			)
+		);
+
+		_bridge.Forward<HostShutdown, ApplicationShutdown>(
+			"ShutdownHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostAcquiredFocus, ApplicationAcquiredFocus>(
+			"AcquiredFocusHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostLostFocus, ApplicationLostFocus>(
+			"LostFocusHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostMouseWheelEvent, ApplicationMouseWheelEvent>(
+			"MouseWheelHandler",
+			(e, ct) => new(
+				e.OffsetX,
+				e.OffsetY
+			)
+		);
+
+		_bridge.Forward<HostMouseMoveEvent, ApplicationMouseMoveEvent>(
+			"MouseMoveHandler",
+			(e, ct) => new(
+				e.X,
+				e.Y,
+				e.DeltaX,
+				e.DeltaY
+			)
+		);
+
+		_bridge.Forward<HostMouseButtonEvent, ApplicationMouseButtonEvent>(
+			"MouseButtonHandler",
+			(e, ct) => new(
+				e.Action,
+				e.Button,
+				e.Modifiers
+			)
+		);
+
 		_bridge.Forward<HostKeyboardEvent, ApplicationKeyboardEvent>(
 			"KeyboardHandler",
-			(e, ct) => new ApplicationKeyboardEvent(
+			(e, ct) => new(
 				e.Action,
 				e.Modifiers,
-				e.Key,
-				ct
+				e.Key
 			)
 		);
 

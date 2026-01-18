@@ -135,7 +135,7 @@ internal sealed class Program
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
 		services.AddSingleton<IKernelModule, OpenTKHostModule>();
-		services.AddSingleton<IKernelModule, ClockModule>();
+		// services.AddSingleton<IKernelModule, ClockModule>();
 		// services.AddSingleton<IKernelModule, HelloModule>();
 		// services.AddSingleton<IKernelModule, ChaosModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();

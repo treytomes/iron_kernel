@@ -8,25 +8,26 @@ using OpenTK.Windowing.Desktop;
 
 namespace IronKernel.Modules.OpenTKHost;
 
-public sealed class OpenTKHostModule :
-	IKernelModule,
+public sealed class OpenTKHostModule(
+	IMessageBus bus,
+	ILogger<OpenTKHostModule> logger
+) : IKernelModule,
 	IPrimaryKernelModule,
 	IAsyncDisposable
 {
-	private readonly IMessageBus _bus;
-	private readonly ILogger<OpenTKHostModule> _logger;
+	#region Fields
+
+	private readonly IMessageBus _bus = bus;
+	private readonly ILogger<OpenTKHostModule> _logger = logger;
 
 	private GameWindow? _window;
 	private volatile bool _shutdownRequested;
+	private double _totalRenderTime = 0.0;
+	private double _totalUpdateTime = 0.0f;
 
-	public OpenTKHostModule(
-		IMessageBus bus,
-		ILogger<OpenTKHostModule> logger
-	)
-	{
-		_bus = bus;
-		_logger = logger;
-	}
+	#endregion
+
+	#region Methods
 
 	public Task StartAsync(
 		IKernelState state,
@@ -66,8 +67,6 @@ public sealed class OpenTKHostModule :
 		return Task.CompletedTask;
 	}
 
-	private double _totalRenderTime = 0.0;
-	private double _totalUpdateTime = 0.0f;
 	private void HookEvents()
 	{
 		_window!.UpdateFrame += e =>
@@ -166,4 +165,6 @@ public sealed class OpenTKHostModule :
 		_window?.Dispose();
 		return ValueTask.CompletedTask;
 	}
+
+	#endregion
 }
