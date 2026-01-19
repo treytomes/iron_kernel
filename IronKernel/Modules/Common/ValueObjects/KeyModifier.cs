@@ -1,4 +1,4 @@
-namespace IronKernel.Modules.OpenTKHost.ValueObjects;
+namespace IronKernel.Modules.Common.ValueObjects;
 
 /// <summary>
 /// Key modifiers, such as Shift or CTRL.

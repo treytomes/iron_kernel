@@ -1,4 +1,7 @@
+using System.Drawing;
+using System.Numerics;
 using IronKernel.Modules.ApplicationHost;
+using IronKernel.Modules.Common.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -23,56 +26,56 @@ public sealed class DemoUserApplication : IUserApplication
 		_logger.LogInformation("DemoUserApplication starting");
 
 		// Initialize application state.
-		context.State.Set("tickCount", 0);
+		context.State.Set("position", new Point(100, 100));
 
-		// Subscribe to some messages.
-		context.Bus.Subscribe<PingMessage>(
-			"PingHandler",
-			async (msg, ct) =>
-			{
-				_logger.LogInformation(
-					"Received Ping {Value}",
-					msg.Value);
-
-				context.Bus.Publish(
-					new PongMessage(msg.Value + 1));
-
-				await Task.CompletedTask;
-			});
-
-		context.Bus.Subscribe<ApplicationKeyboardEvent>(
+		context.Bus.Subscribe<AppKeyboardEvent>(
 			"KeyboardHandler",
 			async (msg, ct) =>
 			{
 				_logger.LogInformation(
 					"Received keyboard event: {Key}, pressed: {}",
 					msg.Key, msg.Action == InputAction.Press);
+
+				if (msg.Action == InputAction.Press || msg.Action == InputAction.Repeat)
+				{
+					context.State.TryGet("position", out Point position);
+					switch (msg.Key)
+					{
+						case Key.W:
+							position.Y--;
+							break;
+						case Key.S:
+							position.Y++;
+							break;
+						case Key.A:
+							position.X--;
+							break;
+						case Key.D:
+							position.X++;
+							break;
+					}
+					context.State.Set("position", position);
+
+					_logger.LogInformation("Position: {Position}", position);
+				}
 				await Task.CompletedTask;
 			});
 
-		context.Bus.Subscribe<ApplicationUpdateTick>(
+		context.Bus.Subscribe<AppUpdateTick>(
 			"UpdateTickHandler",
 			async (e, ct) =>
 			{
-				context.State.TryGet("tickCount", out int ticks);
-				ticks++;
-
-				context.State.Set("tickCount", ticks);
-
-				_logger.LogInformation(
-					"Tick {TickCount}",
-					ticks);
-
-				context.Bus.Publish(new TickMessage(ticks));
-
-				if (ticks % 5 == 0)
-				{
-					context.Bus.Publish(new PingMessage(ticks));
-				}
+				context.State.TryGet("position", out Point position);
+				context.Bus.Publish(new AppFbWriteSpan(position.X, position.Y, [RadialColor.Red]));
+				await Task.CompletedTask;
 			}
 		);
 
-		// Keep main alive until shutdown
-		await Task.Delay(Timeout.Infinite, stoppingToken);
+		context.Bus.Publish(new AppFbClear(RadialColor.Green));
+		context.Bus.Publish(new AppFbSetBorder(RadialColor.DarkGray));
+
+		// Keep main alive until shutdown.
+		// Not really sure this is necessary.
+		// await Task.Delay(Timeout.Infinite, stoppingToken);
 	}
 }

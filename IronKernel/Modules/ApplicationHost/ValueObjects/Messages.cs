@@ -1,15 +1,25 @@
-using IronKernel.Modules.OpenTKHost.ValueObjects;
+using IronKernel.Modules.Common.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
 
-public sealed record ApplicationUpdateTick(double TotalTime, double ElapsedTime);
-public sealed record ApplicationRenderTick(double TotalTime, double ElapsedTime);
-public sealed record ApplicationResizeEvent(int Width, int Height);
-public sealed record ApplicationShutdown();
-public sealed record ApplicationAcquiredFocus();
-public sealed record ApplicationLostFocus();
+public sealed record AppUpdateTick(double TotalTime, double ElapsedTime);
 
-public sealed record ApplicationMouseWheelEvent(float OffsetX, float OffsetY);
-public sealed record ApplicationMouseMoveEvent(float X, float Y, float DeltaX, float DeltaY);
-public sealed record ApplicationMouseButtonEvent(InputAction Action, MouseButton Button, KeyModifier Modifiers);
-public sealed record ApplicationKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
+// The render tick is effectively the vsync signal.
+public sealed record AppRenderTick(double TotalTime, double ElapsedTime);
+
+public sealed record AppResizeEvent(int Width, int Height);
+public sealed record AppShutdown();
+public sealed record AppAcquiredFocus();
+public sealed record AppLostFocus();
+
+public sealed record AppMouseWheelEvent(float OffsetX, float OffsetY);
+public sealed record AppMouseMoveEvent(float X, float Y, float DeltaX, float DeltaY);
+public sealed record AppMouseButtonEvent(InputAction Action, MouseButton Button, KeyModifier Modifiers);
+public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
+
+
+public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data);
+public sealed record AppFbClear(RadialColor Color);
+public sealed record AppFbSetBorder(RadialColor Color);
+public sealed record AppFbInfo(int Width, int Height, int PaletteSize);
+public sealed record AppFbInfoQuery();

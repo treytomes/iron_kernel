@@ -8,10 +8,12 @@ using Microsoft.Extensions.Logging;
 using System.CommandLine;
 using IronKernel.State;
 using IronKernel.Kernel.Bus;
-using IronKernel.Modules.Clock;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Applications.DemoApp;
 using IronKernel.Modules.OpenTKHost;
+using IronKernel.Modules.Framebuffer;
+using Microsoft.Extensions.Options;
+using OpenTK.Mathematics;
 
 namespace IronKernel;
 
@@ -134,10 +136,35 @@ internal sealed class Program
 		services.AddSingleton<IKernelMessageBus, MessageBus>();
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
-		services.AddSingleton<IKernelModule, OpenTKHostModule>();
-		// services.AddSingleton<IKernelModule, ClockModule>();
+		// Register IVirtualDisplay as a factory.
+		services.AddSingleton<IVirtualDisplay>(serviceProvider =>
+		{
+			// Get window settings from configuration.
+			var appSettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
+
+			// Get or create window.
+			var windowSize = new Vector2i(
+				appSettings.Window.Width,
+				appSettings.Window.Height
+			);
+
+			// Create virtual display settings.
+			var virtualDisplaySettings = new VirtualDisplaySettings
+			{
+				Width = appSettings.VirtualDisplay.Width,
+				Height = appSettings.VirtualDisplay.Height,
+				VertexShaderPath = appSettings.VirtualDisplay.VertexShaderPath,
+				FragmentShaderPath = appSettings.VirtualDisplay.FragmentShaderPath
+			};
+
+			// Create and return the virtual display.
+			return new VirtualDisplay(windowSize, virtualDisplaySettings);
+		});
+
 		// services.AddSingleton<IKernelModule, HelloModule>();
 		// services.AddSingleton<IKernelModule, ChaosModule>();
+		services.AddSingleton<IKernelModule, OpenTKHostModule>();
+		services.AddSingleton<IKernelModule, FramebufferModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
 		services.AddSingleton<DemoUserApplication>();

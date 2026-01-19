@@ -70,6 +70,24 @@ internal sealed class ApplicationBusBridge(
 		_subs.Add(sub);
 	}
 
+	public void Request<TApp, TKernel>(
+		string name,
+		Func<TApp, CancellationToken, TKernel> map)
+		where TApp : notnull
+		where TKernel : notnull
+	{
+		var sub = _appBus.Subscribe<TApp>(
+			name,
+			(msg, ct) =>
+			{
+				_kernelBus.Publish(map(msg, ct));
+				return Task.CompletedTask;
+			}
+		);
+
+		_subs.Add(sub);
+	}
+
 	public void Dispose()
 	{
 		foreach (var s in _subs)

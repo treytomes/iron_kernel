@@ -1,4 +1,5 @@
 using IronKernel.Modules.ApplicationHost;
+using IronKernel.Modules.Common.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -40,7 +41,7 @@ public sealed class SimpleUserApplication : IUserApplication
 				await Task.CompletedTask;
 			});
 
-		context.Bus.Subscribe<ApplicationKeyboardEvent>(
+		context.Bus.Subscribe<AppKeyboardEvent>(
 			"KeyboardHandler",
 			async (msg, ct) =>
 			{

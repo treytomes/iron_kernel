@@ -2,15 +2,20 @@ using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.Messages;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.Common.ValueObjects;
+using IronKernel.Modules.Framebuffer;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Desktop;
 
 namespace IronKernel.Modules.OpenTKHost;
 
 public sealed class OpenTKHostModule(
 	IMessageBus bus,
-	ILogger<OpenTKHostModule> logger
+	ILogger<OpenTKHostModule> logger,
+	IVirtualDisplay virtualDisplay
 ) : IKernelModule,
 	IPrimaryKernelModule,
 	IAsyncDisposable
@@ -24,6 +29,10 @@ public sealed class OpenTKHostModule(
 	private volatile bool _shutdownRequested;
 	private double _totalRenderTime = 0.0;
 	private double _totalUpdateTime = 0.0f;
+	// private readonly ConcurrentQueue<Action> _renderCommands = new();
+	private readonly IVirtualDisplay _virtualDisplay = virtualDisplay ?? throw new ArgumentNullException(nameof(virtualDisplay));
+	private bool _isReady = false;
+	private Color4 _borderColor = Color4.Black;
 
 	#endregion
 
@@ -39,7 +48,30 @@ public sealed class OpenTKHostModule(
 
 		_window = new GameWindow(settings, native);
 
-		_bus.Subscribe<KernelShutdownRequested>(runtime, "KernelShutdownRequestHandler", OnShutdownRequested);
+		_bus.Subscribe<KernelShutdownRequested>(
+			runtime,
+			"KernelShutdownRequestHandler",
+			OnShutdownRequested
+		);
+
+		// _bus.Subscribe<HostRenderCommand>(
+		// 	runtime,
+		// 	"RenderCommandHandler",
+		// 	(cmd, ct) =>
+		// 	{
+		// 		_renderCommands.Enqueue(cmd.Execute);
+		// 		return Task.CompletedTask;
+		// 	});
+
+		_bus.Subscribe<HostSetBorderColor>(
+			runtime,
+			"SetBorderColorHandler",
+			(msg, ct) =>
+			{
+				_borderColor = msg.Color;
+				return Task.CompletedTask;
+			}
+		);
 
 		HookEvents();
 
@@ -81,9 +113,22 @@ public sealed class OpenTKHostModule(
 
 		_window.RenderFrame += e =>
 		{
-			// Vertical sync
+			GL.ClearColor(_borderColor);
+			GL.Clear(ClearBufferMask.ColorBufferBit);
+
+			// while (_renderCommands.TryDequeue(out var cmd))
+			// 	cmd();
+
+			if (!_isReady)
+			{
+				_bus.Publish(new HostWindowReady());
+				_virtualDisplay.Initialize();
+				_isReady = true;
+			}
+
 			_totalRenderTime += e.Time;
 			_bus.Publish(new HostRenderTick(_totalRenderTime, e.Time));
+			_virtualDisplay.Render();
 			_window.SwapBuffers();
 		};
 

@@ -1,6 +1,7 @@
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
@@ -52,7 +53,7 @@ public sealed class ApplicationHostModule(
 		_runtime = new ApplicationRuntime(runtime);
 		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
 
-		_bridge.ForwardClocked<HostUpdateTick, ApplicationUpdateTick>(
+		_bridge.ForwardClocked<HostUpdateTick, AppUpdateTick>(
 			"UpdateTickHandler",
 			TimeSpan.FromSeconds(1.0 / TARGET_UPDATE_FPS),
 			(clock, _) => new(
@@ -61,16 +62,16 @@ public sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.ForwardClocked<HostRenderTick, ApplicationRenderTick>(
-			"RenderTickHandler",
-			TimeSpan.FromSeconds(1.0 / TARGET_RENDER_FPS),
-			(clock, _) => new(
-				clock.TotalTime,
-				clock.ElapsedTime
-			)
-		);
+		// _bridge.ForwardClocked<HostRenderTick, ApplicationRenderTick>(
+		// 	"RenderTickHandler",
+		// 	TimeSpan.FromSeconds(1.0 / TARGET_RENDER_FPS),
+		// 	(clock, _) => new(
+		// 		clock.TotalTime,
+		// 		clock.ElapsedTime
+		// 	)
+		// );
 
-		_bridge.Forward<HostResizeEvent, ApplicationResizeEvent>(
+		_bridge.Forward<HostResizeEvent, AppResizeEvent>(
 			"ResizeEventHandler",
 			(e, ct) => new(
 				e.Width,
@@ -78,25 +79,25 @@ public sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.Forward<HostShutdown, ApplicationShutdown>(
+		_bridge.Forward<HostShutdown, AppShutdown>(
 			"ShutdownHandler",
 			(e, ct) => new(
 			)
 		);
 
-		_bridge.Forward<HostAcquiredFocus, ApplicationAcquiredFocus>(
+		_bridge.Forward<HostAcquiredFocus, AppAcquiredFocus>(
 			"AcquiredFocusHandler",
 			(e, ct) => new(
 			)
 		);
 
-		_bridge.Forward<HostLostFocus, ApplicationLostFocus>(
+		_bridge.Forward<HostLostFocus, AppLostFocus>(
 			"LostFocusHandler",
 			(e, ct) => new(
 			)
 		);
 
-		_bridge.Forward<HostMouseWheelEvent, ApplicationMouseWheelEvent>(
+		_bridge.Forward<HostMouseWheelEvent, AppMouseWheelEvent>(
 			"MouseWheelHandler",
 			(e, ct) => new(
 				e.OffsetX,
@@ -104,7 +105,7 @@ public sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.Forward<HostMouseMoveEvent, ApplicationMouseMoveEvent>(
+		_bridge.Forward<HostMouseMoveEvent, AppMouseMoveEvent>(
 			"MouseMoveHandler",
 			(e, ct) => new(
 				e.X,
@@ -114,7 +115,7 @@ public sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.Forward<HostMouseButtonEvent, ApplicationMouseButtonEvent>(
+		_bridge.Forward<HostMouseButtonEvent, AppMouseButtonEvent>(
 			"MouseButtonHandler",
 			(e, ct) => new(
 				e.Action,
@@ -123,13 +124,42 @@ public sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.Forward<HostKeyboardEvent, ApplicationKeyboardEvent>(
+		_bridge.Forward<HostKeyboardEvent, AppKeyboardEvent>(
 			"KeyboardHandler",
 			(e, ct) => new(
 				e.Action,
 				e.Modifiers,
 				e.Key
 			)
+		);
+
+		_bridge.Forward<FbInfo, AppFbInfo>(
+			"FbInfoHandler",
+			(e, ct) => new(
+				e.Width,
+				e.Height,
+				e.PaletteSize
+			)
+		);
+
+		_bridge.Request<AppFbWriteSpan, FbWriteSpan>(
+			"AppFbWriteSpanHandler",
+			(e, ct) => new(e.X, e.Y, e.Data)
+		);
+
+		_bridge.Request<AppFbClear, FbClear>(
+			"AppFbClearHandler",
+			(e, ct) => new(e.Color)
+		);
+
+		_bridge.Request<AppFbSetBorder, FbSetBorder>(
+			"AppFbSetBorderHandler",
+			(e, ct) => new(e.Color)
+		);
+
+		_bridge.Request<AppFbInfoQuery, FbInfoQuery>(
+			"AppFbInfoHandler",
+			(e, ct) => new()
 		);
 
 		var context = new ApplicationContext(

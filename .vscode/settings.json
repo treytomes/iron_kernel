@@ -20,8 +20,13 @@
 	"dotnet.defaultSolution": "IronKernel.sln",
 	"cSpell.words": [
 		"appsettings",
+		"Bresenham's",
+		"finalizer",
+		"glsl",
+		"Lerp",
 		"microkernel",
 		"reentrancy",
+		"vsync",
 		"waitables"
 	]
 }
