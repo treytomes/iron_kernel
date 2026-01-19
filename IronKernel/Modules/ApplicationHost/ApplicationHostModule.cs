@@ -15,6 +15,13 @@ public sealed class ApplicationHostModule(
 	ILogger<ApplicationHostModule> logger
 ) : IKernelModule
 {
+	#region Constants
+
+	private const double TARGET_UPDATE_FPS = 60.0;
+	private const double TARGET_RENDER_FPS = 60.0;
+
+	#endregion
+
 	#region Fields
 
 	private readonly IUserApplicationFactory _factory = factory;
@@ -45,19 +52,21 @@ public sealed class ApplicationHostModule(
 		_runtime = new ApplicationRuntime(runtime);
 		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
 
-		_bridge.Forward<HostUpdateTick, ApplicationUpdateTick>(
+		_bridge.ForwardClocked<HostUpdateTick, ApplicationUpdateTick>(
 			"UpdateTickHandler",
-			(e, ct) => new(
-				e.TotalTime,
-				e.ElapsedTime
+			TimeSpan.FromSeconds(1.0 / TARGET_UPDATE_FPS),
+			(clock, _) => new(
+				clock.TotalTime,
+				clock.ElapsedTime
 			)
 		);
 
-		_bridge.Forward<HostRenderTick, ApplicationRenderTick>(
+		_bridge.ForwardClocked<HostRenderTick, ApplicationRenderTick>(
 			"RenderTickHandler",
-			(e, ct) => new(
-				e.TotalTime,
-				e.ElapsedTime
+			TimeSpan.FromSeconds(1.0 / TARGET_RENDER_FPS),
+			(clock, _) => new(
+				clock.TotalTime,
+				clock.ElapsedTime
 			)
 		);
 

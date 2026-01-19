@@ -5,7 +5,7 @@ namespace IronKernel.Kernel.Bus;
 
 public sealed class MessageBus : IKernelMessageBus
 {
-	private const int FloodThreshold = 10_000;
+	private const int FloodThreshold = 100_000;
 	private static readonly TimeSpan FloodWindow = TimeSpan.FromSeconds(1);
 
 	private readonly ConcurrentDictionary<Type, List<ISubscription>> _handlers = new();
