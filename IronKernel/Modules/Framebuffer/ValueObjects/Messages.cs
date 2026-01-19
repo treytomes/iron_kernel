@@ -1,4 +1,4 @@
-using IronKernel.Modules.Common.ValueObjects;
+using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.Framebuffer.ValueObjects;
 

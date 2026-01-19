@@ -23,9 +23,13 @@
 		"Bresenham's",
 		"finalizer",
 		"glsl",
+		"inspectable",
 		"Lerp",
 		"microkernel",
 		"reentrancy",
+		"roguelike",
+		"syscalls",
+		"userland",
 		"vsync",
 		"waitables"
 	]

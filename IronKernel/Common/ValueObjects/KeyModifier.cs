@@ -1,4 +1,4 @@
-namespace IronKernel.Modules.Common.ValueObjects;
+namespace IronKernel.Common.ValueObjects;
 
 /// <summary>
 /// Key modifiers, such as Shift or CTRL.

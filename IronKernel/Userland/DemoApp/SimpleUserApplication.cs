@@ -1,9 +1,9 @@
+using IronKernel.Common;
+using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
-using IronKernel.Modules.Common.ValueObjects;
-using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
-namespace IronKernel.Applications.DemoApp;
+namespace IronKernel.Userland.DemoApp;
 
 /// <summary>
 /// Simple demo user application.

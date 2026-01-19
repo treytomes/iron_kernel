@@ -1,4 +1,4 @@
-namespace IronKernel.Modules.ApplicationHost;
+namespace IronKernel.Common;
 
 public interface IApplicationState
 {

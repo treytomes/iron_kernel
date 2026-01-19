@@ -1,4 +1,4 @@
-using IronKernel.Modules.Common.ValueObjects;
+using IronKernel.Common.ValueObjects;
 using OpenTK.Mathematics;
 
 namespace IronKernel.Modules.OpenTKHost.ValueObjects;

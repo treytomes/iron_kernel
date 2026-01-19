@@ -1,4 +1,4 @@
-namespace IronKernel.Modules.Common.ValueObjects;
+namespace IronKernel.Common.ValueObjects;
 
 /// <summary>
 /// Specifies key codes and modifiers in US keyboard layout.

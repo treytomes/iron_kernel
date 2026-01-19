@@ -1,6 +1,6 @@
 using OpenTK.Mathematics;
 
-namespace IronKernel.Modules.Common.ValueObjects;
+namespace IronKernel.Common.ValueObjects;
 
 public sealed record RadialColor : IEquatable<RadialColor>
 {

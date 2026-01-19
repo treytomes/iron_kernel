@@ -1,4 +1,4 @@
-namespace IronKernel.Applications.DemoApp;
+namespace IronKernel.Userland.DemoApp;
 
 public sealed record PingMessage(int Value);
 public sealed record PongMessage(int Value);

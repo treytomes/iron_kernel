@@ -1,11 +1,10 @@
 using System.Drawing;
-using System.Numerics;
 using IronKernel.Modules.ApplicationHost;
-using IronKernel.Modules.Common.ValueObjects;
-using IronKernel.Modules.OpenTKHost.ValueObjects;
+using IronKernel.Common;
+using IronKernel.Common.ValueObjects;
 using Microsoft.Extensions.Logging;
 
-namespace IronKernel.Applications.DemoApp;
+namespace IronKernel.Userland.DemoApp;
 
 /// <summary>
 /// Simple demo user application.
@@ -19,7 +18,7 @@ public sealed class DemoUserApplication : IUserApplication
 		_logger = logger;
 	}
 
-	public async Task RunAsync(
+	public Task RunAsync(
 		IApplicationContext context,
 		CancellationToken stoppingToken)
 	{
@@ -74,8 +73,6 @@ public sealed class DemoUserApplication : IUserApplication
 		context.Bus.Publish(new AppFbClear(RadialColor.Green));
 		context.Bus.Publish(new AppFbSetBorder(RadialColor.DarkGray));
 
-		// Keep main alive until shutdown.
-		// Not really sure this is necessary.
-		// await Task.Delay(Timeout.Infinite, stoppingToken);
+		return Task.CompletedTask;
 	}
 }

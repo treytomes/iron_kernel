@@ -1,7 +1,7 @@
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
-using IronKernel.Modules.Common.ValueObjects;
+using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;

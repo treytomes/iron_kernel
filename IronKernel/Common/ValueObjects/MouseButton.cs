@@ -1,4 +1,4 @@
-namespace IronKernel.Modules.Common.ValueObjects;
+namespace IronKernel.Common.ValueObjects;
 
 public enum MouseButton
 {
