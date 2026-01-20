@@ -25,6 +25,7 @@ internal sealed class OpenTKHostModule(
 
 	private readonly IMessageBus _bus = bus;
 	private readonly ILogger<OpenTKHostModule> _logger = logger;
+	private bool _isDisposed = false;
 
 	private GameWindow? _window;
 	private volatile bool _shutdownRequested;
@@ -228,7 +229,11 @@ internal sealed class OpenTKHostModule(
 
 	public ValueTask DisposeAsync()
 	{
-		_window?.Dispose();
+		if (!_isDisposed)
+		{
+			_window?.Dispose();
+			_isDisposed = true;
+		}
 		return ValueTask.CompletedTask;
 	}
 

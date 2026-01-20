@@ -14,7 +14,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTK.Mathematics;
 using System.CommandLine;
-using IronKernel.Userland;
 
 namespace IronKernel;
 

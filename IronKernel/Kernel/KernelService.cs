@@ -83,6 +83,7 @@ public sealed class KernelService
 
 				// Blocks until the primary module exits
 				primary.Run();
+				await primary.DisposeAsync();
 			}
 			else
 			{

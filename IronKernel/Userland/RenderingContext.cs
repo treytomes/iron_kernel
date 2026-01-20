@@ -155,32 +155,11 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
-		var x1 = rect.Left;
-		var x2 = rect.Right;
-		var y1 = rect.Top;
-		var y2 = rect.Bottom;
-
-		// Ensure x1 <= x2 and y1 <= y2  
-		if (x1 > x2)
-		{
-			(x1, x2) = (x2, x1);
-		}
-		if (y1 > y2)
-		{
-			(y1, y2) = (y2, y1);
-		}
-
-		// Clip to bounds  
-		x1 = Math.Max(0, Math.Min(Width - 1, x1));
-		y1 = Math.Max(0, Math.Min(Height - 1, y1));
-		x2 = Math.Max(0, Math.Min(Width - 1, x2));
-		y2 = Math.Max(0, Math.Min(Height - 1, y2));
-
 		// Optimized direct buffer access for filled rectangle  
-		for (int y = y1; y <= y2; y++)
+		for (int y = rect.Top; y < rect.Bottom; y++)
 		{
 			int rowOffset = y * Width;
-			for (int x = x1; x <= x2; x++)
+			for (int x = rect.Left; x < rect.Right; x++)
 			{
 				_data![rowOffset + x] = color;
 			}
@@ -192,32 +171,14 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void RenderRect(Rectangle rect, RadialColor color, int thickness = 1)
 	{
-		var x1 = rect.Left;
-		var x2 = rect.Right;
-		var y1 = rect.Top;
-		var y2 = rect.Bottom;
-
-		// Ensure x1,y1 is the top-left and x2,y2 is the bottom-right
-		if (x1 > x2)
-		{
-			(x1, x2) = (x2, x1);
-		}
-		if (y1 > y2)
-		{
-			(y1, y2) = (y2, y1);
-		}
-
-		// Calculate the actual thickness (clamped to available space)
-		thickness = Math.Min(thickness, Math.Min((x2 - x1) / 2, (y2 - y1) / 2));
-
 		// Draw multiple concentric rectangles to achieve the desired thickness
 		for (var i = 0; i < thickness; i++)
 		{
 			// Draw the four sides of the rectangle
-			RenderHLine(new Point(x1 + i, y1 + i), x2 - i, color);  // Top
-			RenderHLine(new Point(x1 + i, y2 - i), x2 - i, color);  // Bottom
-			RenderVLine(new Point(x1 + i, y1 + i + 1), y2 - i - 1, color);  // Left
-			RenderVLine(new Point(x2 - i, y1 + i + 1), y2 - i - 1, color);  // Right
+			RenderHLine(new Point(rect.Left, rect.Top + i), rect.Width, color);  // Top
+			RenderHLine(new Point(rect.Left, rect.Bottom - i - 1), rect.Width, color);  // Bottom
+			RenderVLine(new Point(rect.Left + i, rect.Top), rect.Height, color);  // Left
+			RenderVLine(new Point(rect.Right - i - 1, rect.Top), rect.Height, color);  // Right
 		}
 	}
 
@@ -226,23 +187,10 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
-		var x1 = pnt.X;
-		var x2 = x1 + len - 1;
-		var y = pnt.Y;
-		if (y < 0 || y >= Height)
-			return;
-
-		if (x1 > x2)
-			(x1, x2) = (x2, x1);
-
-		x1 = Math.Max(0, x1);
-		x2 = Math.Min(Width - 1, x2);
-
-		// Optimized direct buffer access  
-		int offset = y * Width;
-		for (int x = x1; x <= x2; x++)
+		var offset = pnt.Y * Width + pnt.X;
+		for (var dx = 0; dx < len; dx++)
 		{
-			_data![offset + x] = color;
+			_data![offset + dx] = color;
 		}
 
 		_isDirty = true;
@@ -253,22 +201,9 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
-		var x = pnt.X;
-		var y1 = pnt.Y;
-		var y2 = pnt.Y + len - 1;
-		if (x < 0 || x >= Width)
-			return;
-
-		if (y1 > y2)
-			(y1, y2) = (y2, y1);
-
-		y1 = Math.Max(0, y1);
-		y2 = Math.Min(Height - 1, y2);
-
-		// Direct buffer access  
-		for (int y = y1; y <= y2; y++)
+		for (var dy = 0; dy < len; dy++)
 		{
-			_data![y * Width + x] = color;
+			_data![(pnt.Y + dy) * Width + pnt.X] = color;
 		}
 
 		_isDirty = true;

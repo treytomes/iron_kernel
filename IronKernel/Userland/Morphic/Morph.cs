@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Modules.ApplicationHost;
 using IronKernel.Userland;
 
 namespace IronKernel.Morphic;
@@ -20,6 +21,8 @@ public abstract class Morph
 	public Morph? Owner { get; private set; }
 
 	public IReadOnlyList<Morph> Submorphs => _submorphs;
+
+	public virtual bool WantsKeyboardFocus => false;
 
 	#endregion
 
@@ -74,6 +77,33 @@ public abstract class Morph
 		}
 
 		return ContainsPoint(p) ? this : null;
+	}
+
+	public virtual void OnPointerDown(PointerDownEvent e) { }
+	public virtual void OnPointerUp(PointerUpEvent e) { }
+	public virtual void OnPointerMove(PointerMoveEvent e) { }
+
+	public virtual void OnKeyDown(AppKeyboardEvent e) { }
+
+	public void DispatchPointerDown(PointerDownEvent e)
+	{
+		OnPointerDown(e);
+		if (!e.Handled && Owner != null)
+			Owner.DispatchPointerDown(e);
+	}
+
+	public void DispatchPointerUp(PointerUpEvent e)
+	{
+		OnPointerUp(e);
+		if (!e.Handled && Owner != null)
+			Owner.DispatchPointerUp(e);
+	}
+
+	public void DispatchPointerMove(PointerMoveEvent e)
+	{
+		OnPointerMove(e);
+		if (!e.Handled && Owner != null)
+			Owner.DispatchPointerMove(e);
 	}
 
 	#endregion

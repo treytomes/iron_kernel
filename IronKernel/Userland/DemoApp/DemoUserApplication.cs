@@ -30,7 +30,11 @@ public sealed class DemoUserApplication(
 
 		var world = new WorldMorph(new Size(320, 240));
 
-		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30), RadialColor.Blue));
+		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30))
+		{
+			FillColor = RadialColor.Red,
+			BorderColor = RadialColor.Blue.Lerp(RadialColor.White, 0.5f)
+		});
 
 		var canvas = new FramebufferCanvas(context.Bus);
 
@@ -51,6 +55,19 @@ public sealed class DemoUserApplication(
 				await Task.CompletedTask;
 			}
 		);
+
+		context.Bus.Subscribe<AppKeyboardEvent>(
+			"KeyboardHandler",
+			async (e, ct) =>
+			{
+				if (world.KeyboardFocus != null)
+				{
+					world.KeyboardFocus.OnKeyDown(e);
+				}
+				await Task.CompletedTask;
+			}
+		);
+
 		// context.Bus.Subscribe<AppKeyboardEvent>(
 		// 	"KeyboardHandler",
 		// 	async (msg, ct) =>
