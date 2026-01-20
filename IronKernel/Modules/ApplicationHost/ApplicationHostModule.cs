@@ -1,3 +1,4 @@
+using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
@@ -139,7 +140,9 @@ public sealed class ApplicationHostModule(
 			(e, ct) => new(
 				e.Width,
 				e.Height,
-				e.PaletteSize
+				e.PaletteSize,
+				new Point((int)e.Padding.X, (int)e.Padding.Y),
+				e.Scale
 			)
 		);
 

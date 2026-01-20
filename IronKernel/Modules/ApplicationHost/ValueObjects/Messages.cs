@@ -1,3 +1,4 @@
+using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -21,5 +22,5 @@ public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers,
 public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data);
 public sealed record AppFbClear(RadialColor Color);
 public sealed record AppFbSetBorder(RadialColor Color);
-public sealed record AppFbInfo(int Width, int Height, int PaletteSize);
+public sealed record AppFbInfo(int Width, int Height, int PaletteSize, Point Padding, float Scale);
 public sealed record AppFbInfoQuery();

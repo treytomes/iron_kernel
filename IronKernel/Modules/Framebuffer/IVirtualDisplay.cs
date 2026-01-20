@@ -37,20 +37,6 @@ public interface IVirtualDisplay : IDisposable
 	public void Initialize();
 
 	/// <summary>  
-	/// Convert actual screen coordinates to virtual coordinates.  
-	/// </summary>  
-	/// <param name="actualPoint">The point in actual screen coordinates.</param>  
-	/// <returns>The corresponding point in virtual display coordinates.</returns>  
-	public Vector2 ActualToVirtualPoint(Vector2 actualPoint);
-
-	/// <summary>  
-	/// Convert virtual coordinates to actual screen coordinates.  
-	/// </summary>  
-	/// <param name="virtualPoint">The point in virtual display coordinates.</param>  
-	/// <returns>The corresponding point in actual screen coordinates.</returns>  
-	public Vector2 VirtualToActualPoint(Vector2 virtualPoint);
-
-	/// <summary>  
 	/// Updates the pixel data for the virtual display.  
 	/// </summary>
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  

@@ -105,7 +105,7 @@ public sealed class FramebufferModule(
 			"InfoQueryHandler",
 			(msg, ct) =>
 			{
-				_bus.Publish(new FbInfo(_virtualDisplay.Width, _virtualDisplay.Height, _virtualDisplay.Palette.Count));
+				_bus.Publish(new FbInfo(_virtualDisplay.Width, _virtualDisplay.Height, _virtualDisplay.Palette.Count, (_virtualDisplay.Padding.X, _virtualDisplay.Padding.Y), _virtualDisplay.Scale));
 				return Task.CompletedTask;
 			}
 		));

@@ -28,6 +28,8 @@
 		"microkernel",
 		"reentrancy",
 		"roguelike",
+		"scanline",
+		"Submorphs",
 		"syscalls",
 		"userland",
 		"vsync",
