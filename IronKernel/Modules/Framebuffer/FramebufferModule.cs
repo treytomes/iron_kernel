@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Modules.Framebuffer;
 
-public sealed class FramebufferModule(
+internal sealed class FramebufferModule(
 	IMessageBus bus,
 	ILogger<FramebufferModule> logger,
 	IVirtualDisplay virtualDisplay
@@ -105,7 +105,15 @@ public sealed class FramebufferModule(
 			"InfoQueryHandler",
 			(msg, ct) =>
 			{
-				_bus.Publish(new FbInfo(_virtualDisplay.Width, _virtualDisplay.Height, _virtualDisplay.Palette.Count, (_virtualDisplay.Padding.X, _virtualDisplay.Padding.Y), _virtualDisplay.Scale));
+				// if (!_virtualDisplay.IsInitialized) throw new InvalidOperationException("Virtual display is not initialized.");
+				while (!_virtualDisplay.IsInitialized) ; // TODO: This is working, but it's an odd construct.
+				var width = _virtualDisplay.Width;
+				var height = _virtualDisplay.Height;
+				var paletteSize = _virtualDisplay.Palette.Count;
+				var paddingX = _virtualDisplay.Padding.X;
+				var paddingY = _virtualDisplay.Padding.Y;
+				var scale = _virtualDisplay.Scale;
+				_bus.Publish(new FbInfo(width, height, paletteSize, (paddingX, paddingY), scale));
 				return Task.CompletedTask;
 			}
 		));

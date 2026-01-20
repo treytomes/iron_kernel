@@ -164,6 +164,26 @@ public class VirtualDisplay : IVirtualDisplay
 	}
 
 	/// <summary>  
+	/// Convert actual screen coordinates to virtual coordinates.  
+	/// </summary>  
+	/// <param name="actualPoint">The point in actual screen coordinates.</param>  
+	/// <returns>The corresponding point in virtual display coordinates.</returns>  
+	public Vector2 ActualToVirtualPoint(Vector2 actualPoint)
+	{
+		return (actualPoint - _padding) / _scale;
+	}
+
+	/// <summary>  
+	/// Convert virtual coordinates to actual screen coordinates.  
+	/// </summary>  
+	/// <param name="virtualPoint">The point in virtual display coordinates.</param>  
+	/// <returns>The corresponding point in actual screen coordinates.</returns>  
+	public Vector2 VirtualToActualPoint(Vector2 virtualPoint)
+	{
+		return virtualPoint * _scale + _padding;
+	}
+
+	/// <summary>  
 	/// Updates the pixel data for the virtual display.  
 	/// </summary>  
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  
@@ -350,99 +370,6 @@ public class VirtualDisplay : IVirtualDisplay
 
 		// Restore viewport  
 		GL.Viewport(currentViewport[0], currentViewport[1], currentViewport[2], currentViewport[3]);
-	}
-
-	/// <summary>  
-	/// Draws a line between two points using Bresenham's algorithm.  
-	/// </summary>  
-	/// <param name="x0">Starting x-coordinate.</param>  
-	/// <param name="y0">Starting y-coordinate.</param>  
-	/// <param name="x1">Ending x-coordinate.</param>  
-	/// <param name="y1">Ending y-coordinate.</param>  
-	/// <param name="colorIndex">The palette index to use for the line.</param>  
-	public void DrawLine(int x0, int y0, int x1, int y1, byte colorIndex)
-	{
-		int dx = Math.Abs(x1 - x0);
-		int dy = -Math.Abs(y1 - y0);
-		int sx = x0 < x1 ? 1 : -1;
-		int sy = y0 < y1 ? 1 : -1;
-		int err = dx + dy;
-
-		while (true)
-		{
-			SetPixel(x0, y0, colorIndex);
-
-			if (x0 == x1 && y0 == y1) break;
-
-			int e2 = 2 * err;
-			if (e2 >= dy)
-			{
-				if (x0 == x1) break;
-				err += dy;
-				x0 += sx;
-			}
-
-			if (e2 <= dx)
-			{
-				if (y0 == y1) break;
-				err += dx;
-				y0 += sy;
-			}
-		}
-	}
-
-	/// <summary>  
-	/// Draws a rectangle outline.  
-	/// </summary>  
-	/// <param name="x">X-coordinate of the top-left corner.</param>  
-	/// <param name="y">Y-coordinate of the top-left corner.</param>  
-	/// <param name="width">Width of the rectangle.</param>  
-	/// <param name="height">Height of the rectangle.</param>  
-	/// <param name="colorIndex">The palette index to use for the rectangle.</param>  
-	public void DrawRectangle(int x, int y, int width, int height, byte colorIndex)
-	{
-		// Draw horizontal lines  
-		for (int i = 0; i < width; i++)
-		{
-			SetPixel(x + i, y, colorIndex);
-			SetPixel(x + i, y + height - 1, colorIndex);
-		}
-
-		// Draw vertical lines  
-		for (int i = 1; i < height - 1; i++)
-		{
-			SetPixel(x, y + i, colorIndex);
-			SetPixel(x + width - 1, y + i, colorIndex);
-		}
-	}
-
-	/// <summary>  
-	/// Fills a rectangle with the specified color.  
-	/// </summary>  
-	/// <param name="x">X-coordinate of the top-left corner.</param>  
-	/// <param name="y">Y-coordinate of the top-left corner.</param>  
-	/// <param name="width">Width of the rectangle.</param>  
-	/// <param name="height">Height of the rectangle.</param>  
-	/// <param name="colorIndex">The palette index to use for filling.</param>  
-	public void FillRectangle(int x, int y, int width, int height, byte colorIndex)
-	{
-		// Clip the rectangle to the bounds of the display  
-		int startX = Math.Max(0, x);
-		int startY = Math.Max(0, y);
-		int endX = Math.Min(Width, x + width);
-		int endY = Math.Min(Height, y + height);
-
-		// Fill the rectangle with the specified color  
-		for (int j = startY; j < endY; j++)
-		{
-			int rowOffset = j * Width;
-			for (int i = startX; i < endX; i++)
-			{
-				_pixelData[rowOffset + i] = colorIndex;
-			}
-		}
-
-		_textureNeedsUpdate = true;
 	}
 
 	/// <summary>  

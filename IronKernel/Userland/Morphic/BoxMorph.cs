@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland;
 
 namespace IronKernel.Morphic;
 
@@ -14,9 +15,9 @@ public sealed class BoxMorph : Morph
 
 	public RadialColor Color { get; set; }
 
-	public override void Draw(IMorphicCanvas canvas)
+	public override void Draw(IRenderingContext rc)
 	{
-		canvas.DrawRect(Position.X, Position.Y, Size.Width, Size.Height, Color);
-		base.Draw(canvas);
+		rc.RenderFilledRect(new Rectangle(Position, Size), Color);
+		base.Draw(rc);
 	}
 }

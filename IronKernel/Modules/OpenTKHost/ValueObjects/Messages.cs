@@ -14,8 +14,8 @@ public sealed record HostLostFocus();
 // Message to push render commands onto the render thread.  Not sure if it's a good idea.
 // public sealed record HostRenderCommand(Action Execute);
 
-public sealed record HostMouseWheelEvent(float OffsetX, float OffsetY);
-public sealed record HostMouseMoveEvent(float X, float Y, float DeltaX, float DeltaY);
+public sealed record HostMouseWheelEvent(int OffsetX, int OffsetY);
+public sealed record HostMouseMoveEvent(int X, int Y, int DeltaX, int DeltaY);
 public sealed record HostMouseButtonEvent(InputAction Action, MouseButton Button, KeyModifier Modifiers);
 public sealed record HostKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
 

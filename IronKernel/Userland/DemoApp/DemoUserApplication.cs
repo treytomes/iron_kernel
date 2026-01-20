@@ -10,33 +10,47 @@ namespace IronKernel.Userland.DemoApp;
 /// <summary>
 /// Simple demo user application.
 /// </summary>
-public sealed class DemoUserApplication : IUserApplication
+public sealed class DemoUserApplication(
+	ILogger<DemoUserApplication> logger
+) : IUserApplication
 {
-	private readonly ILogger<DemoUserApplication> _logger;
+	private readonly ILogger<DemoUserApplication> _logger = logger;
 
-	public DemoUserApplication(ILogger<DemoUserApplication> logger)
-	{
-		_logger = logger;
-	}
-
-	public Task RunAsync(
+	public async Task RunAsync(
 		IApplicationContext context,
 		CancellationToken stoppingToken)
 	{
 		_logger.LogInformation("DemoUserApplication starting");
 
+		var rc = new RenderingContext(context.Bus);
+		await rc.InitializeAsync();
+
 		// Initialize application state.
 		// context.State.Set("position", new Point(100, 100));
 
 		var world = new WorldMorph(new Size(320, 240));
-		var hand = new HandMorph { Position = new Point(10, 10) };
 
 		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30), RadialColor.Blue));
 
-		world.AddMorph(hand);
-
 		var canvas = new FramebufferCanvas(context.Bus);
 
+		context.Bus.Subscribe<AppMouseMoveEvent>(
+			"MouseMoveHandler",
+			async (e, ct) =>
+			{
+				var pnt = new Point((int)e.X, (int)e.Y);
+				world.PointerMove(pnt);
+				await Task.CompletedTask;
+			});
+
+		context.Bus.Subscribe<AppMouseButtonEvent>(
+			"MouseButtonHandler",
+			async (e, ct) =>
+			{
+				world.PointerButton(e.Button, e.Action);
+				await Task.CompletedTask;
+			}
+		);
 		// context.Bus.Subscribe<AppKeyboardEvent>(
 		// 	"KeyboardHandler",
 		// 	async (msg, ct) =>
@@ -74,8 +88,12 @@ public sealed class DemoUserApplication : IUserApplication
 			"UpdateTickHandler",
 			async (e, ct) =>
 			{
-				canvas.Clear(RadialColor.Black);
-				world.Draw(canvas);
+				if (rc.IsInitialized)
+				{
+					rc.Clear();
+					world.Draw(rc);
+				}
+				rc.Present();
 				await Task.CompletedTask;
 			}
 		);
@@ -83,6 +101,6 @@ public sealed class DemoUserApplication : IUserApplication
 		// context.Bus.Publish(new AppFbClear(RadialColor.Green));
 		context.Bus.Publish(new AppFbSetBorder(RadialColor.Green));
 
-		return Task.CompletedTask;
+		// return Task.CompletedTask;
 	}
 }

@@ -1,7 +1,6 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
-using Microsoft.Extensions.Logging;
 using System.Drawing;
 
 namespace IronKernel.Userland;
@@ -9,29 +8,30 @@ namespace IronKernel.Userland;
 /// <summary>  
 /// Provides a high-level drawing API for rendering to a VirtualDisplay.  
 /// </summary>  
-public sealed class RenderingContext(IApplicationBus bus, ILogger<RenderingContext> logger) : IRenderingContext
+public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 {
 	#region Fields  
 
-	private readonly ILogger<RenderingContext> _logger = logger;
 	private readonly IApplicationBus _bus = bus;
 	private bool _isDirty = true;
 	private RadialColor[]? _data = null;
 	private bool _isInitialized = false;
 
-	/// <summary>  
-	/// Gets the current scale factor applied to the virtual display.  
-	/// </summary>  
-	private float _scale = 1.0f;
+	// /// <summary>  
+	// /// Gets the current scale factor applied to the virtual display.  
+	// /// </summary>  
+	// private float _scale = 1.0f;
 
-	/// <summary>  
-	/// Gets the current padding applied to center the display.  
-	/// </summary>  
-	private Point _padding = new Point(0, 0);
+	// /// <summary>  
+	// /// Gets the current padding applied to center the display.  
+	// /// </summary>  
+	// private Point _padding = new Point(0, 0);
 
 	#endregion
 
-	#region Properties  
+	#region Properties
+
+	public bool IsInitialized => _isInitialized;
 
 	/// <summary>  
 	/// Gets the width of the rendering context in pixels.  
@@ -64,39 +64,40 @@ public sealed class RenderingContext(IApplicationBus bus, ILogger<RenderingConte
 		{
 			Width = msg.Width;
 			Height = msg.Height;
-			_padding = msg.Padding;
-			_scale = msg.Scale;
+			// _padding = msg.Padding;
+			// _scale = msg.Scale;
 			_data = new RadialColor[Width * Height];
 			_isInitialized = true;
 			foreach (var sub in subs) sub.Dispose();
 			return Task.CompletedTask;
 		}));
 		_bus.Publish(new AppFbInfoQuery());
+		await Task.CompletedTask;
 	}
 
-	/// <summary>  
-	/// Convert actual screen coordinates to virtual coordinates.  
-	/// </summary>  
-	/// <param name="actualPoint">The point in actual screen coordinates.</param>  
-	/// <returns>The corresponding point in virtual display coordinates.</returns>  
-	public Point ActualToVirtualPoint(Point actualPoint)
-	{
-		var x = actualPoint.X - _padding.X / _scale;
-		var y = actualPoint.Y - _padding.Y / _scale;
-		return new Point((int)x, (int)y);
-	}
+	// /// <summary>  
+	// /// Convert actual screen coordinates to virtual coordinates.  
+	// /// </summary>  
+	// /// <param name="actualPoint">The point in actual screen coordinates.</param>  
+	// /// <returns>The corresponding point in virtual display coordinates.</returns>  
+	// public Point ActualToVirtualPoint(Point actualPoint)
+	// {
+	// 	var x = actualPoint.X - _padding.X / _scale;
+	// 	var y = actualPoint.Y - _padding.Y / _scale;
+	// 	return new Point((int)x, (int)y);
+	// }
 
-	/// <summary>  
-	/// Convert virtual coordinates to actual screen coordinates.  
-	/// </summary>  
-	/// <param name="virtualPoint">The point in virtual display coordinates.</param>  
-	/// <returns>The corresponding point in actual screen coordinates.</returns>  
-	public Point VirtualToActualPoint(Point virtualPoint)
-	{
-		var x = virtualPoint.X * _scale + _padding.X;
-		var y = virtualPoint.Y * _scale + _padding.Y;
-		return new Point((int)x, (int)y);
-	}
+	// /// <summary>  
+	// /// Convert virtual coordinates to actual screen coordinates.  
+	// /// </summary>  
+	// /// <param name="virtualPoint">The point in virtual display coordinates.</param>  
+	// /// <returns>The corresponding point in actual screen coordinates.</returns>  
+	// public Point VirtualToActualPoint(Point virtualPoint)
+	// {
+	// 	var x = virtualPoint.X * _scale + _padding.X;
+	// 	var y = virtualPoint.Y * _scale + _padding.Y;
+	// 	return new Point((int)x, (int)y);
+	// }
 
 	/// <inheritdoc/>
 	public void Fill(RadialColor color)

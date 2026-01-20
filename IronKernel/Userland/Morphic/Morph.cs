@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Userland;
 
 namespace IronKernel.Morphic;
 
@@ -42,12 +43,12 @@ public abstract class Morph
 	/// <summary>
 	/// Draw this morph. Coordinates are in world space.
 	/// </summary>
-	public virtual void Draw(IMorphicCanvas canvas)
+	public virtual void Draw(IRenderingContext rc)
 	{
 		foreach (var child in _submorphs)
 		{
 			if (!child.Visible) continue;
-			child.Draw(canvas);
+			child.Draw(rc);
 		}
 	}
 
@@ -57,6 +58,22 @@ public abstract class Morph
 	public virtual bool ContainsPoint(Point p)
 	{
 		return new Rectangle(Position, Size).Contains(p);
+	}
+
+	public virtual Morph? FindMorphAt(Point p)
+	{
+		// Traverse top-down so last added is "on top"
+		for (int i = Submorphs.Count - 1; i >= 0; i--)
+		{
+			var child = Submorphs[i];
+			if (!child.Visible) continue;
+
+			var found = child.FindMorphAt(p);
+			if (found != null)
+				return found;
+		}
+
+		return ContainsPoint(p) ? this : null;
 	}
 
 	#endregion

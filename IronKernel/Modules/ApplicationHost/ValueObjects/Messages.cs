@@ -13,8 +13,8 @@ public sealed record AppShutdown();
 public sealed record AppAcquiredFocus();
 public sealed record AppLostFocus();
 
-public sealed record AppMouseWheelEvent(float OffsetX, float OffsetY);
-public sealed record AppMouseMoveEvent(float X, float Y, float DeltaX, float DeltaY);
+public sealed record AppMouseWheelEvent(int OffsetX, int OffsetY);
+public sealed record AppMouseMoveEvent(int X, int Y, int DeltaX, int DeltaY);
 public sealed record AppMouseButtonEvent(InputAction Action, MouseButton Button, KeyModifier Modifiers);
 public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
 

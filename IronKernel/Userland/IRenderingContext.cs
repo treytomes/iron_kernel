@@ -1,12 +1,12 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Modules.Framebuffer;
-using OpenTK.Mathematics;
 
 namespace IronKernel.Userland;
 
 public interface IRenderingContext
 {
+	bool IsInitialized { get; }
+
 	/// <summary>  
 	/// Gets the width of the rendering context in pixels.  
 	/// </summary>  
@@ -27,19 +27,19 @@ public interface IRenderingContext
 	/// </summary>  
 	Rectangle Bounds { get; }
 
-	/// <summary>  
-	/// Convert actual screen coordinates to virtual coordinates.  
-	/// </summary>  
-	/// <param name="actualPoint">The point in actual screen coordinates.</param>  
-	/// <returns>The corresponding point in virtual display coordinates.</returns>  
-	Point ActualToVirtualPoint(Point actualPoint);
+	// /// <summary>  
+	// /// Convert actual screen coordinates to virtual coordinates.  
+	// /// </summary>  
+	// /// <param name="actualPoint">The point in actual screen coordinates.</param>  
+	// /// <returns>The corresponding point in virtual display coordinates.</returns>  
+	// Point ActualToVirtualPoint(Point actualPoint);
 
-	/// <summary>  
-	/// Convert virtual coordinates to actual screen coordinates.  
-	/// </summary>  
-	/// <param name="virtualPoint">The point in virtual display coordinates.</param>  
-	/// <returns>The corresponding point in actual screen coordinates.</returns>  
-	Point VirtualToActualPoint(Point virtualPoint);
+	// /// <summary>  
+	// /// Convert virtual coordinates to actual screen coordinates.  
+	// /// </summary>  
+	// /// <param name="virtualPoint">The point in virtual display coordinates.</param>  
+	// /// <returns>The corresponding point in actual screen coordinates.</returns>  
+	// Point VirtualToActualPoint(Point virtualPoint);
 
 	/// <summary>  
 	/// Fills the entire rendering context with the specified color.  

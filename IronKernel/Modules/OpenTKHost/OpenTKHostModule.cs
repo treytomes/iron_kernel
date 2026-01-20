@@ -8,11 +8,12 @@ using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 
 namespace IronKernel.Modules.OpenTKHost;
 
-public sealed class OpenTKHostModule(
+internal sealed class OpenTKHostModule(
 	IMessageBus bus,
 	ILogger<OpenTKHostModule> logger,
 	IVirtualDisplay virtualDisplay
@@ -176,14 +177,11 @@ public sealed class OpenTKHostModule(
 			));
 		};
 
-		_window.MouseMove += e =>
-		{
-			_bus.Publish(new HostMouseMoveEvent(e.X, e.Y, e.DeltaX, e.DeltaY));
-		};
+		_window.MouseMove += HandleMouseMove;
 
 		_window.MouseWheel += e =>
 		{
-			_bus.Publish(new HostMouseWheelEvent(e.OffsetX, e.OffsetY));
+			_bus.Publish(new HostMouseWheelEvent((int)e.OffsetX, (int)e.OffsetY));
 		};
 
 		_window.Resize += e =>
@@ -203,6 +201,29 @@ public sealed class OpenTKHostModule(
 		{
 			_bus.Publish(new HostLostFocus());
 		};
+	}
+
+
+	private void HandleMouseMove(MouseMoveEventArgs e)
+	{
+		if (_window == null) return;
+
+		var position = _virtualDisplay.ActualToVirtualPoint(e.Position);
+		var delta = e.Delta / _virtualDisplay.Scale;
+
+		if (position.X < 0 || position.Y < 0 || position.X > _virtualDisplay.Width || position.Y > _virtualDisplay.Height)
+		{
+			// The cursor has fallen off the virtual display.  
+			_window.CursorState = CursorState.Normal;
+		}
+		else
+		{
+			_window.CursorState = CursorState.Hidden;
+		}
+
+		e = new MouseMoveEventArgs(position, delta);
+
+		_bus.Publish(new HostMouseMoveEvent((int)e.X, (int)e.Y, (int)e.DeltaX, (int)e.DeltaY));
 	}
 
 	public ValueTask DisposeAsync()
