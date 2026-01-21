@@ -40,6 +40,6 @@ public sealed class HandMorph : Morph
 
 	public override void Draw(IRenderingContext rc)
 	{
-		rc.RenderFilledCircle(Position, 8, RadialColor.Yellow);
+		rc.RenderFilledCircle(Position, 2, RadialColor.Yellow);
 	}
 }

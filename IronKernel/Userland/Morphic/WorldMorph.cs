@@ -1,10 +1,19 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland;
 
 namespace IronKernel.Morphic;
 
 public sealed class WorldMorph : Morph
 {
+	#region Fields
+
+	private HaloMorph? _halo;
+
+	#endregion
+
+	#region Constructors
+
 	public WorldMorph(Size screenSize)
 	{
 		Position = Point.Empty;
@@ -14,25 +23,87 @@ public sealed class WorldMorph : Morph
 		AddMorph(Hand);
 	}
 
+	#endregion
+
+	#region Properties
+
 	public Morph? PointerFocus { get; private set; }
 	public Morph? KeyboardFocus { get; private set; }
 	public HandMorph Hand { get; }
+	public Morph? SelectedMorph { get; private set; }
+	public Morph? PointerCapture { get; private set; }
+
+	#endregion
+
+	#region Methods
+
+
+	public void CapturePointer(Morph morph)
+	{
+		PointerCapture = morph;
+	}
+
+	public void ReleasePointer(Morph morph)
+	{
+		if (PointerCapture == morph)
+			PointerCapture = null;
+	}
+
+	public override void Draw(IRenderingContext rc)
+	{
+		base.Draw(rc);
+		// TODO: Hand will be drawn twice.
+		Hand.Draw(rc);
+	}
 
 	public void PointerButton(MouseButton button, InputAction action)
 	{
 		if (button != MouseButton.Left)
 			return;
 
+		var position = Hand.Position;
+		var target = FindMorphAt(position) ?? this;
+
 		if (action == InputAction.Press)
 		{
-			var target = FindMorphAt(Hand.Position);
-			if (target != null && target != this && target != Hand)
+			var e = new PointerDownEvent(position)
 			{
-				Hand.Grab(target, Hand.Position);
+				Target = target
+			};
+
+			// World first (selection, halos)
+			OnPointerDown(e);
+
+			if (!e.Handled)
+			{
+				PointerFocus = target;
+
+				if (target.WantsKeyboardFocus)
+					KeyboardFocus = target;
+
+				target.DispatchPointerDown(e);
+			}
+
+			// Grab AFTER dispatch so halos win
+			if (!e.Handled && target != this && target != Hand)
+			{
+				Hand.Grab(target, position);
 			}
 		}
 		else if (action == InputAction.Release)
 		{
+			var e = new PointerUpEvent(position);
+
+			if (PointerCapture != null)
+			{
+				PointerCapture.OnPointerUp(e);
+				PointerCapture = null;
+			}
+			else
+			{
+				PointerFocus?.DispatchPointerUp(e);
+			}
+
 			Hand.Release();
 		}
 	}
@@ -43,34 +114,68 @@ public sealed class WorldMorph : Morph
 		Hand.Update();
 
 		var e = new PointerMoveEvent(p);
-		Hand.DispatchPointerMove(e);
-	}
 
-	public void PointerDown(Point p)
-	{
-		var target = FindMorphAt(p);
-		if (target == null)
-			return;
-
-		PointerFocus = target;
-
-		if (target.WantsKeyboardFocus)
-			KeyboardFocus = target;
-
-		var e = new PointerDownEvent(p)
+		if (PointerCapture != null)
 		{
-			Target = target,
-		};
-		target.DispatchPointerDown(e);
+			PointerCapture.OnPointerMove(e);
+			return;
+		}
+
+		if (PointerFocus != null)
+		{
+			PointerFocus.DispatchPointerMove(e);
+		}
+		else
+		{
+			Hand.DispatchPointerMove(e);
+		}
 	}
 
-	public void PointerUp(Point p)
+	public override void OnPointerDown(PointerDownEvent e)
 	{
-		var target = FindMorphAt(p);
-		if (target == null)
+		// Clicking a halo should NOT affect selection
+		if (!e.Target.IsSelectable)
+		{
+			// e.MarkHandled();
+			return;
+		}
+
+		if (e.Target == this)
+		{
+			ClearSelection();
+			e.MarkHandled();
+			return;
+		}
+
+		SelectMorph(e.Target);
+	}
+
+	public void SelectMorph(Morph? morph)
+	{
+		if (SelectedMorph == morph)
 			return;
 
-		var e = new PointerUpEvent(p);
-		target.DispatchPointerUp(e);
+		ClearSelection();
+
+		if (morph == null || morph == this)
+			return;
+
+		SelectedMorph = morph;
+
+		_halo = new HaloMorph(morph);
+		morph.Owner?.AddMorph(_halo);
 	}
+
+	public void ClearSelection()
+	{
+		if (_halo != null)
+		{
+			_halo.Owner?.RemoveMorph(_halo);
+			_halo = null;
+		}
+
+		SelectedMorph = null;
+	}
+
+	#endregion
 }

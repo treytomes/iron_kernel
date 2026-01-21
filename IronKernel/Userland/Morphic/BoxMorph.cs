@@ -4,7 +4,7 @@ using IronKernel.Userland;
 
 namespace IronKernel.Morphic;
 
-public sealed class BoxMorph : DraggableMorph
+public sealed class BoxMorph : Morph
 {
 	public BoxMorph(Point position, Size size)
 	{

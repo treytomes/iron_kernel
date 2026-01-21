@@ -26,6 +26,7 @@
 		"inspectable",
 		"Lerp",
 		"microkernel",
+		"Rects",
 		"reentrancy",
 		"roguelike",
 		"scanline",

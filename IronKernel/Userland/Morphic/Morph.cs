@@ -21,8 +21,8 @@ public abstract class Morph
 	public Morph? Owner { get; private set; }
 
 	public IReadOnlyList<Morph> Submorphs => _submorphs;
-
 	public virtual bool WantsKeyboardFocus => false;
+	public virtual bool IsSelectable => true;
 
 	#endregion
 
@@ -82,7 +82,6 @@ public abstract class Morph
 	public virtual void OnPointerDown(PointerDownEvent e) { }
 	public virtual void OnPointerUp(PointerUpEvent e) { }
 	public virtual void OnPointerMove(PointerMoveEvent e) { }
-
 	public virtual void OnKeyDown(AppKeyboardEvent e) { }
 
 	public void DispatchPointerDown(PointerDownEvent e)
@@ -104,6 +103,20 @@ public abstract class Morph
 		OnPointerMove(e);
 		if (!e.Handled && Owner != null)
 			Owner.DispatchPointerMove(e);
+	}
+
+	/// <summary>
+	/// Mark this Morph's rendering area as needing a redraw.
+	/// </summary>
+	public virtual void Invalidate()
+	{
+		// no-op for now
+	}
+
+	public Morph GetWorld()
+	{
+		if (this is WorldMorph) return this;
+		return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();
 	}
 
 	#endregion
