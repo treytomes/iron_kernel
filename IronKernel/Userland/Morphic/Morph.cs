@@ -1,8 +1,7 @@
 using System.Drawing;
 using IronKernel.Modules.ApplicationHost;
-using IronKernel.Userland;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public abstract class Morph
 {
@@ -17,6 +16,7 @@ public abstract class Morph
 	public Point Position { get; set; }
 	public Size Size { get; set; }
 	public bool Visible { get; set; } = true;
+	public bool IsHovered { get; private set; } = false;
 
 	public Morph? Owner { get; private set; }
 
@@ -30,6 +30,8 @@ public abstract class Morph
 
 	public void AddMorph(Morph morph)
 	{
+		if (morph == null)
+			throw new ArgumentNullException(nameof(morph));
 		if (morph.Owner != null)
 			throw new InvalidOperationException("Morph already has an owner");
 
@@ -78,6 +80,22 @@ public abstract class Morph
 
 		return ContainsPoint(p) ? this : null;
 	}
+
+	internal void SetHovered(bool value)
+	{
+		if (IsHovered == value)
+			return;
+
+		IsHovered = value;
+
+		if (value)
+			OnPointerEnter();
+		else
+			OnPointerLeave();
+	}
+
+	protected virtual void OnPointerEnter() { }
+	protected virtual void OnPointerLeave() { }
 
 	public virtual void OnPointerDown(PointerDownEvent e) { }
 	public virtual void OnPointerUp(PointerUpEvent e) { }

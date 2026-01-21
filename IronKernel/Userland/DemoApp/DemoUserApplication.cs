@@ -3,7 +3,7 @@ using IronKernel.Modules.ApplicationHost;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using Microsoft.Extensions.Logging;
-using IronKernel.Morphic;
+using IronKernel.Userland.Morphic;
 
 namespace IronKernel.Userland.DemoApp;
 

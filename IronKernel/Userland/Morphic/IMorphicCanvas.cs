@@ -1,6 +1,6 @@
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public interface IMorphicCanvas
 {

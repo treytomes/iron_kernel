@@ -1,8 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public sealed class WorldMorph : Morph
 {
@@ -32,6 +31,7 @@ public sealed class WorldMorph : Morph
 	public HandMorph Hand { get; }
 	public Morph? SelectedMorph { get; private set; }
 	public Morph? PointerCapture { get; private set; }
+	public Morph? HoveredMorph { get; private set; }
 
 	#endregion
 
@@ -96,14 +96,14 @@ public sealed class WorldMorph : Morph
 
 			if (PointerCapture != null)
 			{
-				PointerCapture.OnPointerUp(e);
-				PointerCapture = null;
+				PointerCapture.DispatchPointerUp(e);
 			}
-			else
+			else if (PointerFocus != null)
 			{
-				PointerFocus?.DispatchPointerUp(e);
+				PointerFocus.DispatchPointerUp(e);
 			}
 
+			PointerFocus = null;
 			Hand.Release();
 		}
 	}
@@ -113,15 +113,24 @@ public sealed class WorldMorph : Morph
 		Hand.MoveTo(p);
 		Hand.Update();
 
-		var e = new PointerMoveEvent(p);
+		// --- HOVER RESOLUTION ---
+		var newHover = FindMorphAt(p);
 
-		if (PointerCapture != null)
+		if (newHover != HoveredMorph)
 		{
-			PointerCapture.OnPointerMove(e);
-			return;
+			HoveredMorph?.SetHovered(false);
+			HoveredMorph = newHover;
+			HoveredMorph?.SetHovered(true);
 		}
 
-		if (PointerFocus != null)
+		var e = new PointerMoveEvent(p);
+
+		// --- DISPATCH ---
+		if (PointerCapture != null)
+		{
+			PointerCapture.DispatchPointerMove(e);
+		}
+		else if (PointerFocus != null)
 		{
 			PointerFocus.DispatchPointerMove(e);
 		}
@@ -133,7 +142,9 @@ public sealed class WorldMorph : Morph
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
-		// Clicking a halo should NOT affect selection
+		if (e.Target == null) return;
+
+		// Clicking a halo should NOT affect selection.
 		if (!e.Target.IsSelectable)
 		{
 			// e.MarkHandled();

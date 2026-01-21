@@ -2,7 +2,7 @@ using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public sealed class FramebufferCanvas : IMorphicCanvas
 {

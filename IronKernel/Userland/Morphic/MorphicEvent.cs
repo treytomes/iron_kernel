@@ -1,4 +1,4 @@
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public abstract class MorphicEvent
 {

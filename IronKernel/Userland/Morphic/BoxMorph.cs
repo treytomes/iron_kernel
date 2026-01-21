@@ -2,7 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public sealed class BoxMorph : Morph
 {

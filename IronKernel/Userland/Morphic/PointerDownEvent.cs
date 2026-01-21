@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace IronKernel.Morphic;
+namespace IronKernel.Userland.Morphic;
 
 public sealed class PointerDownEvent : MorphicEvent
 {
