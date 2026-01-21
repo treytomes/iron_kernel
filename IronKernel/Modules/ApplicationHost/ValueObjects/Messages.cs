@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -24,3 +25,7 @@ public sealed record AppFbClear(RadialColor Color);
 public sealed record AppFbSetBorder(RadialColor Color);
 public sealed record AppFbInfo(int Width, int Height, int PaletteSize, Point Padding, float Scale);
 public sealed record AppFbInfoQuery();
+
+
+public sealed record AppAssetImageQuery(Guid CorrelationID, string AssetId) : Query(CorrelationID);
+public sealed record AppAssetImageResponse(Guid CorrelationID, string AssetId, Image Image) : Response<Image>(CorrelationID, Image);

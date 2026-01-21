@@ -3,6 +3,7 @@ using IronKernel.Common;
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.AssetLoader.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,7 @@ namespace IronKernel.Modules.ApplicationHost;
 /// <summary>
 /// Kernel module responsible for hosting a single user application.
 /// </summary>
-public sealed class ApplicationHostModule(
+internal sealed class ApplicationHostModule(
 	IUserApplicationFactory factory,
 	IMessageBus kernelBus,
 	ILogger<ApplicationHostModule> logger
@@ -165,6 +166,9 @@ public sealed class ApplicationHostModule(
 			"AppFbInfoHandler",
 			(e, ct) => new()
 		);
+
+		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.AssetId));
+		_bridge.Forward<AssetImageResponse, AppAssetImageResponse>("AppAssetImageResponse", (e, ct) => new(e.CorrelationID, e.AssetId, e.Image));
 
 		var context = new ApplicationContext(
 			_bus,

@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTK.Mathematics;
 using System.CommandLine;
+using IronKernel.Modules.AssetLoader;
+using IronKernel.Common;
 
 namespace IronKernel;
 
@@ -161,10 +163,14 @@ internal sealed class Program
 			return new VirtualDisplay(windowSize, virtualDisplaySettings);
 		});
 
+		services.AddSingleton<IResourceManager, ResourceManager>();
+		// services.AddTransient<IResourceLoader<Image>, ImageLoader>();
+
 		// services.AddSingleton<IKernelModule, HelloModule>();
 		// services.AddSingleton<IKernelModule, ChaosModule>();
 		services.AddSingleton<IKernelModule, OpenTKHostModule>();
 		services.AddSingleton<IKernelModule, FramebufferModule>();
+		services.AddSingleton<IKernelModule, AssetLoaderModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
 		services.AddSingleton<DemoUserApplication>();

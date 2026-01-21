@@ -1,9 +1,9 @@
-using System.Drawing;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
-using Microsoft.Extensions.Logging;
 using IronKernel.Userland.Morphic;
+using Microsoft.Extensions.Logging;
+using System.Drawing;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -29,6 +29,20 @@ public sealed class DemoUserApplication(
 		// context.State.Set("position", new Point(100, 100));
 
 		var world = new WorldMorph(new Size(320, 240));
+
+		var subs = new List<IDisposable>();
+		context.Bus.Subscribe<AppAssetImageResponse>("AppAssetImageResponse", (msg, ct) =>
+		{
+			_logger.LogInformation("AppAssetImageResponse: {Msg}", msg.ToString());
+			if (msg.AssetId == "mouse_cursor")
+			{
+				world.Hand.Image = new RenderImage(msg.Image);
+			}
+			return Task.CompletedTask;
+		});
+
+		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "mouse_cursor"));
+		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "oem437_8"));
 
 		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30))
 		{

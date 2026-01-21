@@ -1,6 +1,5 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -8,6 +7,7 @@ public sealed class HandMorph : Morph
 {
 	private Point _grabOffset;
 
+	public RenderImage? Image { get; set; }
 	public Morph? GrabbedMorph { get; private set; }
 
 	public void MoveTo(Point p)
@@ -40,6 +40,13 @@ public sealed class HandMorph : Morph
 
 	public override void Draw(IRenderingContext rc)
 	{
-		rc.RenderFilledCircle(Position, 2, RadialColor.Yellow);
+		if (Image != null)
+		{
+			Image.Render(rc, Position);
+		}
+		else
+		{
+			rc.RenderFilledCircle(Position, 2, RadialColor.Yellow);
+		}
 	}
 }
