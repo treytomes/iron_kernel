@@ -131,9 +131,9 @@ public abstract class Morph
 		// no-op for now
 	}
 
-	public Morph GetWorld()
+	public WorldMorph GetWorld()
 	{
-		if (this is WorldMorph) return this;
+		if (this is WorldMorph) return (this as WorldMorph)!;
 		return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();
 	}
 

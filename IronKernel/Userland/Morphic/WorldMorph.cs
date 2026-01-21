@@ -66,7 +66,7 @@ public sealed class WorldMorph : Morph
 
 		if (action == InputAction.Press)
 		{
-			var e = new PointerDownEvent(position)
+			var e = new PointerDownEvent(button, position)
 			{
 				Target = target
 			};

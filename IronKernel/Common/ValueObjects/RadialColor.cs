@@ -41,11 +41,13 @@ public sealed record RadialColor : IEquatable<RadialColor>
 	public static RadialColor DarkGray => new RadialColor(1, 1, 1);
 	public static RadialColor Gray => new RadialColor(3, 3, 3);
 	public static RadialColor White => new RadialColor(5, 5, 5);
+
 	public static RadialColor Red => new RadialColor(5, 0, 0);
-	public static RadialColor Green => new RadialColor(0, 5, 0);
-	public static RadialColor Blue => new RadialColor(0, 0, 5);
-	public static RadialColor Cyan => new RadialColor(0, 5, 5);
+	public static RadialColor Orange => new RadialColor(5, 3, 0);
 	public static RadialColor Yellow => new RadialColor(5, 5, 0);
+	public static RadialColor Green => new RadialColor(0, 5, 0);
+	public static RadialColor Cyan => new RadialColor(0, 5, 5);
+	public static RadialColor Blue => new RadialColor(0, 0, 5);
 
 	/// <summary>
 	/// Calculate the palette index for this color.

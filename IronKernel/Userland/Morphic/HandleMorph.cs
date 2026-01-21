@@ -25,13 +25,13 @@ public abstract class HandleMorph : Morph
 		StartPosition = Target.Position;
 		StartSize = Target.Size;
 
-		(GetWorld() as WorldMorph)?.CapturePointer(this);
+		GetWorld().CapturePointer(this);
 		e.MarkHandled();
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)
 	{
-		(GetWorld() as WorldMorph)?.ReleasePointer(this);
+		GetWorld().ReleasePointer(this);
 		e.MarkHandled();
 	}
 }

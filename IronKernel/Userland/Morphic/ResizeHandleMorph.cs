@@ -5,7 +5,6 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class ResizeHandleMorph : HandleMorph
 {
-
 	public ResizeHandleMorph(Morph target, ResizeHandle kind)
 		: base(target)
 	{
@@ -19,7 +18,7 @@ public sealed class ResizeHandleMorph : HandleMorph
 	{
 		rc.RenderFilledRect(
 			new Rectangle(Position, Size),
-			IsHovered ? RadialColor.Cyan : RadialColor.White);
+			IsHovered ? RadialColor.Cyan : RadialColor.Cyan.Lerp(RadialColor.White, 0.5f));
 	}
 
 	public override void OnPointerMove(PointerMoveEvent e)

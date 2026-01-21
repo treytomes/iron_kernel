@@ -16,6 +16,14 @@ public sealed class HaloMorph : Morph
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopRight));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomLeft));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomRight));
+
+		AddMorph(new MoveHandleMorph(target)
+		{
+			Position = new Point(
+				target.Position.X + target.Size.Width / 2 - 6,
+				target.Position.Y - 16
+			)
+		});
 	}
 
 	public override bool IsSelectable => false;
@@ -63,5 +71,10 @@ public sealed class HaloMorph : Morph
 				_ => m.Position
 			};
 		}
+
+		Submorphs.OfType<MoveHandleMorph>().Single().Position = new Point(
+			Position.X + Size.Width / 2 - 6,
+			Position.Y - 16
+		);
 	}
 }
