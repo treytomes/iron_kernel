@@ -1,7 +1,8 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Handles;
 
 public sealed class MoveHandleMorph : HandleMorph
 {

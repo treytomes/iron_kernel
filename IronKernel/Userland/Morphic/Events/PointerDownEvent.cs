@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Events;
 
 public sealed class PointerDownEvent(MouseButton button, Point position) : MorphicEvent
 {

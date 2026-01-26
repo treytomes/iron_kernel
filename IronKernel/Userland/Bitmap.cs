@@ -84,7 +84,7 @@ public class Bitmap : IImage<Bitmap, bool>
 					{
 						var dy = y * scale + sy;
 						var dx = x * scale + sx;
-						Data[dy * Width + dx] = color.Index > 0;
+						Data[dy * Width + dx] = color != null && color.Index != 0;
 					}
 				}
 			}
