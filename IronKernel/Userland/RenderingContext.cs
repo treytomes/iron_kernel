@@ -155,11 +155,21 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
+		var y0 = rect.Top;
+		var y1 = rect.Bottom;
+		var x0 = rect.Left;
+		var x1 = rect.Right;
+
+		if (y0 < 0) y0 = 0;
+		if (y1 > Height) y1 = Height;
+		if (x0 < 0) x0 = 0;
+		if (x1 > Width) x1 = Width;
+
 		// Optimized direct buffer access for filled rectangle  
-		for (int y = rect.Top; y < rect.Bottom; y++)
+		for (var y = y0; y < y1; y++)
 		{
-			int rowOffset = y * Width;
-			for (int x = rect.Left; x < rect.Right; x++)
+			var rowOffset = y * Width;
+			for (var x = x0; x < x1; x++)
 			{
 				_data![rowOffset + x] = color;
 			}
@@ -187,8 +197,17 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
-		var offset = pnt.Y * Width + pnt.X;
-		for (var dx = 0; dx < len; dx++)
+		var x = pnt.X;
+		var y = pnt.Y;
+		if (y < 0 || y >= Height) return;
+		if (x < 0)
+		{
+			len += x;
+			x = 0;
+		}
+
+		var offset = y * Width + x;
+		for (var dx = 0; dx < len && x + dx < Width; dx++)
 		{
 			_data![offset + dx] = color;
 		}
@@ -201,9 +220,18 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 
-		for (var dy = 0; dy < len; dy++)
+		var x = pnt.X;
+		var y = pnt.Y;
+		if (x < 0 || x >= Width) return;
+		if (y < 0)
 		{
-			_data![(pnt.Y + dy) * Width + pnt.X] = color;
+			len += y;
+			y = 0;
+		}
+
+		for (var dy = 0; dy < len && y + dy < Height; dy++)
+		{
+			_data![(y + dy) * Width + x] = color;
 		}
 
 		_isDirty = true;

@@ -42,7 +42,7 @@ public sealed class RenderImage
 					break;
 				}
 				var color = GetPixel(dx, dy);
-				if (color.Index < 255)
+				if (color != null)
 				{
 					rc.SetPixel(new Point(x + dx, y + dy), color);
 				}

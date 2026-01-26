@@ -15,13 +15,13 @@ public class Image : IImage<Image, RadialColor>
 
 	#region Fields
 
-	public readonly RadialColor[] Data;
+	public readonly RadialColor?[] Data;
 
 	#endregion
 
 	#region Constructors
 
-	public Image(int width, int height, RadialColor[] data, int scale)
+	public Image(int width, int height, RadialColor?[] data, int scale)
 	{
 		if (scale < 1)
 		{
@@ -29,7 +29,7 @@ public class Image : IImage<Image, RadialColor>
 		}
 		Width = width * scale;
 		Height = height * scale;
-		Data = new RadialColor[Width * Height];
+		Data = new RadialColor?[Width * Height];
 
 		for (var y = 0; y < height; y++)
 		{
@@ -50,11 +50,11 @@ public class Image : IImage<Image, RadialColor>
 		}
 	}
 
-	public Image(int width, int height, RadialColor[] data)
+	public Image(int width, int height, RadialColor?[] data)
 	{
 		Width = width;
 		Height = height;
-		Data = (RadialColor[])data.Clone();
+		Data = (RadialColor?[])data.Clone();
 	}
 
 	#endregion
@@ -64,7 +64,7 @@ public class Image : IImage<Image, RadialColor>
 	public int Width { get; }
 	public int Height { get; }
 
-	public RadialColor this[int x, int y]
+	public RadialColor? this[int x, int y]
 	{
 		get
 		{
@@ -80,7 +80,7 @@ public class Image : IImage<Image, RadialColor>
 
 	#region Methods
 
-	public void Recolor(RadialColor oldColor, RadialColor newColor)
+	public void Recolor(RadialColor? oldColor, RadialColor? newColor)
 	{
 		for (var i = 0; i < Data.Length; i++)
 		{
@@ -91,13 +91,13 @@ public class Image : IImage<Image, RadialColor>
 		}
 	}
 
-	public RadialColor GetPixel(int x, int y)
+	public RadialColor? GetPixel(int x, int y)
 	{
 		var index = (y * Width + x) * BPP;
 		return Data[index];
 	}
 
-	public void SetPixel(int x, int y, RadialColor color)
+	public void SetPixel(int x, int y, RadialColor? color)
 	{
 		var index = (y * Width + x) * BPP;
 		Data[index] = color;
@@ -108,7 +108,7 @@ public class Image : IImage<Image, RadialColor>
 	/// </summary>
 	public Image Crop(int x, int y, int width, int height)
 	{
-		var data = new RadialColor[width * height * BPP];
+		var data = new RadialColor?[width * height * BPP];
 
 		for (var i = 0; i < height; i++)
 		{

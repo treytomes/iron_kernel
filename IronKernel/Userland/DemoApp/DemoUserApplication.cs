@@ -4,6 +4,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
+using IronKernel.Modules.Framebuffer;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -36,7 +37,10 @@ public sealed class DemoUserApplication(
 			_logger.LogInformation("AppAssetImageResponse: {Msg}", msg.ToString());
 			if (msg.AssetId == "mouse_cursor")
 			{
-				world.Hand.Image = new RenderImage(msg.Image);
+				var image = new RenderImage(msg.Image);
+				image.Recolor(RadialColor.Black, null);
+				// image.Recolor(129, new RadialColor(1, 1, 1));
+				world.Hand.Image = image;
 			}
 			return Task.CompletedTask;
 		});
@@ -56,7 +60,7 @@ public sealed class DemoUserApplication(
 			"MouseMoveHandler",
 			async (e, ct) =>
 			{
-				var pnt = new Point((int)e.X, (int)e.Y);
+				var pnt = new Point(e.X, e.Y);
 				world.PointerMove(pnt);
 				await Task.CompletedTask;
 			});
