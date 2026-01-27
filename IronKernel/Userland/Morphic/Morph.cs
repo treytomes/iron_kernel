@@ -24,6 +24,7 @@ public abstract class Morph
 	public IReadOnlyList<Morph> Submorphs => _submorphs;
 	public virtual bool WantsKeyboardFocus => false;
 	public virtual bool IsSelectable => true;
+	public virtual bool IsGrabbable => false;
 
 	#endregion
 

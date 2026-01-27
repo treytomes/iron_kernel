@@ -88,7 +88,7 @@ public sealed class WorldMorph : Morph
 			}
 
 			// Grab AFTER dispatch so halos win
-			if (!e.Handled && target != this && target != Hand)
+			if (!e.Handled && target != this && target != Hand && target.IsGrabbable)
 			{
 				Hand.Grab(target, position);
 			}
