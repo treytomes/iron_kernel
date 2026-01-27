@@ -32,19 +32,19 @@
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="assets/assets.json">
+		<None Update="assets/mouse_cursor.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="assets/mouse_cursor.png">
+		<None Update="assets/move_icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="assets/oem437_8.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="assets/shaders/fragment.glsl">
+		<None Update="assets/resize_icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="assets/shaders/simplex.glsl">
+		<None Update="assets/shaders/fragment.glsl">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="assets/shaders/vertex.glsl">

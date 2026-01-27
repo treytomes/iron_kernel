@@ -4,7 +4,6 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
-using IronKernel.Modules.Framebuffer;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -31,22 +30,16 @@ public sealed class DemoUserApplication(
 
 		var world = new WorldMorph(new Size(320, 240));
 
-		var subs = new List<IDisposable>();
-		context.Bus.Subscribe<AppAssetImageResponse>("AppAssetImageResponse", (msg, ct) =>
-		{
-			_logger.LogInformation("AppAssetImageResponse: {Msg}", msg.ToString());
-			if (msg.AssetId == "mouse_cursor")
-			{
-				var image = new RenderImage(msg.Image);
-				image.Recolor(RadialColor.Black, null);
-				// image.Recolor(129, new RadialColor(1, 1, 1));
-				world.Hand.Image = image;
-			}
-			return Task.CompletedTask;
-		});
+		var response = await context.Bus.QueryAsync<
+			AppAssetImageQuery,
+			AppAssetImageResponse>(
+				id => new AppAssetImageQuery(id, "image.mouse_cursor"));
 
-		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "mouse_cursor"));
-		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "oem437_8"));
+		var image = new RenderImage(response.Image);
+		image.Recolor(RadialColor.Black, null);
+		world.Hand.Image = image;
+
+		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "image.oem437_8"));
 
 		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30))
 		{

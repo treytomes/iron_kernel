@@ -129,6 +129,7 @@ internal sealed class Program
 	{
 		// Configuration
 		services.Configure<AppSettings>(ctx.Configuration);
+		services.AddSingleton(sp => sp.GetRequiredService<IOptions<AppSettings>>().Value);
 
 		// Kernel infrastructure
 		services.AddSingleton<IKernelState, KernelStateStore>();
@@ -151,7 +152,7 @@ internal sealed class Program
 			);
 
 			// Create virtual display settings.
-			var virtualDisplaySettings = new VirtualDisplaySettings
+			var virtualDisplaySettings = new AppSettings.VirtualDisplaySettings
 			{
 				Width = appSettings.VirtualDisplay.Width,
 				Height = appSettings.VirtualDisplay.Height,

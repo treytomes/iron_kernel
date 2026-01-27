@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace IronKernel.Modules.AssetLoader;
 
 internal sealed class AssetLoaderModule(
+	AppSettings settings,
 	IMessageBus bus,
 	ILogger<AssetLoaderModule> logger,
 	IResourceManager resourceManager
@@ -15,6 +16,7 @@ internal sealed class AssetLoaderModule(
 {
 	#region Fields
 
+	private readonly AppSettings.AssetDirectory _assetDirectory = settings.Assets;
 	private readonly IMessageBus _bus = bus;
 	private readonly ILogger<AssetLoaderModule> _logger = logger;
 	private readonly IResourceManager _resourceManager = resourceManager;
@@ -32,22 +34,34 @@ internal sealed class AssetLoaderModule(
 		_bus.Subscribe<AssetImageQuery>(runtime, "ImageQueryHandler", (msg, ct) =>
 		{
 			var path = GetPathFromAssetId(msg.AssetId);
-			var image = _resourceManager.Load<Image>(path);
-			_bus.Publish(new AssetImageResponse(msg.CorrelationID, msg.AssetId, image));
+			if (path != null)
+			{
+				var image = _resourceManager.Load<Image>(path);
+				_bus.Publish(new AssetImageResponse(msg.CorrelationID, msg.AssetId, image));
+			}
 			return Task.CompletedTask;
 		});
 
 		return Task.CompletedTask;
 	}
 
-	public string GetPathFromAssetId(string assetId)
+	public string? GetPathFromAssetId(string assetId)
 	{
-		return assetId switch
+		var pieces = assetId.ToLower().Split('.');
+		if (pieces[0].Trim() == "image")
 		{
-			"mouse_cursor" => "mouse_cursor.png",
-			"oem437_8" => "oem437_8.png",
-			_ => throw new FileNotFoundException($"Asset id is undefined: {assetId}"),
-		};
+			return _assetDirectory.Image[pieces[1].Trim()];
+		}
+		// throw new FileNotFoundException($"Asset id is undefined: {assetId}");
+		_logger.LogError($"Asset id is undefined: {assetId}");
+		return null;
+
+		// return assetId switch
+		// {
+		// 	"mouse_cursor" => "mouse_cursor.png",
+		// 	"oem437_8" => "oem437_8.png",
+		// 	_ => throw new FileNotFoundException($"Asset id is undefined: {assetId}"),
+		// };
 	}
 
 	public ValueTask DisposeAsync()

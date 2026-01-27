@@ -8,7 +8,7 @@ namespace IronKernel.Modules.Framebuffer;
 /// Manages a virtual display with fixed resolution that scales to fit the window  
 /// while maintaining aspect ratio.  
 /// </summary>
-public class VirtualDisplay : IVirtualDisplay
+internal class VirtualDisplay : IVirtualDisplay
 {
 	#region Fields  
 
@@ -27,7 +27,7 @@ public class VirtualDisplay : IVirtualDisplay
 		2, 3, 0
 	};
 
-	private readonly VirtualDisplaySettings _settings;
+	private readonly AppSettings.VirtualDisplaySettings _settings;
 	private int _vao;
 	private int _vbo;
 	private int _ebo;
@@ -59,7 +59,7 @@ public class VirtualDisplay : IVirtualDisplay
 	/// <param name="settings">The settings for the virtual display.</param>  
 	/// <exception cref="ArgumentNullException">Thrown if settings is null.</exception>  
 	/// <exception cref="Exception">Thrown if any OpenGL resource creation fails.</exception>  
-	public VirtualDisplay(Vector2i windowSize, VirtualDisplaySettings settings)
+	public VirtualDisplay(Vector2i windowSize, AppSettings.VirtualDisplaySettings settings)
 	{
 		_settings = settings ?? throw new ArgumentNullException(nameof(settings));
 		_lastWindowSize = windowSize;

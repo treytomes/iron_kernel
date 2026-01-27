@@ -14,6 +14,7 @@ using OpenTK.Windowing.Desktop;
 namespace IronKernel.Modules.OpenTKHost;
 
 internal sealed class OpenTKHostModule(
+	AppSettings settings,
 	IMessageBus bus,
 	ILogger<OpenTKHostModule> logger,
 	IVirtualDisplay virtualDisplay
@@ -23,6 +24,7 @@ internal sealed class OpenTKHostModule(
 {
 	#region Fields
 
+	private readonly AppSettings.WindowSettings _settings = settings.Window;
 	private readonly IMessageBus _bus = bus;
 	private readonly ILogger<OpenTKHostModule> _logger = logger;
 	private bool _isDisposed = false;
@@ -49,6 +51,14 @@ internal sealed class OpenTKHostModule(
 		var native = NativeWindowSettings.Default;
 
 		_window = new GameWindow(settings, native);
+		if (_settings.Fullscreen)
+		{
+			_window.WindowState = WindowState.Fullscreen;
+		}
+		else if (_settings.Maximize)
+		{
+			_window.WindowState = WindowState.Maximized;
+		}
 
 		_bus.Subscribe<KernelShutdownRequested>(
 			runtime,
