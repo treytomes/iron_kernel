@@ -38,6 +38,10 @@ public abstract class Morph
 
 		morph.Owner = this;
 		_submorphs.Add(morph);
+
+		// If we're already in a world, load immediately.
+		if (TryGetWorld(out var world))
+			morph.NotifyAddedToWorld(world);
 	}
 
 	public void RemoveMorph(Morph morph)
@@ -95,6 +99,8 @@ public abstract class Morph
 			OnPointerLeave();
 	}
 
+	protected virtual void OnLoad(IAssetService assetService) { }
+
 	protected virtual void OnPointerEnter() { }
 	protected virtual void OnPointerLeave() { }
 
@@ -132,10 +138,33 @@ public abstract class Morph
 		// no-op for now
 	}
 
+	private bool TryGetWorld(out WorldMorph world)
+	{
+		if (this is WorldMorph w)
+		{
+			world = w;
+			return true;
+		}
+
+		if (Owner != null)
+			return Owner.TryGetWorld(out world);
+
+		world = null!;
+		return false;
+	}
+
 	public WorldMorph GetWorld()
 	{
 		if (this is WorldMorph) return (this as WorldMorph)!;
 		return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();
+	}
+
+	internal void NotifyAddedToWorld(WorldMorph world)
+	{
+		OnLoad(world.Assets);
+
+		foreach (var child in _submorphs)
+			child.NotifyAddedToWorld(world);
 	}
 
 	#endregion

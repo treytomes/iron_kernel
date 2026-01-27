@@ -14,8 +14,9 @@ public sealed class WorldMorph : Morph
 
 	#region Constructors
 
-	public WorldMorph(Size screenSize)
+	public WorldMorph(Size screenSize, IAssetService assets)
 	{
+		Assets = assets;
 		Position = Point.Empty;
 		Size = screenSize;
 
@@ -27,6 +28,7 @@ public sealed class WorldMorph : Morph
 
 	#region Properties
 
+	public IAssetService Assets { get; }
 	public Morph? PointerFocus { get; private set; }
 	public Morph? KeyboardFocus { get; private set; }
 	public HandMorph Hand { get; }

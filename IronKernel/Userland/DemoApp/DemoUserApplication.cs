@@ -28,16 +28,7 @@ public sealed class DemoUserApplication(
 		// Initialize application state.
 		// context.State.Set("position", new Point(100, 100));
 
-		var world = new WorldMorph(new Size(320, 240));
-
-		var response = await context.Bus.QueryAsync<
-			AppAssetImageQuery,
-			AppAssetImageResponse>(
-				id => new AppAssetImageQuery(id, "image.mouse_cursor"));
-
-		var image = new RenderImage(response.Image);
-		image.Recolor(RadialColor.Black, null);
-		world.Hand.Image = image;
+		var world = new WorldMorph(new Size(320, 240), new AssetService(context.Bus));
 
 		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "image.oem437_8"));
 

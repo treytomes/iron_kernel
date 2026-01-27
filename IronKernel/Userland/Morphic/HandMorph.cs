@@ -5,10 +5,32 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class HandMorph : Morph
 {
+	#region Fields
+
 	private Point _grabOffset;
+
+	#endregion
+
+	#region Properties
 
 	public RenderImage? Image { get; set; }
 	public Morph? GrabbedMorph { get; private set; }
+
+	#endregion
+
+	#region Methods
+
+	protected override void OnLoad(IAssetService assets)
+	{
+		_ = LoadCursorAsync(assets);
+	}
+
+	private async Task LoadCursorAsync(IAssetService assets)
+	{
+		var image = await assets.LoadImageAsync("image.mouse_cursor");
+		image.Recolor(RadialColor.Black, null);
+		Image = image;
+	}
 
 	public void MoveTo(Point p)
 	{
@@ -40,13 +62,9 @@ public sealed class HandMorph : Morph
 
 	public override void Draw(IRenderingContext rc)
 	{
-		if (Image != null)
-		{
-			Image.Render(rc, Position);
-		}
-		else
-		{
-			rc.RenderFilledCircle(Position, 2, RadialColor.Yellow);
-		}
+		if (Image == null) return;
+		Image.Render(rc, Position);
 	}
+
+	#endregion
 }
