@@ -25,10 +25,23 @@ public abstract class Morph
 	public virtual bool WantsKeyboardFocus => false;
 	public virtual bool IsSelectable => true;
 	public virtual bool IsGrabbable => false;
+	public bool IsMarkedForDeletion { get; private set; } = false;
+
+	protected MorphicStyle? Style => GetWorld()?.Style;
 
 	#endregion
 
 	#region Methods
+
+	public void MarkForDeletion()
+	{
+		IsMarkedForDeletion = true;
+	}
+
+	internal void ClearDeletionMark()
+	{
+		IsMarkedForDeletion = false;
+	}
 
 	public void AddMorph(Morph morph)
 	{
@@ -61,6 +74,12 @@ public abstract class Morph
 			if (!child.Visible) continue;
 			child.Draw(rc);
 		}
+	}
+
+	public virtual void Update(double deltaTime)
+	{
+		// Default: do nothing.
+		foreach (var child in Submorphs) child.Update(deltaTime);
 	}
 
 	/// <summary>

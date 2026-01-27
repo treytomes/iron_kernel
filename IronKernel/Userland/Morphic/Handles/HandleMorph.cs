@@ -20,6 +20,7 @@ public abstract class HandleMorph : Morph
 	public override bool WantsKeyboardFocus => false;
 	public override bool IsSelectable => false;
 	public override bool IsGrabbable => true;
+	protected abstract MorphicStyle.HandleStyle? StyleForHandle { get; }
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{

@@ -107,6 +107,7 @@ public sealed class DemoUserApplication(
 			"UpdateTickHandler",
 			async (e, ct) =>
 			{
+				world.Update(e.ElapsedTime);
 				if (rc.IsInitialized)
 				{
 					rc.Clear();

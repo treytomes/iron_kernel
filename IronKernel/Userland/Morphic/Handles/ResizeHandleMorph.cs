@@ -26,6 +26,7 @@ public sealed class ResizeHandleMorph : HandleMorph
 	#region Properties
 
 	public ResizeHandle Kind { get; }
+	protected override MorphicStyle.HandleStyle? StyleForHandle => Style?.ResizeHandle;
 
 	#endregion
 
@@ -40,14 +41,23 @@ public sealed class ResizeHandleMorph : HandleMorph
 	{
 		_image = await assets.LoadImageAsync("image.resize_icon");
 		_image.Recolor(RadialColor.Black, null);
+		_image.Recolor(RadialColor.White, StyleForHandle?.Foreground);
 	}
 
 	public override void Draw(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(
-			new Rectangle(Position, Size),
-			IsHovered ? RadialColor.Cyan : RadialColor.Cyan.Lerp(RadialColor.White, 0.5f));
-		_image?.Render(rc, Position);
+		if (StyleForHandle == null) return;
+
+		var bg = IsHovered
+			? StyleForHandle.BackgroundHover
+			: StyleForHandle.Background;
+
+		rc.RenderFilledRect(new Rectangle(Position, Size), bg);
+
+		var flipVertical = Kind == ResizeHandle.TopLeft || Kind == ResizeHandle.BottomRight;
+		var flags = flipVertical ? RenderImage.RenderFlag.FlipVertical : RenderImage.RenderFlag.None;
+
+		_image?.Render(rc, Position, flags);
 	}
 
 	public override void OnPointerMove(PointerMoveEvent e)

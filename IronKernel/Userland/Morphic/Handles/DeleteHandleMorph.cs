@@ -4,7 +4,7 @@ using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
 
-public sealed class MoveHandleMorph : HandleMorph
+public sealed class DeleteHandleMorph : HandleMorph
 {
 	#region Fields
 
@@ -14,7 +14,7 @@ public sealed class MoveHandleMorph : HandleMorph
 
 	#region Constructors
 
-	public MoveHandleMorph(Morph target)
+	public DeleteHandleMorph(Morph target)
 		: base(target)
 	{
 		Size = new Size(8, 8);
@@ -24,7 +24,7 @@ public sealed class MoveHandleMorph : HandleMorph
 
 	#region Properties
 
-	protected override MorphicStyle.HandleStyle? StyleForHandle => Style?.MoveHandle;
+	protected override MorphicStyle.HandleStyle? StyleForHandle => Style?.DeleteHandle;
 
 	#endregion
 
@@ -37,7 +37,7 @@ public sealed class MoveHandleMorph : HandleMorph
 
 	private async Task LoadImageAsync(IAssetService assets)
 	{
-		_image = await assets.LoadImageAsync("image.move_icon");
+		_image = await assets.LoadImageAsync("image.delete_icon");
 		_image.Recolor(RadialColor.Black, null);
 	}
 
@@ -53,15 +53,11 @@ public sealed class MoveHandleMorph : HandleMorph
 		_image?.Render(rc, Position);
 	}
 
-	public override void OnPointerMove(PointerMoveEvent e)
+	public override void OnPointerUp(PointerUpEvent e)
 	{
-		var dx = e.Position.X - StartMouse.X;
-		var dy = e.Position.Y - StartMouse.Y;
-
-		Target.Position = new Point(
-			StartPosition.X + dx,
-			StartPosition.Y + dy);
-
+		var owner = Target.Owner;
+		if (owner == null) return;
+		Target.MarkForDeletion();
 		e.MarkHandled();
 	}
 

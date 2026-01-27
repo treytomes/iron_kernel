@@ -11,42 +11,48 @@ public sealed class RenderImage
 	{
 	}
 
-	public void Render(IRenderingContext rc, Point position)
+	public void Render(IRenderingContext rc, Point position, RenderFlag flags = RenderFlag.None)
 	{
-		Render(rc, (int)position.X, (int)position.Y);
-	}
+		var x = position.X;
+		var y = position.Y;
 
-	/// <summary>
-	/// A value of 255 in either color indicates transparent.
-	/// </summary>
-	public void Render(IRenderingContext rc, int x, int y)
-	{
+		var flipH = (flags & RenderFlag.FlipHorizontal) != 0;
+		var flipV = (flags & RenderFlag.FlipVertical) != 0;
+
 		for (var dy = 0; dy < Height; dy++)
 		{
-			if (y + dy < 0)
-			{
+			var dstY = y + dy;
+			if (dstY < 0)
 				continue;
-			}
-			if (y + dy >= rc.Height)
-			{
+			if (dstY >= rc.Height)
 				break;
-			}
+
+			var sy = flipV ? (Height - 1 - dy) : dy;
+
 			for (var dx = 0; dx < Width; dx++)
 			{
-				if (x + dx < 0)
-				{
+				var dstX = x + dx;
+				if (dstX < 0)
 					continue;
-				}
-				if (x + dx >= rc.Width)
-				{
+				if (dstX >= rc.Width)
 					break;
-				}
-				var color = GetPixel(dx, dy);
+
+				var sx = flipH ? (Width - 1 - dx) : dx;
+
+				var color = GetPixel(sx, sy);
 				if (color != null)
 				{
-					rc.SetPixel(new Point(x + dx, y + dy), color);
+					rc.SetPixel(new Point(dstX, dstY), color);
 				}
 			}
 		}
+	}
+
+	[Flags]
+	public enum RenderFlag
+	{
+		None = 0,
+		FlipHorizontal = 1,
+		FlipVertical = 2,
 	}
 }

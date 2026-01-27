@@ -29,6 +29,7 @@ public sealed class WorldMorph : Morph
 	#region Properties
 
 	public IAssetService Assets { get; }
+	public new MorphicStyle Style { get; } = MorphicStyles.Default;
 	public Morph? PointerFocus { get; private set; }
 	public Morph? KeyboardFocus { get; private set; }
 	public HandMorph Hand { get; }
@@ -39,7 +40,6 @@ public sealed class WorldMorph : Morph
 	#endregion
 
 	#region Methods
-
 
 	public void CapturePointer(Morph morph)
 	{
@@ -57,6 +57,12 @@ public sealed class WorldMorph : Morph
 		base.Draw(rc);
 		// TODO: Hand will be drawn twice.
 		Hand.Draw(rc);
+	}
+
+	public override void Update(double deltaTime)
+	{
+		base.Update(deltaTime);
+		CommitDeletions();
 	}
 
 	public void PointerButton(MouseButton button, InputAction action)
@@ -189,6 +195,38 @@ public sealed class WorldMorph : Morph
 		}
 
 		SelectedMorph = null;
+	}
+
+	public void CommitDeletions()
+	{
+		Sweep(this);
+	}
+
+	private void Sweep(Morph parent)
+	{
+		for (var i = parent.Submorphs.Count - 1; i >= 0; i--)
+		{
+			var child = parent.Submorphs[i];
+
+			if (child.IsMarkedForDeletion)
+			{
+				if (IsAncestorOrSelf(child, SelectedMorph)) ClearSelection();
+				parent.RemoveMorph(child);
+				continue;
+			}
+
+			Sweep(child);
+		}
+	}
+
+	private bool IsAncestorOrSelf(Morph root, Morph? target)
+	{
+		while (target != null)
+		{
+			if (target == root) return true;
+			target = target.Owner;
+		}
+		return false;
 	}
 
 	#endregion
