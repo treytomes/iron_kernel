@@ -15,10 +15,10 @@ public abstract class HandleMorph : Morph
 	{
 		Target = target;
 		Visible = true;
+		IsSelectable = false;
 	}
 
 	public override bool WantsKeyboardFocus => false;
-	public override bool IsSelectable => false;
 	public override bool IsGrabbable => false;
 	protected abstract MorphicStyle.HandleStyle? StyleForHandle { get; }
 

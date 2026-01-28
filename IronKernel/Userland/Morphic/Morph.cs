@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Modules.ApplicationHost;
+using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic;
@@ -23,7 +24,7 @@ public abstract class Morph
 
 	public IReadOnlyList<Morph> Submorphs => _submorphs;
 	public virtual bool WantsKeyboardFocus => false;
-	public virtual bool IsSelectable => true;
+	public bool IsSelectable { get; set; } = true;
 	public virtual bool IsGrabbable => false;
 	public bool IsMarkedForDeletion { get; private set; } = false;
 

@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland;
+namespace IronKernel.Userland.Gfx;
 
 public interface IRenderingContext
 {

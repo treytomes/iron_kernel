@@ -1,10 +1,10 @@
 using System.Drawing;
 using IronKernel.Common;
 
-namespace IronKernel.Userland;
+namespace IronKernel.Userland.Gfx;
 
 public sealed class RenderImage
-	: Image
+	: Image, IImage<RenderImage>
 {
 	public RenderImage(Image image)
 		: base(image.Size.Width, image.Size.Height, image.Data, 1)
@@ -46,6 +46,16 @@ public sealed class RenderImage
 				}
 			}
 		}
+	}
+
+	RenderImage IImage<RenderImage>.Crop(int x, int y, int width, int height)
+	{
+		return new RenderImage(Crop(x, y, width, height));
+	}
+
+	RenderImage IImage<RenderImage>.Scale(int factor)
+	{
+		return new RenderImage(Scale(factor));
 	}
 
 	[Flags]

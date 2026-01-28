@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Handles;
 
 namespace IronKernel.Userland.Morphic;
@@ -20,6 +21,7 @@ public sealed class HaloMorph : Morph
 	{
 		_target = target;
 		Visible = true;
+		IsSelectable = false;
 
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopLeft));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopRight));
@@ -48,7 +50,6 @@ public sealed class HaloMorph : Morph
 
 	#region Properties
 
-	public override bool IsSelectable => false;
 	private double AnimationSpeedFactor { get; set; } = 1.0;
 
 	#endregion

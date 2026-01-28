@@ -3,7 +3,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
 using System.Drawing;
 
-namespace IronKernel.Userland;
+namespace IronKernel.Userland.Gfx;
 
 /// <summary>  
 /// Provides a high-level drawing API for rendering to a VirtualDisplay.  

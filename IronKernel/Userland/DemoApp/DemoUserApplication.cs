@@ -4,6 +4,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
+using IronKernel.Userland.Gfx;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -36,6 +37,13 @@ public sealed class DemoUserApplication(
 		{
 			FillColor = RadialColor.Red,
 			BorderColor = RadialColor.Blue.Lerp(RadialColor.White, 0.5f)
+		});
+
+		world.AddMorph(new LabelMorph(new Point(150, 150), "image.oem437_8", new Size(8, 8))
+		{
+			Foreground = RadialColor.Red,
+			BackgroundColor = RadialColor.Blue,
+			Text = "Hello world!",
 		});
 
 		var canvas = new FramebufferCanvas(context.Bus);

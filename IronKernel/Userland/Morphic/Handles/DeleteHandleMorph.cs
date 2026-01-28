@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -18,7 +19,10 @@ public sealed class DeleteHandleMorph : HandleMorph
 	{
 		Size = new Size(8, 8);
 
-		_icon = new ImageMorph("image.delete_icon");
+		_icon = new ImageMorph(new Point(0, 0), "image.delete_icon")
+		{
+			IsSelectable = false,
+		};
 		AddMorph(_icon);
 	}
 

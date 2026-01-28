@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -19,8 +20,9 @@ public sealed class ResizeHandleMorph : HandleMorph
 		Kind = kind;
 		Size = new Size(6, 6);
 
-		_icon = new ImageMorph("image.resize_icon")
+		_icon = new ImageMorph(new Point(0, 0), "image.resize_icon")
 		{
+			IsSelectable = false,
 			Flags = kind is ResizeHandle.TopLeft or ResizeHandle.BottomRight
 				? RenderImage.RenderFlag.FlipVertical
 				: RenderImage.RenderFlag.None

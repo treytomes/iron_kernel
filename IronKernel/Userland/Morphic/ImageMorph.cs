@@ -1,4 +1,6 @@
+using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Gfx;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -6,15 +8,16 @@ public sealed class ImageMorph : Morph
 {
 	private RenderImage? _image;
 
-	public ImageMorph(string assetId)
+	public ImageMorph(Point position, string assetId)
 	{
+		Position = position;
 		AssetId = assetId;
+		IsSelectable = true;
 	}
 
 	public string AssetId { get; }
 	public RadialColor? Foreground { get; set; }
 	public RenderImage.RenderFlag Flags { get; set; }
-	public override bool IsSelectable => false;
 
 	protected override async void OnLoad(IAssetService assets)
 	{
