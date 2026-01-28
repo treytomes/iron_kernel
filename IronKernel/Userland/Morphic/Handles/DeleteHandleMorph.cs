@@ -1,5 +1,4 @@
 using System.Drawing;
-using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -8,7 +7,7 @@ public sealed class DeleteHandleMorph : HandleMorph
 {
 	#region Fields
 
-	private RenderImage? _image;
+	private readonly ImageMorph _icon;
 
 	#endregion
 
@@ -18,6 +17,9 @@ public sealed class DeleteHandleMorph : HandleMorph
 		: base(target)
 	{
 		Size = new Size(8, 8);
+
+		_icon = new ImageMorph("image.delete_icon");
+		AddMorph(_icon);
 	}
 
 	#endregion
@@ -30,27 +32,24 @@ public sealed class DeleteHandleMorph : HandleMorph
 
 	#region Methods
 
-	protected override void OnLoad(IAssetService assets)
-	{
-		_ = LoadImageAsync(assets);
-	}
-
-	private async Task LoadImageAsync(IAssetService assets)
-	{
-		_image = await assets.LoadImageAsync("image.delete_icon");
-		_image.Recolor(RadialColor.Black, null);
-	}
-
 	public override void Draw(IRenderingContext rc)
 	{
 		if (StyleForHandle == null) return;
 
-		var bg = IsHovered
+		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
+		var bg = IsHovered || _icon.IsHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
+		_icon.Position = Position;
+		_icon.Size = Size;
+		_icon.Foreground = IsHovered || _icon.IsHovered
+			? StyleForHandle.ForegroundHover
+			: StyleForHandle.Foreground;
+
 		rc.RenderFilledRect(new Rectangle(Position, Size), bg);
-		_image?.Render(rc, Position);
+
+		base.Draw(rc);
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)

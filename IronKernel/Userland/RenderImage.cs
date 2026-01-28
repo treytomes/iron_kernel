@@ -7,7 +7,7 @@ public sealed class RenderImage
 	: Image
 {
 	public RenderImage(Image image)
-		: base(image.Width, image.Height, image.Data, 1)
+		: base(image.Size.Width, image.Size.Height, image.Data, 1)
 	{
 	}
 
@@ -19,7 +19,7 @@ public sealed class RenderImage
 		var flipH = (flags & RenderFlag.FlipHorizontal) != 0;
 		var flipV = (flags & RenderFlag.FlipVertical) != 0;
 
-		for (var dy = 0; dy < Height; dy++)
+		for (var dy = 0; dy < Size.Height; dy++)
 		{
 			var dstY = y + dy;
 			if (dstY < 0)
@@ -27,9 +27,9 @@ public sealed class RenderImage
 			if (dstY >= rc.Height)
 				break;
 
-			var sy = flipV ? (Height - 1 - dy) : dy;
+			var sy = flipV ? (Size.Height - 1 - dy) : dy;
 
-			for (var dx = 0; dx < Width; dx++)
+			for (var dx = 0; dx < Size.Width; dx++)
 			{
 				var dstX = x + dx;
 				if (dstX < 0)
@@ -37,7 +37,7 @@ public sealed class RenderImage
 				if (dstX >= rc.Width)
 					break;
 
-				var sx = flipH ? (Width - 1 - dx) : dx;
+				var sx = flipH ? (Size.Width - 1 - dx) : dx;
 
 				var color = GetPixel(sx, sy);
 				if (color != null)

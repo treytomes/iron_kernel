@@ -15,5 +15,6 @@ public sealed class MorphicStyle
 		public required RadialColor Background { get; init; }
 		public required RadialColor BackgroundHover { get; init; }
 		public required RadialColor Foreground { get; init; }
+		public required RadialColor ForegroundHover { get; init; }
 	}
 }

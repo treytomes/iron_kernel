@@ -1,10 +1,11 @@
+using System.Drawing;
+
 namespace IronKernel.Common;
 
 public interface IImage<TImage>
 	where TImage : IImage<TImage>
 {
-	int Width { get; }
-	int Height { get; }
+	Size Size { get; }
 	TImage Crop(int x, int y, int width, int height);
 
 	/// <summary>

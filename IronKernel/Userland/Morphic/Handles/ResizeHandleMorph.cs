@@ -1,5 +1,4 @@
 using System.Drawing;
-using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -8,7 +7,7 @@ public sealed class ResizeHandleMorph : HandleMorph
 {
 	#region Fields
 
-	private RenderImage? _image;
+	private readonly ImageMorph _icon;
 
 	#endregion
 
@@ -19,6 +18,14 @@ public sealed class ResizeHandleMorph : HandleMorph
 	{
 		Kind = kind;
 		Size = new Size(6, 6);
+
+		_icon = new ImageMorph("image.resize_icon")
+		{
+			Flags = kind is ResizeHandle.TopLeft or ResizeHandle.BottomRight
+				? RenderImage.RenderFlag.FlipVertical
+				: RenderImage.RenderFlag.None
+		};
+		AddMorph(_icon);
 	}
 
 	#endregion
@@ -32,32 +39,24 @@ public sealed class ResizeHandleMorph : HandleMorph
 
 	#region Methods
 
-	protected override void OnLoad(IAssetService assets)
-	{
-		_ = LoadImageAsync(assets);
-	}
-
-	private async Task LoadImageAsync(IAssetService assets)
-	{
-		_image = await assets.LoadImageAsync("image.resize_icon");
-		_image.Recolor(RadialColor.Black, null);
-		_image.Recolor(RadialColor.White, StyleForHandle?.Foreground);
-	}
-
 	public override void Draw(IRenderingContext rc)
 	{
 		if (StyleForHandle == null) return;
 
-		var bg = IsHovered
+		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
+		var bg = IsHovered || _icon.IsHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
 		rc.RenderFilledRect(new Rectangle(Position, Size), bg);
 
-		var flipVertical = Kind == ResizeHandle.TopLeft || Kind == ResizeHandle.BottomRight;
-		var flags = flipVertical ? RenderImage.RenderFlag.FlipVertical : RenderImage.RenderFlag.None;
+		_icon.Position = Position;
+		_icon.Size = Size;
+		_icon.Foreground = IsHovered || _icon.IsHovered
+			? StyleForHandle.ForegroundHover
+			: StyleForHandle.Foreground;
 
-		_image?.Render(rc, Position, flags);
+		base.Draw(rc);
 	}
 
 	public override void OnPointerMove(PointerMoveEvent e)

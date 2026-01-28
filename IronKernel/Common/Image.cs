@@ -1,3 +1,4 @@
+using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Common;
@@ -27,9 +28,8 @@ public class Image : IImage<Image, RadialColor>
 		{
 			throw new ArgumentException("Value must be > 0.", nameof(scale));
 		}
-		Width = width * scale;
-		Height = height * scale;
-		Data = new RadialColor?[Width * Height];
+		Size = new Size(width * scale, height * scale);
+		Data = new RadialColor?[Size.Width * Size.Height];
 
 		for (var y = 0; y < height; y++)
 		{
@@ -43,7 +43,7 @@ public class Image : IImage<Image, RadialColor>
 					{
 						var dy = y * scale + sy;
 						var dx = x * scale + sx;
-						Data[dy * Width + dx] = color;
+						Data[dy * Size.Width + dx] = color;
 					}
 				}
 			}
@@ -52,8 +52,7 @@ public class Image : IImage<Image, RadialColor>
 
 	public Image(int width, int height, RadialColor?[] data)
 	{
-		Width = width;
-		Height = height;
+		Size = new Size(width, height);
 		Data = (RadialColor?[])data.Clone();
 	}
 
@@ -61,8 +60,7 @@ public class Image : IImage<Image, RadialColor>
 
 	#region Properties
 
-	public int Width { get; }
-	public int Height { get; }
+	public Size Size { get; }
 
 	public RadialColor? this[int x, int y]
 	{
@@ -93,13 +91,13 @@ public class Image : IImage<Image, RadialColor>
 
 	public RadialColor? GetPixel(int x, int y)
 	{
-		var index = (y * Width + x) * BPP;
+		var index = (y * Size.Width + x) * BPP;
 		return Data[index];
 	}
 
 	public void SetPixel(int x, int y, RadialColor? color)
 	{
-		var index = (y * Width + x) * BPP;
+		var index = (y * Size.Width + x) * BPP;
 		Data[index] = color;
 	}
 
@@ -129,7 +127,7 @@ public class Image : IImage<Image, RadialColor>
 		{
 			throw new ArgumentException("Value must be > 0.", nameof(factor));
 		}
-		return new Image(Width, Height, Data, factor);
+		return new Image(Size.Width, Size.Height, Data, factor);
 	}
 
 	#endregion

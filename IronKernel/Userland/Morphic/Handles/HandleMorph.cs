@@ -19,22 +19,24 @@ public abstract class HandleMorph : Morph
 
 	public override bool WantsKeyboardFocus => false;
 	public override bool IsSelectable => false;
-	public override bool IsGrabbable => true;
+	public override bool IsGrabbable => false;
 	protected abstract MorphicStyle.HandleStyle? StyleForHandle { get; }
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
+		if (!TryGetWorld(out var world)) return;
+
 		StartMouse = e.Position;
 		StartPosition = Target.Position;
 		StartSize = Target.Size;
 
-		GetWorld().CapturePointer(this);
+		world.CapturePointer(this);
 		e.MarkHandled();
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)
 	{
-		GetWorld().ReleasePointer(this);
+		if (TryGetWorld(out var world)) world.ReleasePointer(this);
 		e.MarkHandled();
 	}
 }

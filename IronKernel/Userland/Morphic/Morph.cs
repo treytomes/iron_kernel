@@ -158,7 +158,7 @@ public abstract class Morph
 		// no-op for now
 	}
 
-	private bool TryGetWorld(out WorldMorph world)
+	protected bool TryGetWorld(out WorldMorph world)
 	{
 		if (this is WorldMorph w)
 		{
@@ -173,7 +173,7 @@ public abstract class Morph
 		return false;
 	}
 
-	public WorldMorph GetWorld()
+	protected WorldMorph GetWorld()
 	{
 		if (this is WorldMorph) return (this as WorldMorph)!;
 		return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();

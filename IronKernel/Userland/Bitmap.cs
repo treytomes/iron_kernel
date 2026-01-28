@@ -35,13 +35,12 @@ public class Bitmap : IImage<Bitmap, bool>
 		{
 			throw new ArgumentException("Value must be > 0.", nameof(scale));
 		}
-		Width = image.Width * scale;
-		Height = image.Height * scale;
-		Data = new bool[Width * Height];
+		Size = new Size(image.Size.Width * scale, image.Size.Height * scale);
+		Data = new bool[Size.Width * Size.Height];
 
-		for (var y = 0; y < image.Height; y++)
+		for (var y = 0; y < image.Size.Height; y++)
 		{
-			for (var x = 0; x < image.Width; x++)
+			for (var x = 0; x < image.Size.Width; x++)
 			{
 				var color = image.GetPixel(x, y);
 
@@ -51,7 +50,7 @@ public class Bitmap : IImage<Bitmap, bool>
 					{
 						var dy = y * scale + sy;
 						var dx = x * scale + sx;
-						Data[dy * Width + dx] = color;
+						Data[dy * Size.Width + dx] = color;
 					}
 				}
 			}
@@ -68,13 +67,12 @@ public class Bitmap : IImage<Bitmap, bool>
 		{
 			throw new ArgumentException("Value must be > 0.", nameof(scale));
 		}
-		Width = image.Width * scale;
-		Height = image.Height * scale;
-		Data = new bool[Width * Height];
+		Size = new Size(image.Size.Width * scale, image.Size.Height * scale);
+		Data = new bool[Size.Width * Size.Height];
 
-		for (var y = 0; y < image.Height; y++)
+		for (var y = 0; y < image.Size.Height; y++)
 		{
-			for (var x = 0; x < image.Width; x++)
+			for (var x = 0; x < image.Size.Width; x++)
 			{
 				var color = image.GetPixel(x, y);
 
@@ -84,7 +82,7 @@ public class Bitmap : IImage<Bitmap, bool>
 					{
 						var dy = y * scale + sy;
 						var dx = x * scale + sx;
-						Data[dy * Width + dx] = color != null && color.Index != 0;
+						Data[dy * Size.Width + dx] = color != null && color.Index != 0;
 					}
 				}
 			}
@@ -93,8 +91,7 @@ public class Bitmap : IImage<Bitmap, bool>
 
 	public Bitmap(int width, int height, bool[] data)
 	{
-		Width = width;
-		Height = height;
+		Size = new Size(width, height);
 		Data = data;
 	}
 
@@ -102,8 +99,7 @@ public class Bitmap : IImage<Bitmap, bool>
 
 	#region Properties
 
-	public int Width { get; }
-	public int Height { get; }
+	public Size Size { get; }
 
 	public bool this[int x, int y]
 	{
@@ -129,7 +125,7 @@ public class Bitmap : IImage<Bitmap, bool>
 	{
 		var x = position.X;
 		var y = position.Y;
-		for (var dy = 0; dy < Height; dy++)
+		for (var dy = 0; dy < Size.Height; dy++)
 		{
 			if (y + dy < 0)
 			{
@@ -139,7 +135,7 @@ public class Bitmap : IImage<Bitmap, bool>
 			{
 				break;
 			}
-			for (var dx = 0; dx < Width; dx++)
+			for (var dx = 0; dx < Size.Width; dx++)
 			{
 				if (x + dx < 0)
 				{
@@ -170,13 +166,13 @@ public class Bitmap : IImage<Bitmap, bool>
 
 	public bool GetPixel(int x, int y)
 	{
-		var index = (y * Width + x) * BPP;
+		var index = (y * Size.Width + x) * BPP;
 		return Data[index];
 	}
 
 	public void SetPixel(int x, int y, bool value)
 	{
-		var index = (y * Width + x) * BPP;
+		var index = (y * Size.Width + x) * BPP;
 		Data[index] = value;
 	}
 
