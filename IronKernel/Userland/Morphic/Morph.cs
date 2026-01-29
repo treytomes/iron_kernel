@@ -1,11 +1,13 @@
 using System.Drawing;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
+using IronKernel.Userland.Morphic.Handles;
 
 namespace IronKernel.Userland.Morphic;
 
-public abstract class Morph
+public abstract class Morph : ICommandTarget
 {
 	#region Fields
 
@@ -44,7 +46,7 @@ public abstract class Morph
 		IsMarkedForDeletion = false;
 	}
 
-	public void AddMorph(Morph morph)
+	public void AddMorph(Morph morph, int index = -1)
 	{
 		if (morph == null)
 			throw new ArgumentNullException(nameof(morph));
@@ -52,7 +54,14 @@ public abstract class Morph
 			throw new InvalidOperationException("Morph already has an owner");
 
 		morph.Owner = this;
-		_submorphs.Add(morph);
+		if (index >= 0)
+		{
+			_submorphs.Insert(index, morph);
+		}
+		else
+		{
+			_submorphs.Add(morph);
+		}
 
 		// If we're already in a world, load immediately.
 		if (TryGetWorld(out var world))
@@ -187,6 +196,163 @@ public abstract class Morph
 		foreach (var child in _submorphs)
 			child.NotifyAddedToWorld(world);
 	}
+
+	#region ICommandTarget Implementation
+
+	/// <summary>
+	/// Determines whether this morph is willing to execute the given command.
+	/// Subclasses should override to restrict behavior.
+	/// </summary>
+	public virtual bool CanExecute(ICommand command)
+	{
+		return command switch
+		{
+			MoveCommand => true,
+			ResizeCommand => true,
+			DeleteCommand => Owner != null,
+			_ => false
+		};
+	}
+
+	/// <summary>
+	/// Executes the given command, applying this morph's rules.
+	/// </summary>
+	public virtual void Execute(ICommand command)
+	{
+		switch (command)
+		{
+			case MoveCommand move:
+				ExecuteMove(move);
+				break;
+
+			case ResizeCommand resize:
+				ExecuteResize(resize);
+				break;
+
+			case DeleteCommand delete:
+				delete.Execute(); // deletion owns its own logic
+				break;
+		}
+	}
+
+	/// <summary>
+	/// Undoes the effects of a previously executed command.
+	/// </summary>
+	public virtual void Undo(ICommand command)
+	{
+		switch (command)
+		{
+			case MoveCommand move:
+				UndoMove(move);
+				break;
+
+			case ResizeCommand resize:
+				UndoResize(resize);
+				break;
+
+			case DeleteCommand delete:
+				delete.Undo();
+				break;
+		}
+	}
+
+	#endregion
+
+	#region Move handling
+
+	private Point _previousPosition;
+
+	/// <summary>
+	/// Applies a move command.
+	/// </summary>
+	protected virtual void ExecuteMove(MoveCommand command)
+	{
+		_previousPosition = Position;
+		Position = new Point(
+			Position.X + command.DeltaX,
+			Position.Y + command.DeltaY);
+
+		Invalidate();
+	}
+
+	/// <summary>
+	/// Reverts a move command.
+	/// </summary>
+	protected virtual void UndoMove(MoveCommand command)
+	{
+		Position = _previousPosition;
+		Invalidate();
+	}
+
+	#endregion
+
+	#region Resize handling
+
+	private Size _previousSize;
+	private Point _previousResizePosition;
+
+	/// <summary>
+	/// Applies a resize command.
+	/// Default behavior is free resize.
+	/// </summary>
+	protected virtual void ExecuteResize(ResizeCommand command)
+	{
+		_previousSize = Size;
+		_previousResizePosition = Position;
+
+		var newSize = Size;
+		var newPosition = Position;
+
+		switch (command.Handle)
+		{
+			case ResizeHandle.TopLeft:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height - command.DeltaY);
+				newPosition = new Point(Position.X + command.DeltaX, Position.Y + command.DeltaY);
+				break;
+
+			case ResizeHandle.TopRight:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height - command.DeltaY);
+				newPosition = new Point(Position.X, Position.Y + command.DeltaY);
+				break;
+
+			case ResizeHandle.BottomLeft:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height + command.DeltaY);
+				newPosition = new Point(Position.X + command.DeltaX, Position.Y);
+				break;
+
+			case ResizeHandle.BottomRight:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height + command.DeltaY);
+				break;
+		}
+
+		Size = ClampSize(newSize);
+		Position = newPosition;
+
+		Invalidate();
+	}
+
+	/// <summary>
+	/// Reverts a resize command.
+	/// </summary>
+	protected virtual void UndoResize(ResizeCommand command)
+	{
+		Size = _previousSize;
+		Position = _previousResizePosition;
+		Invalidate();
+	}
+
+	/// <summary>
+	/// Ensures the size remains valid.
+	/// Subclasses may override.
+	/// </summary>
+	protected virtual Size ClampSize(Size size)
+	{
+		return new Size(
+			Math.Max(1, size.Width),
+			Math.Max(1, size.Height));
+	}
+
+	#endregion
 
 	#endregion
 }

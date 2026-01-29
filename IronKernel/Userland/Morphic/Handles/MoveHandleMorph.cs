@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -62,9 +63,14 @@ public sealed class MoveHandleMorph : HandleMorph
 		var dx = e.Position.X - StartMouse.X;
 		var dy = e.Position.Y - StartMouse.Y;
 
-		Target.Position = new Point(
-			StartPosition.X + dx,
-			StartPosition.Y + dy);
+		if (dx != 0 || dy != 0)
+		{
+			if (TryGetWorld(out var world))
+			{
+				world.Commands.Submit(new MoveCommand(Target, dx, dy));
+				StartMouse = e.Position;
+			}
+		}
 
 		e.MarkHandled();
 	}

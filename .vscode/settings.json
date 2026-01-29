@@ -33,6 +33,7 @@
 		"scanline",
 		"Submorphs",
 		"syscalls",
+		"undoable",
 		"userland",
 		"vsync",
 		"waitables"

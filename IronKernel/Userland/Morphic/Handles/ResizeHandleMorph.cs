@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Handles;
@@ -66,35 +67,44 @@ public sealed class ResizeHandleMorph : HandleMorph
 		var dx = e.Position.X - StartMouse.X;
 		var dy = e.Position.Y - StartMouse.Y;
 
-		var pos = StartPosition;
-		var size = StartSize;
+		// var pos = StartPosition;
+		// var size = StartSize;
 
-		switch (Kind)
+		// switch (Kind)
+		// {
+		// 	case ResizeHandle.TopLeft:
+		// 		pos = new Point(pos.X + dx, pos.Y + dy);
+		// 		size = new Size(size.Width - dx, size.Height - dy);
+		// 		break;
+
+		// 	case ResizeHandle.TopRight:
+		// 		pos = new Point(pos.X, pos.Y + dy);
+		// 		size = new Size(size.Width + dx, size.Height - dy);
+		// 		break;
+
+		// 	case ResizeHandle.BottomLeft:
+		// 		pos = new Point(pos.X + dx, pos.Y);
+		// 		size = new Size(size.Width - dx, size.Height + dy);
+		// 		break;
+
+		// 	case ResizeHandle.BottomRight:
+		// 		size = new Size(size.Width + dx, size.Height + dy);
+		// 		break;
+		// }
+
+		if (dx != 0 || dy != 0)
 		{
-			case ResizeHandle.TopLeft:
-				pos = new Point(pos.X + dx, pos.Y + dy);
-				size = new Size(size.Width - dx, size.Height - dy);
-				break;
-
-			case ResizeHandle.TopRight:
-				pos = new Point(pos.X, pos.Y + dy);
-				size = new Size(size.Width + dx, size.Height - dy);
-				break;
-
-			case ResizeHandle.BottomLeft:
-				pos = new Point(pos.X + dx, pos.Y);
-				size = new Size(size.Width - dx, size.Height + dy);
-				break;
-
-			case ResizeHandle.BottomRight:
-				size = new Size(size.Width + dx, size.Height + dy);
-				break;
+			if (TryGetWorld(out var world))
+			{
+				world.Commands.Submit(new ResizeCommand(Target, Kind, dx, dy));
+				StartMouse = e.Position;
+			}
 		}
 
-		Target.Position = pos;
-		Target.Size = new Size(
-			Math.Max(1, size.Width),
-			Math.Max(1, size.Height));
+		// Target.Position = pos;
+		// Target.Size = new Size(
+		// 	Math.Max(1, size.Width),
+		// 	Math.Max(1, size.Height));
 
 		e.MarkHandled();
 	}

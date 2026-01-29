@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic;
@@ -10,6 +11,7 @@ public sealed class WorldMorph : Morph
 	#region Fields
 
 	private HaloMorph? _halo;
+	private readonly WorldCommandManager _commandManager = new();
 
 	#endregion
 
@@ -29,6 +31,7 @@ public sealed class WorldMorph : Morph
 
 	#region Properties
 
+	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;
 	public Morph? PointerFocus { get; private set; }
@@ -62,7 +65,11 @@ public sealed class WorldMorph : Morph
 
 	public override void Update(double deltaTime)
 	{
+		// Execute all deferred mutation intents.
+		_commandManager.Flush();
+
 		base.Update(deltaTime);
+
 		CommitDeletions();
 	}
 
@@ -76,6 +83,8 @@ public sealed class WorldMorph : Morph
 
 		if (action == InputAction.Press)
 		{
+			Commands.BeginTransaction();
+
 			var e = new PointerDownEvent(button, position)
 			{
 				Target = target
@@ -115,6 +124,8 @@ public sealed class WorldMorph : Morph
 
 			PointerFocus = null;
 			Hand.Release();
+
+			Commands.CommitTransaction();
 		}
 	}
 
