@@ -41,7 +41,7 @@ public sealed class DemoUserApplication(
 
 		world.AddMorph(new LabelMorph(new Point(150, 150), "image.oem437_8", new Size(8, 8))
 		{
-			Foreground = RadialColor.Red,
+			ForegroundColor = RadialColor.Red,
 			BackgroundColor = RadialColor.Blue,
 			Text = "Hello world!",
 		});

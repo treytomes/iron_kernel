@@ -1,15 +1,27 @@
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
+using IronKernel.Userland.Morphic.Handles;
 using System.Drawing;
 
 namespace IronKernel.Userland.Morphic;
 
+/// <summary>
+/// A text morph whose size is derived from its content.
+/// Resizing adjusts wrapping width only; height is computed from layout.
+/// </summary>
 public sealed class LabelMorph : Morph
 {
 	#region Fields
 
 	private Font? _font;
 	private string _text = string.Empty;
+
+	/// <summary>
+	/// The desired wrapping width in pixels.
+	/// Null means single-line (natural width).
+	/// </summary>
+	private int? _wrapWidth;
 
 	#endregion
 
@@ -19,8 +31,8 @@ public sealed class LabelMorph : Morph
 	{
 		Position = position;
 		AssetId = assetId;
-		IsSelectable = true;
 		TileSize = tileSize;
+		IsSelectable = true;
 	}
 
 	#endregion
@@ -29,17 +41,13 @@ public sealed class LabelMorph : Morph
 
 	public string AssetId { get; }
 	public Size TileSize { get; }
-	public RadialColor? Foreground { get; set; }
-	public RenderImage.RenderFlag Flags { get; set; }
+
 	public RadialColor ForegroundColor { get; set; } = RadialColor.White;
 	public RadialColor? BackgroundColor { get; set; } = RadialColor.Black;
 
 	public string Text
 	{
-		get
-		{
-			return _text;
-		}
+		get => _text;
 		set
 		{
 			if (_text == value) return;
@@ -51,7 +59,7 @@ public sealed class LabelMorph : Morph
 
 	#endregion
 
-	#region Methods
+	#region Loading / Drawing
 
 	protected override async void OnLoad(IAssetService assets)
 	{
@@ -63,13 +71,127 @@ public sealed class LabelMorph : Morph
 	{
 		if (_font == null) return;
 
-		_font.WriteString(rc, _text, Position, ForegroundColor, BackgroundColor);
+		var lines = ComputeWrappedLines();
+		for (int i = 0; i < lines.Count; i++)
+		{
+			_font.WriteString(
+				rc,
+				lines[i],
+				new Point(Position.X, Position.Y + i * TileSize.Height),
+				ForegroundColor,
+				BackgroundColor);
+		}
 	}
+
+	#endregion
+
+	#region Resize handling (command-based)
+
+	public override bool CanExecute(ICommand command)
+	{
+		if (command is ResizeCommand)
+			return true;
+
+		return base.CanExecute(command);
+	}
+
+	protected override void ExecuteResize(ResizeCommand command)
+	{
+		if (_font == null)
+			return;
+
+		int deltaWidth;
+		bool adjustPosition;
+
+		switch (command.Handle)
+		{
+			case ResizeHandle.TopLeft:
+			case ResizeHandle.BottomLeft:
+				deltaWidth = -command.DeltaX;
+				adjustPosition = true;
+				break;
+
+			case ResizeHandle.TopRight:
+			case ResizeHandle.BottomRight:
+				deltaWidth = command.DeltaX;
+				adjustPosition = false;
+				break;
+
+			default:
+				return;
+		}
+
+		if (deltaWidth == 0)
+			return;
+
+		var minWidth = MinimumWidth;
+		var maxWidth = MaximumWidth;
+
+		var currentWidth = _wrapWidth ?? maxWidth;
+		var newWidth = Math.Clamp(currentWidth + deltaWidth, minWidth, maxWidth);
+
+		var appliedDelta = newWidth - currentWidth;
+
+		// Apply left-edge movement if needed
+		if (adjustPosition && appliedDelta != 0)
+		{
+			Position = new Point(Position.X - appliedDelta, Position.Y);
+		}
+
+		_wrapWidth = newWidth;
+		UpdateLayout();
+		Invalidate();
+	}
+
+	#endregion
+
+	#region Layout logic
+
+	private int MinimumWidth
+		=> TileSize.Width; // one glyph wide [2]
+
+	private int MaximumWidth
+		=> _font!.MeasureString(_text).Width; // single-line width [2]
 
 	private void UpdateLayout()
 	{
-		if (_font == null) return;
-		Size = _font.MeasureString(_text);
+		if (_font == null)
+			return;
+
+		var lines = ComputeWrappedLines();
+
+		var width = _wrapWidth ?? MaximumWidth;
+		var height = lines.Count * TileSize.Height;
+
+		Size = new Size(width, height);
+	}
+
+	private List<string> ComputeWrappedLines()
+	{
+		var result = new List<string>();
+
+		if (_font == null || string.IsNullOrEmpty(_text))
+		{
+			result.Add(string.Empty);
+			return result;
+		}
+
+		// No wrapping → single line
+		if (_wrapWidth == null)
+		{
+			result.Add(_text);
+			return result;
+		}
+
+		var charsPerLine = Math.Max(1, _wrapWidth.Value / TileSize.Width);
+
+		for (int i = 0; i < _text.Length; i += charsPerLine)
+		{
+			var length = Math.Min(charsPerLine, _text.Length - i);
+			result.Add(_text.Substring(i, length));
+		}
+
+		return result;
 	}
 
 	#endregion
