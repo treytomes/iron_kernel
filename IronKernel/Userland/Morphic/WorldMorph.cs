@@ -75,9 +75,6 @@ public sealed class WorldMorph : Morph
 
 	public void PointerButton(MouseButton button, InputAction action)
 	{
-		if (button != MouseButton.Left)
-			return;
-
 		var position = Hand.Position;
 		var target = FindMorphAt(position) ?? this;
 
