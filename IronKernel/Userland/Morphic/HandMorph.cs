@@ -9,7 +9,21 @@ public sealed class HandMorph : Morph
 	#region Fields
 
 	private Point _grabOffset;
-	private RenderImage? _image;
+	private readonly ImageMorph _icon;
+
+	#endregion
+
+	#region Constructors
+
+	public HandMorph()
+		: base()
+	{
+		_icon = new ImageMorph(new Point(0, 0), "image.mouse_cursor")
+		{
+			IsSelectable = false,
+		};
+		AddMorph(_icon);
+	}
 
 	#endregion
 
@@ -20,17 +34,6 @@ public sealed class HandMorph : Morph
 	#endregion
 
 	#region Methods
-
-	protected override void OnLoad(IAssetService assets)
-	{
-		_ = LoadImageAsync(assets);
-	}
-
-	private async Task LoadImageAsync(IAssetService assets)
-	{
-		_image = await assets.LoadImageAsync("image.mouse_cursor");
-		_image.Recolor(RadialColor.Black, null);
-	}
 
 	public void MoveTo(Point p)
 	{
@@ -62,7 +65,8 @@ public sealed class HandMorph : Morph
 
 	public override void Draw(IRenderingContext rc)
 	{
-		_image?.Render(rc, Position);
+		_icon.Position = Position;
+		base.Draw(rc);
 	}
 
 	#endregion
