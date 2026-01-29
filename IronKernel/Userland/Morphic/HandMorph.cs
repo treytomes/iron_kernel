@@ -63,10 +63,10 @@ public sealed class HandMorph : Morph
 		}
 	}
 
-	public override void Draw(IRenderingContext rc)
+	protected override void UpdateLayout()
 	{
 		_icon.Position = Position;
-		base.Draw(rc);
+		base.UpdateLayout();
 	}
 
 	#endregion
