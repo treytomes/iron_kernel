@@ -6,19 +6,28 @@ using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic;
 
+/// <summary>
+/// A clickable Morphic button with depth, hover animation,
+/// pressed feedback, and disabled state.
+/// </summary>
 public sealed class ButtonMorph : Morph
 {
 	#region Fields
 
 	private bool _isPressed;
-	private LabelMorph _label;
+	private readonly LabelMorph _label;
 
-	private RadialColor? _backgroundColorOverride;
-	private RadialColor? _hoverBackgroundColorOverride;
-	private RadialColor? _activeBackgroundColorOverride;
-	private RadialColor? _foregroundColorOverride;
-	private RadialColor? _disabledBackgroundColorOverride;
-	private RadialColor? _disabledForegroundColorOverride;
+	// Animated hover factor [0..1]
+	private float _hoverT;
+
+	// Optional style overrides
+	private RadialColor? _backgroundOverride;
+	private RadialColor? _hoverBackgroundOverride;
+	private RadialColor? _activeBackgroundOverride;
+	private RadialColor? _foregroundOverride;
+	private RadialColor? _disabledBackgroundOverride;
+	private RadialColor? _disabledForegroundOverride;
+
 	#endregion
 
 	#region Constructors
@@ -33,151 +42,179 @@ public sealed class ButtonMorph : Morph
 		{
 			IsSelectable = false,
 			Text = text,
-			BackgroundColor = null,
-			ForegroundColor = RadialColor.White,
+			BackgroundColor = null
 		};
+
 		AddMorph(_label);
 	}
 
 	#endregion
 
-	#region Properties
-
-	public Action? OnClick
-	{
-		get
-		{
-			return (Command as ActionCommand)?.ExecuteAction;
-		}
-		set
-		{
-			if (value == null)
-			{
-				Command = null;
-			}
-			else
-			{
-				Command = new ActionCommand(value);
-			}
-		}
-	}
+	#region Command wiring
 
 	public ICommand? Command { get; set; }
 
-	public RadialColor? BackgroundColor
+	public Action? OnClick
 	{
-		get => _backgroundColorOverride;
-		set
-		{
-			_backgroundColorOverride = value;
-			Invalidate();
-		}
+		set => Command = value == null ? null : new ActionCommand(value);
 	}
-
-	public RadialColor? HoverBackgroundColor
-	{
-		get => _hoverBackgroundColorOverride;
-		set
-		{
-			_hoverBackgroundColorOverride = value;
-			Invalidate();
-		}
-	}
-
-	public RadialColor? ActiveBackgroundColor
-	{
-		get => _activeBackgroundColorOverride;
-		set
-		{
-			_activeBackgroundColorOverride = value;
-			Invalidate();
-		}
-	}
-
-	public RadialColor? ForegroundColor
-	{
-		get => _foregroundColorOverride;
-		set
-		{
-			_foregroundColorOverride = value;
-			Invalidate();
-		}
-	}
-
-	public RadialColor? DisabledBackgroundColor
-	{
-		get => _disabledBackgroundColorOverride;
-		set
-		{
-			_disabledBackgroundColorOverride = value;
-			Invalidate();
-		}
-	}
-
-	public RadialColor? DisabledForegroundColor
-	{
-		get => _disabledForegroundColorOverride;
-		set
-		{
-			_disabledForegroundColorOverride = value;
-			Invalidate();
-		}
-	}
-
-	private RadialColor EffectiveBackgroundColor =>
-		_backgroundColorOverride
-		?? GetWorld()?.Style.ButtonBackgroundColor
-		?? RadialColor.White;
-
-	private RadialColor? EffectiveHoverBackgroundColor =>
-		_hoverBackgroundColorOverride
-		?? GetWorld()?.Style.ButtonHoverBackgroundColor;
-
-	private RadialColor? EffectiveActiveBackgroundColor =>
-		_activeBackgroundColorOverride
-		?? GetWorld()?.Style.ButtonActiveBackgroundColor;
-
-	private RadialColor? EffectiveForegroundColor =>
-		_foregroundColorOverride
-		?? GetWorld()?.Style.ButtonForegroundColor;
-
-	private RadialColor? EffectiveDisabledBackgroundColor =>
-		_disabledBackgroundColorOverride
-		?? GetWorld()?.Style.ButtonDisabledBackgroundColor;
-
-	private RadialColor? EffectiveDisabledForegroundColor =>
-		_disabledForegroundColorOverride
-		?? GetWorld()?.Style.ButtonDisabledForegroundColor;
 
 	public bool IsEnabled => Command?.CanExecute() ?? false;
 
 	#endregion
 
-	#region Methods
+	#region Style properties (overrides)
+
+	public RadialColor? BackgroundColor
+	{
+		get => _backgroundOverride;
+		set { _backgroundOverride = value; Invalidate(); }
+	}
+
+	public RadialColor? HoverBackgroundColor
+	{
+		get => _hoverBackgroundOverride;
+		set { _hoverBackgroundOverride = value; Invalidate(); }
+	}
+
+	public RadialColor? ActiveBackgroundColor
+	{
+		get => _activeBackgroundOverride;
+		set { _activeBackgroundOverride = value; Invalidate(); }
+	}
+
+	public RadialColor? ForegroundColor
+	{
+		get => _foregroundOverride;
+		set { _foregroundOverride = value; Invalidate(); }
+	}
+
+	public RadialColor? DisabledBackgroundColor
+	{
+		get => _disabledBackgroundOverride;
+		set { _disabledBackgroundOverride = value; Invalidate(); }
+	}
+
+	public RadialColor? DisabledForegroundColor
+	{
+		get => _disabledForegroundOverride;
+		set { _disabledForegroundOverride = value; Invalidate(); }
+	}
+
+	#endregion
+
+	#region Style resolution
+
+	private RadialColor EffectiveBackground =>
+		_backgroundOverride
+		?? GetWorld()?.Style.ButtonBackgroundColor
+		?? RadialColor.DarkGray;
+
+	private RadialColor EffectiveHoverBackground =>
+		_hoverBackgroundOverride
+		?? GetWorld()?.Style.ButtonHoverBackgroundColor
+		?? EffectiveBackground;
+
+	private RadialColor EffectiveActiveBackground =>
+		_activeBackgroundOverride
+		?? GetWorld()?.Style.ButtonActiveBackgroundColor
+		?? EffectiveBackground;
+
+	private RadialColor EffectiveForeground =>
+		_foregroundOverride
+		?? GetWorld()?.Style.ButtonForegroundColor
+		?? RadialColor.White;
+
+	private RadialColor EffectiveDisabledBackground =>
+		_disabledBackgroundOverride
+		?? GetWorld()?.Style.ButtonDisabledBackgroundColor
+		?? RadialColor.DarkGray;
+
+	private RadialColor EffectiveDisabledForeground =>
+		_disabledForegroundOverride
+		?? GetWorld()?.Style.ButtonDisabledForegroundColor
+		?? RadialColor.Gray;
+
+	#endregion
+
+	#region Update / animation
+
+	public override void Update(double deltaTime)
+	{
+		var target = (IsEffectivelyHovered && IsEnabled) ? 1f : 0f;
+		_hoverT = Lerp(_hoverT, target, 0.25f);
+		Invalidate();
+
+		base.Update(deltaTime);
+	}
+
+	private static float Lerp(float a, float b, float t)
+		=> a + (b - a) * t;
+
+	#endregion
+
+	#region Drawing
 
 	public override void Draw(IRenderingContext rc)
 	{
-		var bg =
-			!IsEnabled ? EffectiveDisabledBackgroundColor :
-			_isPressed ? EffectiveActiveBackgroundColor :
-			IsEffectivelyHovered ? EffectiveHoverBackgroundColor :
-			EffectiveBackgroundColor;
+		// Resolve background
+		var baseBg = !IsEnabled
+			? EffectiveDisabledBackground
+			: _isPressed
+				? EffectiveActiveBackground
+				: EffectiveBackground.Lerp(EffectiveHoverBackground, _hoverT);
 
-		rc.RenderFilledRect(Bounds, bg!);
-		rc.RenderRect(Bounds, RadialColor.Black);
+		// Pressed offset (depth illusion)
+		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
+		var body = new Rectangle(
+			Bounds.X + offset.X,
+			Bounds.Y + offset.Y,
+			Bounds.Width,
+			Bounds.Height);
 
+		// Optional drop shadow
+		if (IsEnabled && !_isPressed)
+		{
+			var shadow = new Rectangle(
+				Bounds.X + 2,
+				Bounds.Y + 2,
+				Bounds.Width,
+				Bounds.Height);
+			rc.RenderFilledRect(shadow, RadialColor.DarkerGray);
+		}
+
+		// Body
+		rc.RenderFilledRect(body, baseBg);
+
+		// Bevel (classic button look)
+		DrawBevel(rc, body, !_isPressed);
+
+		// Outline
+		rc.RenderRect(body, RadialColor.Black);
+
+		// Label color
 		_label.ForegroundColor = IsEnabled
-			? EffectiveForegroundColor
-			: EffectiveDisabledForegroundColor;
+			? EffectiveForeground
+			: EffectiveDisabledForeground;
 
 		base.Draw(rc);
 	}
 
-	public override void Update(double deltaTime)
+	private void DrawBevel(IRenderingContext rc, Rectangle r, bool raised)
 	{
-		Invalidate();
-		base.Update(deltaTime);
+		var light = raised ? RadialColor.White : RadialColor.DarkGray;
+		var dark = raised ? RadialColor.DarkGray : RadialColor.White;
+
+		rc.RenderLine(new Point(r.Left, r.Top), new Point(r.Right - 1, r.Top), light);
+		rc.RenderLine(new Point(r.Left, r.Top), new Point(r.Left, r.Bottom - 1), light);
+
+		rc.RenderLine(new Point(r.Left, r.Bottom - 1), new Point(r.Right - 1, r.Bottom - 1), dark);
+		rc.RenderLine(new Point(r.Right - 1, r.Top), new Point(r.Right - 1, r.Bottom - 1), dark);
 	}
+
+	#endregion
+
+	#region Pointer handling
 
 	protected override void OnPointerEnter()
 	{
@@ -192,7 +229,8 @@ public sealed class ButtonMorph : Morph
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
-		if (!IsEnabled) return;
+		if (!IsEnabled)
+			return;
 
 		_isPressed = true;
 		GetWorld()?.CapturePointer(this);
@@ -204,19 +242,10 @@ public sealed class ButtonMorph : Morph
 	{
 		GetWorld()?.CapturePointer(null);
 
-		if (!IsEnabled)
-		{
-			_isPressed = false;
-			Invalidate();
-			return;
-		}
-
-		if (_isPressed && IsEffectivelyHovered)
+		if (_isPressed && IsEnabled && IsEffectivelyHovered)
 		{
 			if (TryGetWorld(out var world) && Command != null)
-			{
 				world.Commands.Submit(Command);
-			}
 		}
 
 		_isPressed = false;
@@ -224,9 +253,16 @@ public sealed class ButtonMorph : Morph
 		e.MarkHandled();
 	}
 
+	#endregion
+
+	#region Layout
+
 	protected override void UpdateLayout()
 	{
-		_label.CenterOnOwner();
+		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
+		_label.Position = new Point(
+			Position.X + (Size.Width - _label.Size.Width) / 2 + offset.X,
+			Position.Y + (Size.Height - _label.Size.Height) / 2 + offset.Y);
 	}
 
 	#endregion
