@@ -41,13 +41,13 @@ public sealed class DeleteHandleMorph : HandleMorph
 		if (StyleForHandle == null) return;
 
 		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
-		var bg = IsHovered || _icon.IsHovered
+		var bg = IsEffectivelyHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
 		_icon.Position = Position;
 		_icon.Size = Size;
-		_icon.Foreground = IsHovered || _icon.IsHovered
+		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
 

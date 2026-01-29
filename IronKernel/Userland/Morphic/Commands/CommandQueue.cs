@@ -29,7 +29,7 @@ public sealed class CommandQueue
 				continue;
 
 			command.Execute();
-			history.Record(command);
+			if (command.CanUndo()) history.Record(command);
 		}
 	}
 

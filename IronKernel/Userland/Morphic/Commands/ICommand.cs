@@ -17,6 +17,11 @@ public interface ICommand
 	void Execute();
 
 	/// <summary>
+	/// Can the command be undone?
+	/// </summary>
+	bool CanUndo();
+
+	/// <summary>
 	/// Reverts the effects of a previously executed command.
 	/// </summary>
 	void Undo();

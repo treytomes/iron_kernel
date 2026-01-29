@@ -11,6 +11,9 @@ public sealed class WorldCommandManager
 
 	private CommandTransaction? _activeTransaction;
 
+	public bool CanUndo => _history.CanUndo;
+	public bool CanRedo => _history.CanRedo;
+
 	/// <summary>
 	/// Submits a command for deferred execution.
 	/// </summary>
@@ -57,7 +60,10 @@ public sealed class WorldCommandManager
 		if (_activeTransaction == null)
 			return;
 
-		_history.Record(_activeTransaction);
+		if (!_activeTransaction.IsEmpty)
+		{
+			_history.Record(_activeTransaction);
+		}
 		_activeTransaction = null;
 	}
 
@@ -74,6 +80,7 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void Undo()
 	{
+		Console.WriteLine("Undo");
 		_history.Undo();
 	}
 
@@ -82,6 +89,7 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void Redo()
 	{
+		Console.WriteLine("Redo");
 		_history.Redo();
 	}
 }

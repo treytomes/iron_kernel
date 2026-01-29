@@ -7,12 +7,14 @@ public sealed class CommandTransaction : ICommand
 {
 	private readonly List<ICommand> _commands = new();
 
+	public bool IsEmpty => _commands.Count == 0;
+
 	/// <summary>
 	/// Adds a command to the transaction.
 	/// </summary>
 	public void Add(ICommand command)
 	{
-		_commands.Add(command);
+		if (command.CanUndo()) _commands.Add(command);
 	}
 
 	/// <summary>
@@ -43,6 +45,8 @@ public sealed class CommandTransaction : ICommand
 		// Commands were executed at submission time.
 	}
 
+	public bool CanUndo() => true;
+
 	/// <summary>
 	/// Undoes all commands in reverse order.
 	/// </summary>
@@ -50,5 +54,10 @@ public sealed class CommandTransaction : ICommand
 	{
 		for (int i = _commands.Count - 1; i >= 0; i--)
 			_commands[i].Undo();
+	}
+
+	public override string? ToString()
+	{
+		return $"[{string.Join(',', _commands)}]";
 	}
 }

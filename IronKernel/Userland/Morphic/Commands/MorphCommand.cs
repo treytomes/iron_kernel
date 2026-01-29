@@ -26,6 +26,8 @@ public abstract class MorphCommand : ICommand
 			commandTarget.Execute(this);
 	}
 
+	public virtual bool CanUndo() => true;
+
 	public virtual void Undo()
 	{
 		if (Target is ICommandTarget commandTarget)

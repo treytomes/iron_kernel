@@ -34,7 +34,6 @@ public sealed class WorldMorph : Morph
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;
-	public Morph? PointerFocus { get; private set; }
 	public Morph? KeyboardFocus { get; private set; }
 	public HandMorph Hand { get; }
 	public Morph? SelectedMorph { get; private set; }
@@ -45,7 +44,7 @@ public sealed class WorldMorph : Morph
 
 	#region Methods
 
-	public void CapturePointer(Morph morph)
+	public void CapturePointer(Morph? morph)
 	{
 		PointerCapture = morph;
 	}
@@ -80,6 +79,20 @@ public sealed class WorldMorph : Morph
 
 		if (action == InputAction.Press)
 		{
+			// Halo gesture (right click)
+			if (button == MouseButton.Right)
+			{
+				var e0 = new PointerDownEvent(button, position)
+				{
+					Target = target
+				};
+
+				// World-only handling: open halo, do not dispatch
+				OnPointerDown(e0);
+				return;
+			}
+
+			// Primary interaction (left click)
 			Commands.BeginTransaction();
 
 			var e = new PointerDownEvent(button, position)
@@ -87,20 +100,15 @@ public sealed class WorldMorph : Morph
 				Target = target
 			};
 
-			// World first (selection, halos)
 			OnPointerDown(e);
 
 			if (!e.Handled)
 			{
-				PointerFocus = target;
-
 				if (target.WantsKeyboardFocus)
 					KeyboardFocus = target;
-
 				target.DispatchPointerDown(e);
 			}
 
-			// Grab AFTER dispatch so halos win
 			if (!e.Handled && target != this && target != Hand && target.IsGrabbable)
 			{
 				Hand.Grab(target, position);
@@ -114,12 +122,7 @@ public sealed class WorldMorph : Morph
 			{
 				PointerCapture.DispatchPointerUp(e);
 			}
-			else if (PointerFocus != null)
-			{
-				PointerFocus.DispatchPointerUp(e);
-			}
 
-			PointerFocus = null;
 			Hand.Release();
 
 			Commands.CommitTransaction();
@@ -148,10 +151,6 @@ public sealed class WorldMorph : Morph
 		{
 			PointerCapture.DispatchPointerMove(e);
 		}
-		else if (PointerFocus != null)
-		{
-			PointerFocus.DispatchPointerMove(e);
-		}
 		else
 		{
 			Hand.DispatchPointerMove(e);
@@ -160,23 +159,34 @@ public sealed class WorldMorph : Morph
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
-		if (e.Target == null) return;
-
-		// Clicking a halo should NOT affect selection.
-		if (!e.Target.IsSelectable)
-		{
-			// e.MarkHandled();
+		if (e.Target == null)
 			return;
+
+		var selectable = FindSelectableAncestor(e.Target);
+
+		if (SelectedMorph != null)
+		{
+			if (selectable == null || selectable is HaloMorph || !selectable.IsEffectivelyHovered)
+			{
+				ClearSelection();
+				return;
+			}
 		}
 
-		if (e.Target == this)
+		if (selectable == null)
+			return;
+
+		if (selectable == this && !(_halo?.IsEffectivelyHovered ?? false))
 		{
 			ClearSelection();
 			e.MarkHandled();
 			return;
 		}
 
-		SelectMorph(e.Target);
+		if (e.Button == MouseButton.Right)
+		{
+			SelectMorph(selectable);
+		}
 	}
 
 	public void SelectMorph(Morph? morph)
@@ -236,6 +246,15 @@ public sealed class WorldMorph : Morph
 			target = target.Owner;
 		}
 		return false;
+	}
+
+	private Morph? FindSelectableAncestor(Morph? morph)
+	{
+		while (morph != null && !morph.IsSelectable)
+		{
+			morph = morph.Owner;
+		}
+		return morph;
 	}
 
 	#endregion

@@ -1,5 +1,4 @@
 using System.Drawing;
-using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
@@ -43,7 +42,7 @@ public sealed class MoveHandleMorph : HandleMorph
 		if (StyleForHandle == null) return;
 
 		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
-		var bg = IsHovered || _icon.IsHovered
+		var bg = IsEffectivelyHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
@@ -51,7 +50,7 @@ public sealed class MoveHandleMorph : HandleMorph
 
 		_icon.Position = Position;
 		_icon.Size = Size;
-		_icon.Foreground = IsHovered || _icon.IsHovered
+		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
 

@@ -12,15 +12,49 @@ public abstract class Morph : ICommandTarget
 	#region Fields
 
 	private readonly List<Morph> _submorphs = new();
+	private bool _layoutInvalid = true;
+	private Point _position;
+	private Size _size;
 
 	#endregion
 
 	#region Properties
 
-	public Point Position { get; set; }
-	public Size Size { get; set; }
+	public Rectangle Bounds => new Rectangle(Position, Size);
+
+	public Point Position
+	{
+		get => _position;
+		set
+		{
+			if (_position != value)
+			{
+				_position = value;
+				InvalidateLayout();
+			}
+		}
+	}
+
+	public Size Size
+	{
+		get => _size;
+		set
+		{
+			if (_size != value)
+			{
+				_size = value;
+				InvalidateLayout();
+			}
+		}
+	}
+
 	public bool Visible { get; set; } = true;
 	public bool IsHovered { get; private set; } = false;
+
+	/// <summary>
+	/// The mouse hover is over either this morph directly, or one of it's descendants.
+	/// </summary>
+	public bool IsEffectivelyHovered => IsHovered || Submorphs.Any(x => x.IsEffectivelyHovered);
 
 	public Morph? Owner { get; private set; }
 
@@ -62,6 +96,7 @@ public abstract class Morph : ICommandTarget
 		{
 			_submorphs.Add(morph);
 		}
+		InvalidateLayout();
 
 		// If we're already in a world, load immediately.
 		if (TryGetWorld(out var world))
@@ -71,7 +106,10 @@ public abstract class Morph : ICommandTarget
 	public void RemoveMorph(Morph morph)
 	{
 		if (_submorphs.Remove(morph))
+		{
 			morph.Owner = null;
+			InvalidateLayout();
+		}
 	}
 
 	/// <summary>
@@ -88,8 +126,14 @@ public abstract class Morph : ICommandTarget
 
 	public virtual void Update(double deltaTime)
 	{
-		// Default: do nothing.
-		foreach (var child in Submorphs) child.Update(deltaTime);
+		if (_layoutInvalid)
+		{
+			UpdateLayout();
+			_layoutInvalid = false;
+		}
+
+		foreach (var child in Submorphs)
+			child.Update(deltaTime);
 	}
 
 	/// <summary>
@@ -166,6 +210,24 @@ public abstract class Morph : ICommandTarget
 	public virtual void Invalidate()
 	{
 		// no-op for now
+	}
+
+	/// <summary>
+	/// Marks this morph's layout as invalid.
+	/// </summary>
+	protected void InvalidateLayout()
+	{
+		_layoutInvalid = true;
+		Owner?.InvalidateLayout();
+	}
+
+	/// <summary>
+	/// Recomputes layout if invalid.
+	/// Subclasses override UpdateLayout to implement layout policy.
+	/// </summary>
+	protected virtual void UpdateLayout()
+	{
+		// Default: do nothing
 	}
 
 	protected bool TryGetWorld(out WorldMorph world)
@@ -260,14 +322,11 @@ public abstract class Morph : ICommandTarget
 
 	#region Move handling
 
-	private Point _previousPosition;
-
 	/// <summary>
 	/// Applies a move command.
 	/// </summary>
 	protected virtual void ExecuteMove(MoveCommand command)
 	{
-		_previousPosition = Position;
 		Position = new Point(
 			Position.X + command.DeltaX,
 			Position.Y + command.DeltaY);
@@ -280,7 +339,9 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	protected virtual void UndoMove(MoveCommand command)
 	{
-		Position = _previousPosition;
+		Position = new Point(
+			Position.X - command.DeltaX,
+			Position.Y - command.DeltaY);
 		Invalidate();
 	}
 
@@ -288,18 +349,12 @@ public abstract class Morph : ICommandTarget
 
 	#region Resize handling
 
-	private Size _previousSize;
-	private Point _previousResizePosition;
-
 	/// <summary>
 	/// Applies a resize command.
 	/// Default behavior is free resize.
 	/// </summary>
 	protected virtual void ExecuteResize(ResizeCommand command)
 	{
-		_previousSize = Size;
-		_previousResizePosition = Position;
-
 		var newSize = Size;
 		var newPosition = Position;
 
@@ -336,10 +391,38 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	protected virtual void UndoResize(ResizeCommand command)
 	{
-		Size = _previousSize;
-		Position = _previousResizePosition;
+		var newSize = Size;
+		var newPosition = Position;
+
+		switch (command.Handle)
+		{
+			case ResizeHandle.TopLeft:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height + command.DeltaY);
+				newPosition = new Point(Position.X - command.DeltaX, Position.Y - command.DeltaY);
+				break;
+
+			case ResizeHandle.TopRight:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height + command.DeltaY);
+				newPosition = new Point(Position.X, Position.Y - command.DeltaY);
+				break;
+
+			case ResizeHandle.BottomLeft:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height - command.DeltaY);
+				newPosition = new Point(Position.X - command.DeltaX, Position.Y);
+				break;
+
+			case ResizeHandle.BottomRight:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height - command.DeltaY);
+				break;
+		}
+
+		Size = ClampSize(newSize);
+		Position = newPosition;
+
 		Invalidate();
 	}
+
+	#endregion
 
 	/// <summary>
 	/// Ensures the size remains valid.
@@ -352,7 +435,17 @@ public abstract class Morph : ICommandTarget
 			Math.Max(1, size.Height));
 	}
 
-	#endregion
+	public void CenterOnOwner()
+	{
+		if (Owner == null) return;
+
+		var ownerCenterX = (Owner.Bounds.Right - Owner.Bounds.Left) / 2;
+		var selfCenterX = (Bounds.Right - Bounds.Left) / 2;
+
+		var ownerCenterY = (Owner.Bounds.Bottom - Owner.Bounds.Top) / 2;
+		var selfCenterY = (Bounds.Bottom - Bounds.Top) / 2;
+		Position = new Point(Owner.Bounds.X + ownerCenterX - selfCenterX, Owner.Bounds.Y + ownerCenterY - selfCenterY);
+	}
 
 	#endregion
 }

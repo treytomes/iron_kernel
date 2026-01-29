@@ -27,7 +27,18 @@ public static class MorphicStyles
 			Foreground = RadialColor.Red.Lerp(RadialColor.White, 0.5f),
 			ForegroundHover = RadialColor.Red.Lerp(RadialColor.White, 0.35f),
 		},
+
 		HaloOutline = RadialColor.Yellow,
-		SelectionTint = RadialColor.Yellow.Lerp(RadialColor.White, 0.6f)
+		SelectionTint = RadialColor.Yellow.Lerp(RadialColor.White, 0.6f),
+
+		LabelBackgroundColor = null,
+		LabelForegroundColor = RadialColor.White,
+
+		ButtonBackgroundColor = RadialColor.DarkGray,
+		ButtonHoverBackgroundColor = RadialColor.Gray,
+		ButtonActiveBackgroundColor = RadialColor.LightGray,
+		ButtonForegroundColor = RadialColor.White,
+		ButtonDisabledBackgroundColor = RadialColor.DarkSlateGray,
+		ButtonDisabledForegroundColor = RadialColor.Gray,
 	};
 }

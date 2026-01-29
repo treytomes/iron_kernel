@@ -5,6 +5,7 @@ using IronKernel.Userland.Morphic;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -31,7 +32,25 @@ public sealed class DemoUserApplication(
 
 		var world = new WorldMorph(new Size(320, 240), new AssetService(context.Bus));
 
-		context.Bus.Publish(new AppAssetImageQuery(Guid.NewGuid(), "image.oem437_8"));
+		world.AddMorph(new ButtonMorph(
+			new Point(10, 10),
+			new Size(48, 16),
+			"Undo")
+		{
+			Command = new ActionCommand(
+				world.Commands.Undo, canExecute: () => world.Commands.CanUndo
+			)
+		});
+
+		world.AddMorph(new ButtonMorph(
+			new Point(64, 10),
+			new Size(48, 16),
+			"Redo")
+		{
+			Command = new ActionCommand(
+				world.Commands.Redo, canExecute: () => world.Commands.CanRedo
+			)
+		});
 
 		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30))
 		{
