@@ -79,8 +79,11 @@ public sealed class HaloMorph : Morph
 			: (float)(2.0 - phase * 2.0);
 	}
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
+		base.DrawSelf(rc);
+
+		if (!TryGetWorld(out var world)) return;
 		if (Style == null) return;
 
 		UpdateFromTarget();
@@ -90,11 +93,9 @@ public sealed class HaloMorph : Morph
 			: Style.HaloOutline.Lerp(RadialColor.Black, -_outlineColorLerpWeight);
 
 		rc.RenderRect(
-			new Rectangle(Position, Size),
+			new Rectangle(new Point(0, 0), Size),
 			bg,
 			1);
-
-		base.Draw(rc);
 	}
 
 	private void UpdateFromTarget()
@@ -114,28 +115,28 @@ public sealed class HaloMorph : Morph
 			m.Position = m.Kind switch
 			{
 				ResizeHandle.TopLeft =>
-					new Point(Position.X - hs, Position.Y - hs),
+					new Point(-hs, -hs),
 
 				ResizeHandle.TopRight =>
-					new Point(Position.X + Size.Width - hs, Position.Y - hs),
+					new Point(+Size.Width - hs, -hs),
 
 				ResizeHandle.BottomLeft =>
-					new Point(Position.X - hs, Position.Y + Size.Height - hs),
+					new Point(-hs, +Size.Height - hs),
 
 				ResizeHandle.BottomRight =>
-					new Point(Position.X + Size.Width - hs, Position.Y + Size.Height - hs),
+					new Point(+Size.Width - hs, +Size.Height - hs),
 
 				_ => m.Position
 			};
 		}
 
 		Submorphs.OfType<MoveHandleMorph>().Single().Position = new Point(
-			Position.X + Size.Width / 2 - 6,
-			Position.Y - 16
+			 +Size.Width / 2 - 6,
+			 -16
 		);
 		Submorphs.OfType<DeleteHandleMorph>().Single().Position = new Point(
-			Position.X + Size.Width / 2 - 6,
-			Position.Y + Size.Height + 16
+			 +Size.Width / 2 - 6,
+			 +Size.Height + 16
 		);
 	}
 

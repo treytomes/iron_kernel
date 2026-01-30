@@ -155,8 +155,10 @@ public sealed class ButtonMorph : Morph
 
 	#region Drawing
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
+		base.DrawSelf(rc);
+
 		// Resolve background
 		var baseBg = !IsEnabled
 			? EffectiveDisabledBackground
@@ -167,8 +169,8 @@ public sealed class ButtonMorph : Morph
 		// Pressed offset (depth illusion)
 		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
 		var body = new Rectangle(
-			Bounds.X + offset.X,
-			Bounds.Y + offset.Y,
+			offset.X,
+			offset.Y,
 			Bounds.Width,
 			Bounds.Height);
 
@@ -176,8 +178,8 @@ public sealed class ButtonMorph : Morph
 		if (IsEnabled && !_isPressed)
 		{
 			var shadow = new Rectangle(
-				Bounds.X + 2,
-				Bounds.Y + 2,
+				2,
+				2,
 				Bounds.Width,
 				Bounds.Height);
 			rc.RenderFilledRect(shadow, RadialColor.DarkerGray);
@@ -196,8 +198,6 @@ public sealed class ButtonMorph : Morph
 		_label.ForegroundColor = IsEnabled
 			? EffectiveForeground
 			: EffectiveDisabledForeground;
-
-		base.Draw(rc);
 	}
 
 	private void DrawBevel(IRenderingContext rc, Rectangle r, bool raised)
@@ -261,8 +261,8 @@ public sealed class ButtonMorph : Morph
 	{
 		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
 		_label.Position = new Point(
-			Position.X + (Size.Width - _label.Size.Width) / 2 + offset.X,
-			Position.Y + (Size.Height - _label.Size.Height) / 2 + offset.Y);
+			(Size.Width - _label.Size.Width) / 2 + offset.X,
+			(Size.Height - _label.Size.Height) / 2 + offset.Y);
 	}
 
 	#endregion

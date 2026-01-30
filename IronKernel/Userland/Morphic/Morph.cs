@@ -63,8 +63,19 @@ public abstract class Morph : ICommandTarget
 	public bool IsSelectable { get; set; } = true;
 	public virtual bool IsGrabbable => false;
 	public bool IsMarkedForDeletion { get; private set; } = false;
+	public bool ShouldClipToBounds { get; protected set; } = false;
 
-	protected MorphicStyle? Style => GetWorld()?.Style;
+	protected MorphicStyle? Style
+	{
+		get
+		{
+			if (TryGetWorld(out var world))
+			{
+				return world.Style;
+			}
+			return null;
+		}
+	}
 
 	#endregion
 
@@ -115,14 +126,43 @@ public abstract class Morph : ICommandTarget
 	/// <summary>
 	/// Draw this morph. Coordinates are in world space.
 	/// </summary>
-	public virtual void Draw(IRenderingContext rc)
+	public void Draw(IRenderingContext rc)
 	{
-		foreach (var child in _submorphs)
+		// var isRoot = this is WorldMorph;
+		// if (!isRoot)
+		// {
+		rc.PushOffset(Position);
+		if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
+		// Console.WriteLine($"Push {GetType().Name}");
+		// }
+
+		// try
+		// {
+		DrawSelf(rc);
+
+		foreach (var child in _submorphs.ToArray())
 		{
 			if (!child.Visible) continue;
 			child.Draw(rc);
 		}
+		// }
+		// catch (Exception ex)
+		// {
+		// 	throw new Exception($"Exception drawing {GetType().Name}.", ex);
+		// }
+		// finally
+		// {
+		// 	// if (!isRoot)
+		// 	// {
+		// Console.WriteLine($"Pop {GetType().Name}");
+		rc.PopOffset();
+		if (ShouldClipToBounds) rc.PopClip();
+		// 	if (this is WorldMorph) throw new Exception("Done.");
+		// 	// }
+		// }
 	}
+
+	protected virtual void DrawSelf(IRenderingContext rc) { }
 
 	public virtual void Update(double deltaTime)
 	{
@@ -132,32 +172,42 @@ public abstract class Morph : ICommandTarget
 			_layoutInvalid = false;
 		}
 
-		foreach (var child in Submorphs)
+		foreach (var child in _submorphs.ToArray())
 			child.Update(deltaTime);
 	}
 
 	/// <summary>
-	/// Hit testing (later used for mouse / halos).
+	/// Hit testing.
 	/// </summary>
-	public virtual bool ContainsPoint(Point p)
+	private bool ContainsPoint(Point worldPoint)
 	{
-		return new Rectangle(Position, Size).Contains(p);
+		var localPoint = new Point(
+			worldPoint.X - Position.X,
+			worldPoint.Y - Position.Y);
+
+		return new Rectangle(Point.Empty, Size).Contains(localPoint);
 	}
 
-	public virtual Morph? FindMorphAt(Point p)
+	public virtual Morph? FindMorphAt(Point worldPoint)
 	{
+		var localPoint = new Point(
+			worldPoint.X - Position.X,
+			worldPoint.Y - Position.Y);
+
 		// Traverse top-down so last added is "on top"
 		for (int i = Submorphs.Count - 1; i >= 0; i--)
 		{
 			var child = Submorphs[i];
 			if (!child.Visible) continue;
 
-			var found = child.FindMorphAt(p);
+			var found = child.FindMorphAt(localPoint);
 			if (found != null)
 				return found;
 		}
 
-		return ContainsPoint(p) ? this : null;
+		return new Rectangle(Point.Empty, Size).Contains(localPoint)
+			? this
+			: null;
 	}
 
 	internal void SetHovered(bool value)

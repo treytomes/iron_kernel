@@ -36,8 +36,10 @@ public sealed class DeleteHandleMorph : HandleMorph
 
 	#region Methods
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
+		base.DrawSelf(rc);
+
 		if (StyleForHandle == null) return;
 
 		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
@@ -45,15 +47,13 @@ public sealed class DeleteHandleMorph : HandleMorph
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
-		_icon.Position = Position;
+		_icon.Position = new Point(0, 0);
 		_icon.Size = Size;
 		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
 
-		rc.RenderFilledRect(new Rectangle(Position, Size), bg);
-
-		base.Draw(rc);
+		rc.RenderFilledRect(new Rectangle(new Point(0, 0), Size), bg);
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)

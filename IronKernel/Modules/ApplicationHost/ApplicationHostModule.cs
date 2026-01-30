@@ -136,17 +136,6 @@ internal sealed class ApplicationHostModule(
 			)
 		);
 
-		_bridge.Forward<FbInfo, AppFbInfo>(
-			"FbInfoHandler",
-			(e, ct) => new(
-				e.Width,
-				e.Height,
-				e.PaletteSize,
-				new Point((int)e.Padding.X, (int)e.Padding.Y),
-				e.Scale
-			)
-		);
-
 		_bridge.Request<AppFbWriteSpan, FbWriteSpan>(
 			"AppFbWriteSpanHandler",
 			(e, ct) => new(e.X, e.Y, e.Data)
@@ -162,9 +151,14 @@ internal sealed class ApplicationHostModule(
 			(e, ct) => new(e.Color)
 		);
 
+		_bridge.Forward<FbInfoResponse, AppFbInfoResponse>(
+			"FbInfoHandler",
+			(e, ct) => new(e.CorrelationID, e.Size)
+		);
+
 		_bridge.Request<AppFbInfoQuery, FbInfoQuery>(
 			"AppFbInfoHandler",
-			(e, ct) => new()
+			(e, ct) => new(e.CorrelationID)
 		);
 
 		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.AssetId));

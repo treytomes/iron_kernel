@@ -18,6 +18,7 @@ public sealed class HandMorph : Morph
 	public HandMorph()
 		: base()
 	{
+		IsSelectable = false;
 		_icon = new ImageMorph(new Point(0, 0), "image.mouse_cursor")
 		{
 			IsSelectable = false,
@@ -34,6 +35,11 @@ public sealed class HandMorph : Morph
 	#endregion
 
 	#region Methods
+
+	public override Morph? FindMorphAt(Point worldPoint)
+	{
+		return null;
+	}
 
 	public void MoveTo(Point p)
 	{
@@ -65,7 +71,7 @@ public sealed class HandMorph : Morph
 
 	protected override void UpdateLayout()
 	{
-		_icon.Position = Position;
+		Size = _icon.Size;
 		base.UpdateLayout();
 	}
 

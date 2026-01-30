@@ -26,11 +26,11 @@ public sealed class ImageMorph : Morph
 		Size = _image.Size;
 	}
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
 		if (_image == null) return;
 		var img = new RenderImage(_image);
 		if (Foreground != null) img.Recolor(RadialColor.White, Foreground);
-		img.Render(rc, Position, Flags);
+		img.Render(rc, new Point(0, 0), Flags);
 	}
 }

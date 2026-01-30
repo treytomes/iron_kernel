@@ -23,9 +23,9 @@ public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers,
 public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data);
 public sealed record AppFbClear(RadialColor Color);
 public sealed record AppFbSetBorder(RadialColor Color);
-public sealed record AppFbInfo(int Width, int Height, int PaletteSize, Point Padding, float Scale);
-public sealed record AppFbInfoQuery();
 
+public sealed record AppFbInfoQuery(Guid CorrelationID) : Query(CorrelationID);
+public sealed record AppFbInfoResponse(Guid CorrelationID, Size Size) : Response<Size>(CorrelationID, Size);
 
 public sealed record AppAssetImageQuery(Guid CorrelationID, string AssetId) : Query(CorrelationID);
 public sealed record AppAssetImageResponse(Guid CorrelationID, string AssetId, Image Image) : Response<Image>(CorrelationID, Image);

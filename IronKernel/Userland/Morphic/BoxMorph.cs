@@ -17,10 +17,10 @@ public sealed class BoxMorph : Morph
 	public RadialColor FillColor { get; set; }
 	public RadialColor BorderColor { get; set; }
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Position, Size), FillColor);
-		rc.RenderRect(new Rectangle(Position, Size), BorderColor);
-		base.Draw(rc);
+		base.DrawSelf(rc);
+		rc.RenderFilledRect(new Rectangle(new Point(0, 0), Size), FillColor);
+		rc.RenderRect(new Rectangle(new Point(0, 0), Size), BorderColor);
 	}
 }

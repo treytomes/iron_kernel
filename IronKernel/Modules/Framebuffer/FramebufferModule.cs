@@ -5,6 +5,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
+using System.Drawing;
 
 namespace IronKernel.Modules.Framebuffer;
 
@@ -113,7 +114,7 @@ internal sealed class FramebufferModule(
 				var paddingX = _virtualDisplay.Padding.X;
 				var paddingY = _virtualDisplay.Padding.Y;
 				var scale = _virtualDisplay.Scale;
-				_bus.Publish(new FbInfo(width, height, paletteSize, (paddingX, paddingY), scale));
+				_bus.Publish(new FbInfoResponse(msg.CorrelationID, new Size(width, height)));
 				return Task.CompletedTask;
 			}
 		));

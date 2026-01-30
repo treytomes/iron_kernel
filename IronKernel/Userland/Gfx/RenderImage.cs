@@ -24,7 +24,7 @@ public sealed class RenderImage
 			var dstY = y + dy;
 			if (dstY < 0)
 				continue;
-			if (dstY >= rc.Height)
+			if (dstY >= rc.Size.Height)
 				break;
 
 			var sy = flipV ? (Size.Height - 1 - dy) : dy;
@@ -34,7 +34,7 @@ public sealed class RenderImage
 				var dstX = x + dx;
 				if (dstX < 0)
 					continue;
-				if (dstX >= rc.Width)
+				if (dstX >= rc.Size.Width)
 					break;
 
 				var sx = flipH ? (Size.Width - 1 - dx) : dx;

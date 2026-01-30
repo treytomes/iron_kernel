@@ -95,17 +95,17 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 		UpdateLayout();
 	}
 
-	public override void Draw(IRenderingContext rc)
+	protected override void DrawSelf(IRenderingContext rc)
 	{
 		if (_font == null) return;
 
 		var lines = ComputeWrappedLines();
-		for (int i = 0; i < lines.Count; i++)
+		for (var i = 0; i < lines.Count; i++)
 		{
 			_font.WriteString(
 				rc,
 				lines[i],
-				new Point(Position.X, Position.Y + i * TileSize.Height),
+				new Point(0, i * TileSize.Height),
 				EffectiveForegroundColor,
 				EffectiveBackgroundColor);
 		}

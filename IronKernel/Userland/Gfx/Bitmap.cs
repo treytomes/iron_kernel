@@ -131,7 +131,7 @@ public class Bitmap : IImage<Bitmap, bool>
 			{
 				continue;
 			}
-			if (y + dy >= rc.Height)
+			if (y + dy >= rc.Size.Height)
 			{
 				break;
 			}
@@ -141,7 +141,7 @@ public class Bitmap : IImage<Bitmap, bool>
 				{
 					continue;
 				}
-				if (x + dx >= rc.Width)
+				if (x + dx >= rc.Size.Width)
 				{
 					break;
 				}

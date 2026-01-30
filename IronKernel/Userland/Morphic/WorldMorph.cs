@@ -1,6 +1,5 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
 
@@ -55,21 +54,25 @@ public sealed class WorldMorph : Morph
 			PointerCapture = null;
 	}
 
-	public override void Draw(IRenderingContext rc)
-	{
-		base.Draw(rc);
-		// TODO: Hand will be drawn twice.
-		Hand.Draw(rc);
-	}
-
 	public override void Update(double deltaTime)
 	{
 		// Execute all deferred mutation intents.
 		_commandManager.Flush();
 
 		base.Update(deltaTime);
-
 		CommitDeletions();
+		EnsureHandOnTop();
+	}
+
+	private void EnsureHandOnTop()
+	{
+		if (Submorphs == null || Submorphs.Count == 0) return;
+
+		if (Submorphs.LastOrDefault() != Hand)
+		{
+			RemoveMorph(Hand);
+			AddMorph(Hand);
+		}
 	}
 
 	public void PointerButton(MouseButton button, InputAction action)
@@ -174,10 +177,13 @@ public sealed class WorldMorph : Morph
 		}
 
 		if (selectable == null)
+		{
 			return;
+		}
 
 		if (selectable == this && !(_halo?.IsEffectivelyHovered ?? false))
 		{
+			Console.WriteLine($"Ah ha: {GetType().Name}");
 			ClearSelection();
 			e.MarkHandled();
 			return;
@@ -192,7 +198,9 @@ public sealed class WorldMorph : Morph
 	public void SelectMorph(Morph? morph)
 	{
 		if (SelectedMorph == morph)
+		{
 			return;
+		}
 
 		ClearSelection();
 

@@ -5,9 +5,7 @@ using System.Drawing;
 
 namespace IronKernel.Userland.Gfx;
 
-/// <summary>  
-/// Provides a high-level drawing API for rendering to a VirtualDisplay.  
-/// </summary>  
+/// <inheritdoc/>
 public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 {
 	#region Fields  
@@ -15,94 +13,77 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	private readonly IApplicationBus _bus = bus;
 	private bool _isDirty = true;
 	private RadialColor[]? _data = null;
-	private bool _isInitialized = false;
 
-	// /// <summary>  
-	// /// Gets the current scale factor applied to the virtual display.  
-	// /// </summary>  
-	// private float _scale = 1.0f;
+	// Transformation and clipping stack.
+	private readonly Stack<Point> _offsetStack = new();
+	private Point _currentOffset = Point.Empty;
 
-	// /// <summary>  
-	// /// Gets the current padding applied to center the display.  
-	// /// </summary>  
-	// private Point _padding = new Point(0, 0);
+	private readonly Stack<Rectangle> _clipStack = new();
+	private Rectangle? _currentClip = null;
 
 	#endregion
 
 	#region Properties
 
-	public bool IsInitialized => _isInitialized;
+	/// <inheritdoc/>
+	public Size Size { get; private set; }
 
-	/// <summary>  
-	/// Gets the width of the rendering context in pixels.  
-	/// </summary>  
-	public int Width { get; private set; }
-
-	/// <summary>  
-	/// Gets the height of the rendering context in pixels.  
-	/// </summary>  
-	public int Height { get; private set; }
-
-	/// <summary>  
-	/// Gets the size of the viewport as a Vector2.  
-	/// </summary>  
-	public Point ViewportSize => new(Width, Height);
-
-	/// <summary>  
-	/// Gets a box representing the bounds of the rendering context.  
-	/// </summary>  
-	public Rectangle Bounds => new(0, 0, Width, Height);
+	/// <inheritdoc/>
+	public Rectangle Bounds => new(new Point(0, 0), Size);
 
 	#endregion
 
-	#region Methods  
+	#region Methods
+
+	public void PushOffset(Point offset)
+	{
+		_offsetStack.Push(_currentOffset);
+		_currentOffset = new Point(
+			_currentOffset.X + offset.X,
+			_currentOffset.Y + offset.Y);
+	}
+
+	public void PopOffset()
+	{
+		if (_offsetStack.Count == 0)
+			throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
+
+		_currentOffset = _offsetStack.Pop();
+	}
+
+	public void PushClip(Rectangle rect)
+	{
+		// rect is in *local* space → transform it
+		var transformed = new Rectangle(
+			rect.X + _currentOffset.X,
+			rect.Y + _currentOffset.Y,
+			rect.Width,
+			rect.Height);
+
+		_clipStack.Push(_currentClip ?? Bounds);
+
+		_currentClip = Rectangle.Intersect(
+			_clipStack.Peek(),
+			transformed);
+	}
+
+	public void PopClip()
+	{
+		if (_offsetStack.Count == 0)
+			throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
+		_currentClip = _clipStack.Pop();
+	}
 
 	public async Task InitializeAsync()
 	{
-		var subs = new List<IDisposable>();
-		subs.Add(_bus.Subscribe<AppFbInfo>("FbInfoHandler", (msg, ct) =>
-		{
-			Width = msg.Width;
-			Height = msg.Height;
-			// _padding = msg.Padding;
-			// _scale = msg.Scale;
-			_data = new RadialColor[Width * Height];
-			_isInitialized = true;
-			foreach (var sub in subs) sub.Dispose();
-			return Task.CompletedTask;
-		}));
-		_bus.Publish(new AppFbInfoQuery());
-		await Task.CompletedTask;
+		var response = await _bus.QueryAsync<AppFbInfoQuery, AppFbInfoResponse>(id => new AppFbInfoQuery(id));
+		Size = response.Size;
+		_data = new RadialColor[Size.Width * Size.Height];
 	}
-
-	// /// <summary>  
-	// /// Convert actual screen coordinates to virtual coordinates.  
-	// /// </summary>  
-	// /// <param name="actualPoint">The point in actual screen coordinates.</param>  
-	// /// <returns>The corresponding point in virtual display coordinates.</returns>  
-	// public Point ActualToVirtualPoint(Point actualPoint)
-	// {
-	// 	var x = actualPoint.X - _padding.X / _scale;
-	// 	var y = actualPoint.Y - _padding.Y / _scale;
-	// 	return new Point((int)x, (int)y);
-	// }
-
-	// /// <summary>  
-	// /// Convert virtual coordinates to actual screen coordinates.  
-	// /// </summary>  
-	// /// <param name="virtualPoint">The point in virtual display coordinates.</param>  
-	// /// <returns>The corresponding point in actual screen coordinates.</returns>  
-	// public Point VirtualToActualPoint(Point virtualPoint)
-	// {
-	// 	var x = virtualPoint.X * _scale + _padding.X;
-	// 	var y = virtualPoint.Y * _scale + _padding.Y;
-	// 	return new Point((int)x, (int)y);
-	// }
 
 	/// <inheritdoc/>
 	public void Fill(RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 		Array.Fill(_data!, color);
 		_isDirty = true;
 	}
@@ -116,61 +97,57 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void SetPixel(Point pnt, RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var x = pnt.X + _currentOffset.X;
+		var y = pnt.Y + _currentOffset.Y;
 
-		if (pnt.X < 0 || pnt.X >= Width || pnt.Y < 0 || pnt.Y >= Height)
-		{
+		if (_currentClip.HasValue && !_currentClip.Value.Contains(x, y))
 			return;
-		}
 
-		var index = pnt.Y * Width + pnt.X;
-		_data![index] = color;
+		if (x < 0 || x >= Size.Width || y < 0 || y >= Size.Height)
+			return;
+
+		_data![y * Size.Width + x] = color;
 		_isDirty = true;
 	}
 
-	/// <summary>  
-	/// Gets the palette index of the pixel at the specified position.  
-	/// </summary>  
-	/// <param name="pnt">The position of the pixel.</param>  
-	/// <returns>The color of the pixel, or black if out of bounds.</returns>  
+	/// <inheritdoc/> 
 	public RadialColor GetPixel(Point pnt)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var x = pnt.X + _currentOffset.X;
+		var y = pnt.Y + _currentOffset.Y;
 
-		if (pnt.X < 0 || pnt.X >= Width || pnt.Y < 0 || pnt.Y >= Height)
-		{
+		if (IsClipped(x, y))
 			return RadialColor.Black;
-		}
 
-		var index = pnt.Y * Width + pnt.X;
-		return _data![index];
+		if (x < 0 || x >= Size.Width || y < 0 || y >= Size.Height)
+			return RadialColor.Black;
+
+		return _data![y * Size.Width + x];
 	}
 
-	/// <summary>  
-	/// Renders a filled rectangle with the specified corners and palette index.  
-	/// </summary>  
-	/// <param name="rect">The bounds of the rect to fill.</param>  
-	/// <param name="color">The color to fill with.</param>  
+	/// <inheritdoc/> 
 	public void RenderFilledRect(Rectangle rect, RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var x0 = rect.Left + _currentOffset.X;
+		var y0 = rect.Top + _currentOffset.Y;
+		var x1 = rect.Right + _currentOffset.X;
+		var y1 = rect.Bottom + _currentOffset.Y;
 
-		var y0 = rect.Top;
-		var y1 = rect.Bottom;
-		var x0 = rect.Left;
-		var x1 = rect.Right;
+		var clip = _currentClip ?? Bounds;
 
-		if (y0 < 0) y0 = 0;
-		if (y1 > Height) y1 = Height;
-		if (x0 < 0) x0 = 0;
-		if (x1 > Width) x1 = Width;
+		x0 = Math.Max(x0, clip.Left);
+		y0 = Math.Max(y0, clip.Top);
+		x1 = Math.Min(x1, clip.Right);
+		y1 = Math.Min(y1, clip.Bottom);
 
-		// Optimized direct buffer access for filled rectangle  
 		for (var y = y0; y < y1; y++)
 		{
-			var rowOffset = y * Width;
+			if (y < 0 || y >= Size.Height) continue;
+			var rowOffset = y * Size.Width;
+
 			for (var x = x0; x < x1; x++)
 			{
+				if (x < 0 || x >= Size.Width) continue;
 				_data![rowOffset + x] = color;
 			}
 		}
@@ -195,21 +172,23 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void RenderHLine(Point pnt, int len, RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var y = pnt.Y + _currentOffset.Y;
+		if (y < 0 || y >= Size.Height) return;
 
-		var x = pnt.X;
-		var y = pnt.Y;
-		if (y < 0 || y >= Height) return;
-		if (x < 0)
-		{
-			len += x;
-			x = 0;
-		}
+		var clip = _currentClip ?? Bounds;
 
-		var offset = y * Width + x;
-		for (var dx = 0; dx < len && x + dx < Width; dx++)
+		var xStart = pnt.X + _currentOffset.X;
+		var xEnd = xStart + len;
+
+		xStart = Math.Max(xStart, clip.Left);
+		xEnd = Math.Min(xEnd, clip.Right);
+
+		var rowOffset = y * Size.Width;
+
+		for (var x = xStart; x < xEnd; x++)
 		{
-			_data![offset + dx] = color;
+			if (x < 0 || x >= Size.Width) continue;
+			_data![rowOffset + x] = color;
 		}
 
 		_isDirty = true;
@@ -218,20 +197,21 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void RenderVLine(Point pnt, int len, RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var x = pnt.X + _currentOffset.X;
+		if (x < 0 || x >= Size.Width) return;
 
-		var x = pnt.X;
-		var y = pnt.Y;
-		if (x < 0 || x >= Width) return;
-		if (y < 0)
-		{
-			len += y;
-			y = 0;
-		}
+		var clip = _currentClip ?? Bounds;
 
-		for (var dy = 0; dy < len && y + dy < Height; dy++)
+		var yStart = pnt.Y + _currentOffset.Y;
+		var yEnd = yStart + len;
+
+		yStart = Math.Max(yStart, clip.Top);
+		yEnd = Math.Min(yEnd, clip.Bottom);
+
+		for (var y = yStart; y < yEnd; y++)
 		{
-			_data![(y + dy) * Width + x] = color;
+			if (y < 0 || y >= Size.Height) continue;
+			_data![y * Size.Width + x] = color;
 		}
 
 		_isDirty = true;
@@ -279,8 +259,6 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void RenderOrderedDitheredCircle(Point center, int radius, RadialColor color, float falloffStart = 0.6f, RadialColor? secondaryColor = null)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
-
 		// Bayer 4x4 dithering matrix  
 		var bayerMatrix = new int[,] {
 			{  0, 12,  3, 15 },
@@ -293,18 +271,25 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		var outerRadiusSquared = radius * radius;
 
 		// Calculate bounds for the circle and clip to the display area  
-		int minX = Math.Max(0, (int)(center.X - radius));
-		int maxX = Math.Min(Width - 1, (int)(center.X + radius));
-		int minY = Math.Max(0, (int)(center.Y - radius));
-		int maxY = Math.Min(Height - 1, (int)(center.Y + radius));
+		var cx = center.X + _currentOffset.X;
+		var cy = center.Y + _currentOffset.Y;
+
+		var clip = _currentClip ?? Bounds;
+
+		int minX = Math.Max(cx - radius, clip.Left);
+		int maxX = Math.Min(cx + radius, clip.Right - 1);
+		int minY = Math.Max(cy - radius, clip.Top);
+		int maxY = Math.Min(cy + radius, clip.Bottom - 1);
 
 		for (var y = minY; y <= maxY; y++)
 		{
-			int rowOffset = y * Width;
+			int rowOffset = y * Size.Width;
 			for (var x = minX; x <= maxX; x++)
 			{
-				int dx = x - (int)center.X;
-				int dy = y - (int)center.Y;
+				if (IsClipped(x, y)) continue;
+
+				int dx = x - center.X;
+				int dy = y - center.Y;
 				var distanceSquared = dx * dx + dy * dy;
 
 				if (distanceSquared > outerRadiusSquared)
@@ -324,7 +309,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 				var bayerY = Math.Abs(dy) % 4;
 				var threshold = bayerMatrix[bayerY, bayerX] / 16.0f;
 
-				// Draw pixel if the normalized distance is less than the threshold  
+				// Draw pixel if the normalized distance is less than the threshold.
 				if (normalizedDistance < threshold)
 				{
 					_data![rowOffset + x] = color;
@@ -384,33 +369,32 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void RenderFilledCircle(Point center, int radius, RadialColor color)
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
+		var cx = center.X + _currentOffset.X;
+		var cy = center.Y + _currentOffset.Y;
 
-		var xc = center.X;
-		var yc = center.Y;
+		var clip = _currentClip ?? Bounds;
 
-		// Clip to bounds for optimization  
-		int minX = Math.Max(0, xc - radius);
-		int maxX = Math.Min(Width - 1, xc + radius);
-		int minY = Math.Max(0, yc - radius);
-		int maxY = Math.Min(Height - 1, yc + radius);
+		int minX = Math.Max(cx - radius, clip.Left);
+		int maxX = Math.Min(cx + radius, clip.Right - 1);
+		int minY = Math.Max(cy - radius, clip.Top);
+		int maxY = Math.Min(cy + radius, clip.Bottom - 1);
 
 		int radiusSquared = radius * radius;
 
-		// Use a more efficient algorithm that avoids redundant calculations  
 		for (int y = minY; y <= maxY; y++)
 		{
-			int dy = y - yc;
+			if (y < 0 || y >= Size.Height) continue;
+			int dy = y - cy;
 			int dy2 = dy * dy;
-			int rowOffset = y * Width;
+			int rowOffset = y * Size.Width;
 
 			for (int x = minX; x <= maxX; x++)
 			{
-				int dx = x - xc;
+				if (x < 0 || x >= Size.Width) continue;
+				int dx = x - cx;
+
 				if (dx * dx + dy2 <= radiusSquared)
-				{
 					_data![rowOffset + x] = color;
-				}
 			}
 		}
 
@@ -424,7 +408,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		var y = pnt.Y;
 
 		// Check if the starting point is valid  
-		if (x < 0 || x >= Width || y < 0 || y >= Height)
+		if (x < 0 || x >= Size.Width || y < 0 || y >= Size.Height)
 			return;
 
 		var targetColor = GetPixel(pnt);
@@ -448,7 +432,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 				leftX--;
 
 			int rightX = px;
-			while (rightX < Width - 1 && GetPixel(new Point(rightX + 1, py)) == targetColor)
+			while (rightX < Size.Width - 1 && GetPixel(new Point(rightX + 1, py)) == targetColor)
 				rightX++;
 
 			// Fill the span  
@@ -466,7 +450,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// </summary>  
 	private void CheckFillSpan(int leftX, int rightX, int y, RadialColor targetColor, RadialColor fillColor, Stack<(int X, int Y)> stack)
 	{
-		if (y < 0 || y >= Height)
+		if (y < 0 || y >= Size.Height)
 			return;
 
 		bool inSpan = false;
@@ -485,17 +469,19 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		}
 	}
 
-	/// <summary>  
-	/// Updates the virtual display with the current pixel data if it has changed.  
-	/// </summary>  
+	/// <inheritdoc/> 
 	public void Present()
 	{
-		if (!_isInitialized) throw new InvalidOperationException("Rendering context is not initialized.");
 		if (_isDirty)
 		{
 			_bus.Publish(new AppFbWriteSpan(0, 0, _data!));
 			_isDirty = false;
 		}
+	}
+
+	private bool IsClipped(int x, int y)
+	{
+		return _currentClip.HasValue && !_currentClip.Value.Contains(x, y);
 	}
 
 	#endregion

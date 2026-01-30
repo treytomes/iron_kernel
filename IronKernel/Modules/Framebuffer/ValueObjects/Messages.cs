@@ -1,3 +1,5 @@
+using System.Drawing;
+using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.Framebuffer.ValueObjects;
@@ -10,7 +12,5 @@ public sealed record FbSetBorder(RadialColor Color);
 
 // Output
 
-public sealed record FbInfo(int Width, int Height, int PaletteSize, (float X, float Y) Padding, float Scale);
-
-// A required for FbInfo to be placed on the bus.
-public sealed record FbInfoQuery();
+public sealed record FbInfoResponse(Guid CorrelationID, Size Size) : Response(CorrelationID);
+public sealed record FbInfoQuery(Guid CorrelationID) : Query(CorrelationID);

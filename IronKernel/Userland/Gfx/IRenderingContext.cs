@@ -3,43 +3,26 @@ using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Userland.Gfx;
 
+/// <summary>  
+/// Provides a high-level drawing API for rendering to a VirtualDisplay.  
+/// </summary>
 public interface IRenderingContext
 {
-	bool IsInitialized { get; }
-
 	/// <summary>  
-	/// Gets the width of the rendering context in pixels.  
+	/// Gets the size of the rendering context in pixels.  
 	/// </summary>  
-	int Width { get; }
-
-	/// <summary>  
-	/// Gets the height of the rendering context in pixels.  
-	/// </summary>  
-	int Height { get; }
-
-	/// <summary>  
-	/// Gets the size of the viewport as a Vector2.  
-	/// </summary>  
-	Point ViewportSize { get; }
+	Size Size { get; }
 
 	/// <summary>  
 	/// Gets a box representing the bounds of the rendering context.  
 	/// </summary>  
 	Rectangle Bounds { get; }
 
-	// /// <summary>  
-	// /// Convert actual screen coordinates to virtual coordinates.  
-	// /// </summary>  
-	// /// <param name="actualPoint">The point in actual screen coordinates.</param>  
-	// /// <returns>The corresponding point in virtual display coordinates.</returns>  
-	// Point ActualToVirtualPoint(Point actualPoint);
+	void PushOffset(Point offset);
+	void PopOffset();
 
-	// /// <summary>  
-	// /// Convert virtual coordinates to actual screen coordinates.  
-	// /// </summary>  
-	// /// <param name="virtualPoint">The point in virtual display coordinates.</param>  
-	// /// <returns>The corresponding point in actual screen coordinates.</returns>  
-	// Point VirtualToActualPoint(Point virtualPoint);
+	void PushClip(Rectangle rect);
+	void PopClip();
 
 	/// <summary>  
 	/// Fills the entire rendering context with the specified color.  

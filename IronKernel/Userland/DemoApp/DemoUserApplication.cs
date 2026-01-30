@@ -65,16 +65,27 @@ public sealed class DemoUserApplication(
 			Text = "Hello world!",
 		});
 
+		var window = new WindowMorph(new Point(175, 175), new Size(128, 96), "Sample");
+		window.Content.AddMorph(new LabelMorph(new Point(0, 0), "image.oem437_8", new Size(8, 8))
+		{
+			Text = "Here's a label.",
+		});
+		window.Content.AddMorph(new ButtonMorph(new Point(0, 8), new Size(56, 16), "Hello!")
+		{
+			Command = new ActionCommand(() => Console.WriteLine("Hello!")),
+		});
+		world.AddMorph(window);
+
 		var canvas = new FramebufferCanvas(context.Bus);
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
-			"MouseMoveHandler",
-			async (e, ct) =>
-			{
-				var pnt = new Point(e.X, e.Y);
-				world.PointerMove(pnt);
-				await Task.CompletedTask;
-			});
+				"MouseMoveHandler",
+				async (e, ct) =>
+				{
+					var pnt = new Point(e.X, e.Y);
+					world.PointerMove(pnt);
+					await Task.CompletedTask;
+				});
 
 		context.Bus.Subscribe<AppMouseButtonEvent>(
 			"MouseButtonHandler",
@@ -135,11 +146,8 @@ public sealed class DemoUserApplication(
 			async (e, ct) =>
 			{
 				world.Update(e.ElapsedTime);
-				if (rc.IsInitialized)
-				{
-					rc.Clear();
-					world.Draw(rc);
-				}
+				rc.Clear();
+				world.Draw(rc);
 				rc.Present();
 				await Task.CompletedTask;
 			}
