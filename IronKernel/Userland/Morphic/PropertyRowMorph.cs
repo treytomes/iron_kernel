@@ -1,4 +1,3 @@
-using System;
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -109,10 +108,7 @@ public sealed class PropertyRowMorph : Morph
 
 	private static LabelMorph CreateNameLabel(string name)
 	{
-		return new LabelMorph(
-			Point.Empty,
-			"image.oem437_8",
-			new Size(8, 8))
+		return new LabelMorph(Point.Empty)
 		{
 			IsSelectable = false,
 			Text = name,

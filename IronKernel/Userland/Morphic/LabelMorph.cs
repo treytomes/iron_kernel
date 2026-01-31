@@ -30,20 +30,20 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 
 	#region Constructors
 
-	public LabelMorph(Point position, string assetId, Size tileSize)
+	public LabelMorph()
+		: this(Point.Empty)
+	{
+	}
+
+	public LabelMorph(Point position)
 	{
 		Position = position;
-		AssetId = assetId;
-		TileSize = tileSize;
 		IsSelectable = true;
 	}
 
 	#endregion
 
 	#region Properties
-
-	public string AssetId { get; }
-	public Size TileSize { get; }
 
 	public RadialColor? ForegroundColor
 	{
@@ -91,7 +91,13 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 
 	protected override async void OnLoad(IAssetService assets)
 	{
-		_font = await assets.LoadFontAsync(AssetId, TileSize);
+		if (Style == null) throw new Exception("Style is null.");
+
+		_font = await assets.LoadFontAsync(
+			Style.DefaultFontStyle.AssetId,
+			Style.DefaultFontStyle.TileSize,
+			Style.DefaultFontStyle.GlyphOffset
+		);
 		UpdateLayout();
 	}
 
@@ -105,7 +111,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 			_font.WriteString(
 				rc,
 				lines[i],
-				new Point(0, i * TileSize.Height),
+				new Point(0, i * _font.TileSize.Height),
 				EffectiveForegroundColor,
 				EffectiveBackgroundColor);
 		}
@@ -223,11 +229,9 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 
 	#region Layout logic
 
-	private int MinimumWidth
-		=> TileSize.Width; // one glyph wide [2]
+	private int MinimumWidth => _font!.TileSize.Width; // one glyph wide [2]
 
-	private int MaximumWidth
-		=> _font!.MeasureString(_text).Width; // single-line width [2]
+	private int MaximumWidth => _font!.MeasureString(_text).Width; // single-line width [2]
 
 	protected override void UpdateLayout()
 	{
@@ -237,7 +241,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 		var lines = ComputeWrappedLines();
 
 		var width = _wrapWidth ?? MaximumWidth;
-		var height = lines.Count * TileSize.Height;
+		var height = lines.Count * _font.TileSize.Height;
 
 		Size = new Size(width, height);
 	}
@@ -259,7 +263,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 			return result;
 		}
 
-		var charsPerLine = Math.Max(1, _wrapWidth.Value / TileSize.Width);
+		var charsPerLine = Math.Max(1, _wrapWidth.Value / _font.TileSize.Width);
 
 		for (int i = 0; i < _text.Length; i += charsPerLine)
 		{

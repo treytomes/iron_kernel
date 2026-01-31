@@ -3,20 +3,28 @@ using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Userland.Gfx;
 
-public class Font
+public sealed class Font
 {
 	#region Fields
 
 	private readonly GlyphSet<Bitmap> _tiles;
+	private readonly int _glyphOffset;
 
 	#endregion
 
 	#region Constructors
 
-	public Font(GlyphSet<Bitmap> tiles)
+	public Font(GlyphSet<Bitmap> tiles, int glyphOffset = 0)
 	{
 		_tiles = tiles;
+		_glyphOffset = glyphOffset;
 	}
+
+	#endregion
+
+	#region Properties
+
+	public Size TileSize => new Size(_tiles.TileWidth, _tiles.TileHeight);
 
 	#endregion
 
@@ -26,7 +34,9 @@ public class Font
 	{
 		for (int i = 0; i < text.Length; i++)
 		{
-			_tiles[text[i]].Render(rc, new Point(position.X + i * 8, position.Y), fg, bg);
+			var index = text[i] + _glyphOffset;
+			if (index >= 0 && index < _tiles.Count)
+				_tiles[index].Render(rc, new Point(position.X + i * _tiles.TileWidth, position.Y), fg, bg);
 		}
 	}
 

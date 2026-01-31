@@ -38,7 +38,7 @@ public sealed class ButtonMorph : Morph
 		Size = size;
 		IsSelectable = true;
 
-		_label = new LabelMorph(position, "image.oem437_8", new Size(8, 8))
+		_label = new LabelMorph(position)
 		{
 			IsSelectable = false,
 			Text = text,

@@ -12,14 +12,14 @@ internal class AssetService(IApplicationBus bus) : IAssetService
 	private readonly ConcurrentDictionary<string, Font> _fontCache = new();
 	private readonly ConcurrentDictionary<string, RenderImage> _imageCache = new();
 
-	public async Task<Font> LoadFontAsync(string assetId, Size tileSize)
+	public async Task<Font> LoadFontAsync(string assetId, Size tileSize, int glyphOffset)
 	{
 		if (!_fontCache.ContainsKey(assetId))
 		{
 			var image = await LoadImageAsync(assetId);
 			var bitmap = new Bitmap(image);
 			var glyphs = new GlyphSet<Bitmap>(bitmap, tileSize.Width, tileSize.Height);
-			var font = new Font(glyphs);
+			var font = new Font(glyphs, glyphOffset);
 			_fontCache[assetId] = font;
 		}
 		return _fontCache[assetId];

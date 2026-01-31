@@ -38,10 +38,7 @@ public class WindowMorph : Morph
 			ShouldClipToBounds = true
 		};
 
-		_titleLabel = new LabelMorph(
-			Point.Empty,
-			"image.oem437_8",
-			new Size(8, 8))
+		_titleLabel = new LabelMorph()
 		{
 			IsSelectable = false,
 			Text = title,

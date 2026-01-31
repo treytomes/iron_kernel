@@ -28,10 +28,7 @@ public class ValueMorph : Morph
 		_lastValue = _valueProvider();
 		IsSelectable = true;
 
-		_label = new LabelMorph(
-			Point.Empty,
-			"image.oem437_8",
-			new Size(8, 8))
+		_label = new LabelMorph()
 		{
 			IsSelectable = false,
 			BackgroundColor = null

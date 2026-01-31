@@ -58,7 +58,7 @@ public sealed class DemoUserApplication(
 			BorderColor = RadialColor.Blue.Lerp(RadialColor.White, 0.5f)
 		});
 
-		world.AddMorph(new LabelMorph(new Point(150, 150), "image.oem437_8", new Size(8, 8))
+		world.AddMorph(new LabelMorph()
 		{
 			ForegroundColor = RadialColor.Red,
 			BackgroundColor = RadialColor.Blue,
@@ -66,7 +66,7 @@ public sealed class DemoUserApplication(
 		});
 
 		var window = new WindowMorph(new Point(175, 175), new Size(128, 96), "Sample");
-		window.Content.AddMorph(new LabelMorph(new Point(0, 0), "image.oem437_8", new Size(8, 8))
+		window.Content.AddMorph(new LabelMorph()
 		{
 			Text = "Here's a label.",
 		});

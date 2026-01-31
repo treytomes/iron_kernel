@@ -55,13 +55,6 @@ internal sealed class AssetLoaderModule(
 		// throw new FileNotFoundException($"Asset id is undefined: {assetId}");
 		_logger.LogError($"Asset id is undefined: {assetId}");
 		return null;
-
-		// return assetId switch
-		// {
-		// 	"mouse_cursor" => "mouse_cursor.png",
-		// 	"oem437_8" => "oem437_8.png",
-		// 	_ => throw new FileNotFoundException($"Asset id is undefined: {assetId}"),
-		// };
 	}
 
 	public ValueTask DisposeAsync()

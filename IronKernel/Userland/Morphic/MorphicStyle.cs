@@ -1,3 +1,4 @@
+using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Userland.Morphic;
@@ -29,11 +30,20 @@ public sealed class MorphicStyle
 	public required RadialColor ButtonDisabledBackgroundColor { get; init; }
 	public required RadialColor ButtonDisabledForegroundColor { get; init; }
 
+	public required FontStyle DefaultFontStyle { get; init; }
+
 	public sealed class HandleStyle
 	{
 		public required RadialColor Background { get; init; }
 		public required RadialColor BackgroundHover { get; init; }
 		public required RadialColor Foreground { get; init; }
 		public required RadialColor ForegroundHover { get; init; }
+	}
+
+	public sealed class FontStyle
+	{
+		public required string AssetId { get; init; }
+		public required Size TileSize { get; init; }
+		public required int GlyphOffset { get; init; }
 	}
 }
