@@ -44,6 +44,15 @@ public sealed class HaloMorph : Morph
 				target.Position.Y + target.Size.Height + 16
 			)
 		});
+
+		AddMorph(new InspectHandleMorph(target)
+		{
+
+			Position = new Point(
+				target.Position.X + target.Size.Width + 16,
+				target.Position.Y + target.Size.Height + 16
+			)
+		});
 	}
 
 	#endregion
@@ -136,6 +145,10 @@ public sealed class HaloMorph : Morph
 		);
 		Submorphs.OfType<DeleteHandleMorph>().Single().Position = new Point(
 			 +Size.Width / 2 - 6,
+			 +Size.Height + 16
+		);
+		Submorphs.OfType<InspectHandleMorph>().Single().Position = new Point(
+			 +Size.Width + 16,
 			 +Size.Height + 16
 		);
 	}

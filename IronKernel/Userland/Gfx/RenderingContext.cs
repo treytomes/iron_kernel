@@ -15,10 +15,10 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	private RadialColor[]? _data = null;
 
 	// Transformation and clipping stack.
-	private readonly Stack<Point> _offsetStack = new();
+	private readonly Stack<Point> _offsetStack = new(256);
 	private Point _currentOffset = Point.Empty;
 
-	private readonly Stack<Rectangle> _clipStack = new();
+	private readonly Stack<Rectangle> _clipStack = new(256);
 	private Rectangle? _currentClip = null;
 
 	#endregion
@@ -31,28 +31,37 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public Rectangle Bounds => new(new Point(0, 0), Size);
 
+	public int OffsetStackSize => _offsetStack.Count;
+	public int ClipStackSize => _clipStack.Count;
+
 	#endregion
 
 	#region Methods
 
-	public void PushOffset(Point offset)
+	public int PushOffset(Point offset)
 	{
+		var size = _offsetStack.Count;
 		_offsetStack.Push(_currentOffset);
 		_currentOffset = new Point(
 			_currentOffset.X + offset.X,
 			_currentOffset.Y + offset.Y);
+		return size;
 	}
 
-	public void PopOffset()
+	public void PopOffset(int targetCount)
 	{
-		if (_offsetStack.Count == 0)
-			throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
-
-		_currentOffset = _offsetStack.Pop();
+		// if (_offsetStack.Count == 0)
+		// 	throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
+		while (_offsetStack.Count > targetCount && _offsetStack.Count > 0)
+		{
+			if (_offsetStack.TryPop(out var offset)) _currentOffset = offset;
+		}
+		// _currentOffset = _offsetStack.Pop();
 	}
 
-	public void PushClip(Rectangle rect)
+	public int PushClip(Rectangle rect)
 	{
+		var size = _clipStack.Count;
 		// rect is in *local* space → transform it
 		var transformed = new Rectangle(
 			rect.X + _currentOffset.X,
@@ -65,13 +74,19 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		_currentClip = Rectangle.Intersect(
 			_clipStack.Peek(),
 			transformed);
+
+		return size;
 	}
 
-	public void PopClip()
+	public void PopClip(int targetCount)
 	{
-		if (_offsetStack.Count == 0)
-			throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
-		_currentClip = _clipStack.Pop();
+		// if (_offsetStack.Count == 0)
+		// 	throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
+		while (_clipStack.Count > targetCount && _clipStack.Count > 0)
+		{
+			if (_clipStack.TryPop(out var clip)) _currentClip = clip;
+		}
+		// _currentClip = _clipStack.Pop();
 	}
 
 	public async Task InitializeAsync()

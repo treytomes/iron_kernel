@@ -4,15 +4,24 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class MorphicStyle
 {
+	// Semantic palette (new)
+	public required SemanticColors Semantic { get; init; }
+
+	// Handles
 	public required HandleStyle MoveHandle { get; init; }
 	public required HandleStyle ResizeHandle { get; init; }
 	public required HandleStyle DeleteHandle { get; init; }
+	public required HandleStyle InspectHandle { get; init; }
+
+	// Structural UI
 	public required RadialColor HaloOutline { get; init; }
 	public required RadialColor SelectionTint { get; init; }
 
+	// Labels
 	public required RadialColor LabelForegroundColor { get; init; }
 	public required RadialColor? LabelBackgroundColor { get; init; }
 
+	// Buttons
 	public required RadialColor ButtonBackgroundColor { get; init; }
 	public required RadialColor ButtonHoverBackgroundColor { get; init; }
 	public required RadialColor ButtonActiveBackgroundColor { get; init; }

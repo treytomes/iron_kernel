@@ -18,11 +18,20 @@ public interface IRenderingContext
 	/// </summary>  
 	Rectangle Bounds { get; }
 
-	void PushOffset(Point offset);
-	void PopOffset();
+	int OffsetStackSize { get; }
+	int ClipStackSize { get; }
 
-	void PushClip(Rectangle rect);
-	void PopClip();
+	/// <returns>
+	/// The size of the stack.
+	/// </returns>
+	int PushOffset(Point offset);
+	void PopOffset(int targetCount);
+
+	/// <returns>
+	/// The size of the stack.
+	/// </returns>
+	int PushClip(Rectangle rect);
+	void PopClip(int targetCount);
 
 	/// <summary>  
 	/// Fills the entire rendering context with the specified color.  

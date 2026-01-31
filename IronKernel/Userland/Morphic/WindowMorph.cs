@@ -1,16 +1,14 @@
 using System.Drawing;
-using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 
 namespace IronKernel.Userland.Morphic;
 
 /// <summary>
-/// A compositional window morph with a header (title + buttons)
-/// and a content area. Structural operations (move/resize/delete)
-/// are handled by the Halo, not by this class.
+/// A compositional window morph with semantic styling.
+/// Structural operations (move/resize/delete) are handled by the Halo.
 /// </summary>
-public sealed class WindowMorph : Morph
+public class WindowMorph : Morph
 {
 	#region Fields
 
@@ -31,11 +29,13 @@ public sealed class WindowMorph : Morph
 		Position = position;
 		Size = size;
 		IsSelectable = true;
+		ShouldClipToBounds = true;
 
 		// --- Header ---
 		_header = new ContainerMorph
 		{
-			IsSelectable = false
+			IsSelectable = false,
+			ShouldClipToBounds = true
 		};
 
 		_titleLabel = new LabelMorph(
@@ -64,7 +64,8 @@ public sealed class WindowMorph : Morph
 		// --- Content ---
 		_content = new ContainerMorph
 		{
-			IsSelectable = false
+			IsSelectable = false,
+			ShouldClipToBounds = true
 		};
 
 		AddMorph(_content);
@@ -75,8 +76,7 @@ public sealed class WindowMorph : Morph
 	#region Properties
 
 	/// <summary>
-	/// The container morph where clients add their UI.
-	/// Coordinates are local to the content area.
+	/// Container for window contents (local coordinates).
 	/// </summary>
 	public Morph Content => _content;
 
@@ -86,13 +86,15 @@ public sealed class WindowMorph : Morph
 		set => _titleLabel.Text = value;
 	}
 
+	private bool IsSelected => GetWorld().SelectedMorph == this;
+
 	#endregion
 
 	#region Layout
 
 	protected override void UpdateLayout()
 	{
-		// Header layout (local coordinates)
+		// Header
 		_header.Position = Point.Empty;
 		_header.Size = new Size(Size.Width, HeaderHeight);
 
@@ -104,7 +106,7 @@ public sealed class WindowMorph : Morph
 			_header.Size.Width - _closeButton.Size.Width - Padding,
 			(HeaderHeight - _closeButton.Size.Height) / 2);
 
-		// Content layout (local coordinates)
+		// Content
 		_content.Position = new Point(0, HeaderHeight);
 		_content.Size = new Size(
 			Size.Width,
@@ -117,20 +119,29 @@ public sealed class WindowMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		// Draw window background (local)
+		var semantic = GetWorld().Style.Semantic;
+
+		// Window background
 		rc.RenderFilledRect(
 			new Rectangle(Point.Empty, Size),
-			GetWorld().Style.SelectionTint);
+			semantic.Surface);
 
-		// Draw header background (local)
+		// Header background (semantic selection)
+		var headerColor = IsSelected
+			? semantic.Primary
+			: semantic.Surface;
+
 		rc.RenderFilledRect(
 			new Rectangle(Point.Empty, new Size(Size.Width, HeaderHeight)),
-			GetWorld().Style.HaloOutline);
+			headerColor);
 
-		// Draw window outline (local)
+		// Window border
 		rc.RenderRect(
 			new Rectangle(Point.Empty, Size),
-			RadialColor.Black);
+			semantic.Border);
+
+		// Title text color
+		_titleLabel.ForegroundColor = semantic.Text;
 	}
 
 	#endregion

@@ -44,3 +44,7 @@ If you want, next we can:
 * sharpen the **kernel vs userland contract** in words
 * define the system explicitly as a **computer**, not an engine
 * or write a short “design manifesto” that you can keep around as a guardrail
+
+## References
+
+- [Good Neighbors font by Clint Bellanger](https://opengameart.org/content/good-neighbors-pixel-font)

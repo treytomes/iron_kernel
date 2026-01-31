@@ -63,7 +63,7 @@ public abstract class Morph : ICommandTarget
 	public bool IsSelectable { get; set; } = true;
 	public virtual bool IsGrabbable => false;
 	public bool IsMarkedForDeletion { get; private set; } = false;
-	public bool ShouldClipToBounds { get; protected set; } = false;
+	public bool ShouldClipToBounds { get; set; } = false;
 
 	protected MorphicStyle? Style
 	{
@@ -96,7 +96,10 @@ public abstract class Morph : ICommandTarget
 		if (morph == null)
 			throw new ArgumentNullException(nameof(morph));
 		if (morph.Owner != null)
-			throw new InvalidOperationException("Morph already has an owner");
+			morph.Owner.RemoveMorph(morph);
+		// if (morph.Owner != null)
+		// 	throw new InvalidOperationException("Morph already has an owner");
+
 
 		morph.Owner = this;
 		if (index >= 0)
@@ -114,13 +117,16 @@ public abstract class Morph : ICommandTarget
 			morph.NotifyAddedToWorld(world);
 	}
 
-	public void RemoveMorph(Morph morph)
+	public bool RemoveMorph(Morph morph)
 	{
+		if (morph.Owner == null) return true;
 		if (_submorphs.Remove(morph))
 		{
 			morph.Owner = null;
 			InvalidateLayout();
+			return true;
 		}
+		return false;
 	}
 
 	/// <summary>
@@ -128,38 +134,30 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	public void Draw(IRenderingContext rc)
 	{
-		// var isRoot = this is WorldMorph;
-		// if (!isRoot)
-		// {
-		rc.PushOffset(Position);
-		if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
-		// Console.WriteLine($"Push {GetType().Name}");
-		// }
-
-		// try
-		// {
-		DrawSelf(rc);
-
-		foreach (var child in _submorphs.ToArray())
+		var isRoot = this is WorldMorph;
+		var offsetSize = rc.OffsetStackSize;
+		var clipSize = rc.ClipStackSize;
+		try
 		{
-			if (!child.Visible) continue;
-			child.Draw(rc);
+			if (!isRoot)
+			{
+				rc.PushOffset(Position);
+				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
+			}
+
+			DrawSelf(rc);
+
+			foreach (var child in _submorphs.ToArray())
+			{
+				if (!child.Visible) continue;
+				child.Draw(rc);
+			}
 		}
-		// }
-		// catch (Exception ex)
-		// {
-		// 	throw new Exception($"Exception drawing {GetType().Name}.", ex);
-		// }
-		// finally
-		// {
-		// 	// if (!isRoot)
-		// 	// {
-		// Console.WriteLine($"Pop {GetType().Name}");
-		rc.PopOffset();
-		if (ShouldClipToBounds) rc.PopClip();
-		// 	if (this is WorldMorph) throw new Exception("Done.");
-		// 	// }
-		// }
+		finally
+		{
+			rc.PopOffset(offsetSize);
+			rc.PopClip(clipSize);
+		}
 	}
 
 	protected virtual void DrawSelf(IRenderingContext rc) { }
