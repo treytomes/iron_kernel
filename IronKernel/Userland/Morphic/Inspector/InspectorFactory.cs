@@ -1,3 +1,5 @@
+using IronKernel.Common.ValueObjects;
+
 namespace IronKernel.Userland.Morphic.Inspector;
 
 public class InspectorFactory : IInspectorFactory
@@ -11,6 +13,9 @@ public class InspectorFactory : IInspectorFactory
 				setter?.Invoke(b);
 			});
 		}
+
+		if (contentType == typeof(RadialColor))
+			return new RadialColorValueMorph();
 
 		return new LabelMorph
 		{
