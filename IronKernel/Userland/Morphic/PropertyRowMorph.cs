@@ -16,7 +16,7 @@ public sealed class PropertyRowMorph : Morph
 	private readonly ValueMorph _valueMorph;
 
 	private int _nameColumnWidth = 96;
-	private const int Padding = 4;
+	private const int Padding = 1;
 
 	#endregion
 

@@ -183,7 +183,6 @@ public sealed class WorldMorph : Morph
 
 		if (selectable == this && !(_halo?.IsEffectivelyHovered ?? false))
 		{
-			Console.WriteLine($"Ah ha: {GetType().Name}");
 			ClearSelection();
 			e.MarkHandled();
 			return;

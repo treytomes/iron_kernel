@@ -17,8 +17,8 @@ public class WindowMorph : Morph
 	private readonly LabelMorph _titleLabel;
 	private readonly ButtonMorph _closeButton;
 
-	private const int HeaderHeight = 16;
-	private const int Padding = 4;
+	private const int HeaderHeight = 6 * 2;
+	private const int Padding = 3;
 
 	#endregion
 
@@ -47,7 +47,7 @@ public class WindowMorph : Morph
 
 		_closeButton = new ButtonMorph(
 			Point.Empty,
-			new Size(16, 12),
+			new Size(10, 10),
 			"X")
 		{
 			IsSelectable = false,

@@ -11,9 +11,9 @@ public sealed class PropertyListMorph : Morph
 {
 	#region Fields
 
-	private int _rowSpacing = 2;
+	private int _rowSpacing = 1;
 	private int _nameColumnWidth = 96;
-	private const int Padding = 4;
+	private const int Padding = 1;
 
 	#endregion
 
