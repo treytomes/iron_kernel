@@ -10,14 +10,11 @@ public class ValueMorph : Morph
 {
 	#region Fields
 
-	private IInspectorFactory _inspectorFactory;
-
-	/// <summary>
-	/// The runtime value being represented.
-	/// </summary>
+	private readonly IInspectorFactory _inspectorFactory;
 	private readonly Func<object?> _valueProvider;
-
 	private readonly Action<object?>? _valueSetter;
+
+	private readonly Type? _declaredType;
 
 	private object? _lastValue;
 	protected Morph _content;
@@ -27,27 +24,26 @@ public class ValueMorph : Morph
 	#region Constructors
 
 	public ValueMorph(
-		InspectorFactory inspectorFactory,
+		IInspectorFactory inspectorFactory,
 		Func<object?> valueProvider,
-		Action<object?>? valueSetter = null
-	)
+		Action<object?>? valueSetter = null,
+		Type? declaredType = null)
 	{
-		_inspectorFactory = inspectorFactory;
-		_valueProvider = valueProvider ?? throw new ArgumentNullException(nameof(valueProvider));
+		_inspectorFactory = inspectorFactory
+			?? throw new ArgumentNullException(nameof(inspectorFactory));
+
+		_valueProvider = valueProvider
+			?? throw new ArgumentNullException(nameof(valueProvider));
+
 		_valueSetter = valueSetter;
+		_declaredType = declaredType;
+
 		_lastValue = _valueProvider();
 		IsSelectable = true;
 
-		_content = _inspectorFactory.GetInspectorFor(
-			_lastValue?.GetType(),
-			value =>
-			{
-				_valueSetter?.Invoke(value);
-				_lastValue = value;
-			}
-		);
-
+		_content = CreateContent(_lastValue);
 		AddMorph(_content);
+
 		UpdateDisplay();
 	}
 
@@ -66,19 +62,20 @@ public class ValueMorph : Morph
 		base.Update(deltaTime);
 
 		var current = _valueProvider();
-		if (!Equals(current?.GetType(), _lastValue?.GetType()))
+
+		var previousType = ResolveType(_lastValue);
+		var currentType = ResolveType(current);
+
+		// If the resolved type changes, rebuild the content morph
+		if (!Equals(previousType, currentType))
 		{
 			RemoveMorph(_content);
-			_content = _inspectorFactory.GetInspectorFor(
-				_lastValue?.GetType(),
-				value =>
-				{
-					_valueSetter?.Invoke(value);
-					_lastValue = value;
-				}
-			);
+			_content = CreateContent(current);
 			AddMorph(_content);
+			InvalidateLayout();
 		}
+
+		// If the value changes, refresh display
 		if (!Equals(current, _lastValue))
 		{
 			_lastValue = current;
@@ -86,6 +83,8 @@ public class ValueMorph : Morph
 			InvalidateLayout();
 		}
 	}
+
+	#endregion
 
 	#region Layout
 
@@ -99,10 +98,6 @@ public class ValueMorph : Morph
 
 	#region Display
 
-	/// <summary>
-	/// Updates the visual representation of the value.
-	/// Subclasses override for richer rendering.
-	/// </summary>
 	protected virtual void UpdateDisplay()
 	{
 		if (_content is IValueContentMorph refreshable)
@@ -112,6 +107,27 @@ public class ValueMorph : Morph
 	}
 
 	#endregion
+
+	#region Helpers
+
+	private Morph CreateContent(object? value)
+	{
+		var type = ResolveType(value);
+
+		return _inspectorFactory.GetInspectorFor(
+			type,
+			v =>
+			{
+				_valueSetter?.Invoke(v);
+				_lastValue = v;
+			});
+	}
+
+	private Type? ResolveType(object? value)
+	{
+		// Declared type always wins if present
+		return _declaredType ?? value?.GetType();
+	}
 
 	#endregion
 }

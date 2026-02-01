@@ -39,7 +39,7 @@ public sealed class ButtonMorph : Morph
 
 		_label = new LabelMorph(position)
 		{
-			IsSelectable = false,
+			IsSelectable = true,
 			Text = text,
 			BackgroundColor = null
 		};
@@ -102,6 +102,12 @@ public sealed class ButtonMorph : Morph
 	{
 		get => _disabledForegroundOverride;
 		set { _disabledForegroundOverride = value; Invalidate(); }
+	}
+
+	public string Text
+	{
+		get => _label.Text;
+		set => _label.Text = value;
 	}
 
 	#endregion

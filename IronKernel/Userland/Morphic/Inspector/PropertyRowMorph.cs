@@ -24,12 +24,14 @@ public sealed class PropertyRowMorph : Morph
 	#region Constructors
 
 	/// <summary>
-	/// Core constructor: explicit name, value provider, and optional setter.
+	/// Core constructor: explicit name, value provider, optional setter,
+	/// and optional declared type.
 	/// </summary>
 	public PropertyRowMorph(
 		string name,
 		Func<object?> valueProvider,
-		Action<object?>? valueSetter = null)
+		Action<object?>? valueSetter = null,
+		Type? declaredType = null)
 	{
 		if (string.IsNullOrWhiteSpace(name))
 			throw new ArgumentException("Property name cannot be null or empty.", nameof(name));
@@ -39,10 +41,13 @@ public sealed class PropertyRowMorph : Morph
 		IsSelectable = false;
 
 		_nameLabel = CreateNameLabel(name);
+
 		_valueMorph = new ValueMorph(
 			new InspectorFactory(),
 			valueProvider,
-			valueSetter);
+			valueSetter,
+			declaredType
+		);
 
 		AddMorph(_nameLabel);
 		AddMorph(_valueMorph);
@@ -53,7 +58,11 @@ public sealed class PropertyRowMorph : Morph
 	/// Read-only unless a setter is supplied elsewhere.
 	/// </summary>
 	public PropertyRowMorph(Expression<Func<object?>> expression)
-		: this(ExtractName(expression), expression.Compile())
+		: this(
+			ExtractName(expression),
+			expression.Compile(),
+			null,
+			ExtractDeclaredType(expression))
 	{
 	}
 
@@ -67,7 +76,8 @@ public sealed class PropertyRowMorph : Morph
 			() => property.GetValue(target),
 			property.CanWrite
 				? value => property.SetValue(target, value)
-				: null)
+				: null,
+			property.PropertyType)
 	{
 	}
 
@@ -140,6 +150,16 @@ public sealed class PropertyRowMorph : Morph
 		throw new ArgumentException(
 			"Expression must be a simple property or field access.",
 			nameof(expr));
+	}
+
+	private static Type? ExtractDeclaredType(Expression<Func<object?>> expr)
+	{
+		Expression body = expr.Body;
+
+		if (body is UnaryExpression unary && unary.NodeType == ExpressionType.Convert)
+			body = unary.Operand;
+
+		return body.Type;
 	}
 
 	#endregion
