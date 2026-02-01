@@ -23,25 +23,22 @@ public sealed class HaloMorph : Morph
 		Visible = true;
 		IsSelectable = false;
 
-		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopLeft));
+		// AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopLeft));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopRight));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomLeft));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomRight));
 
 		AddMorph(new MoveHandleMorph(target)
 		{
-			Position = new Point(
-				target.Position.X + target.Size.Width / 2 - 6,
-				target.Position.Y - 16
-			)
+			Position = new Point(-4, -4)
 		});
 
 		AddMorph(new DeleteHandleMorph(target)
 		{
 
 			Position = new Point(
-				target.Position.X + target.Size.Width / 2 - 6,
-				target.Position.Y + target.Size.Height + 16
+				target.Position.X + target.Size.Width / 2 - 4,
+				target.Position.Y + target.Size.Height - 4
 			)
 		});
 
@@ -49,8 +46,8 @@ public sealed class HaloMorph : Morph
 		{
 
 			Position = new Point(
-				target.Position.X + target.Size.Width + 16,
-				target.Position.Y + target.Size.Height + 16
+				target.Position.X + target.Size.Width / 2 - 4,
+				target.Position.Y - 4
 			)
 		});
 	}
@@ -123,8 +120,8 @@ public sealed class HaloMorph : Morph
 		{
 			m.Position = m.Kind switch
 			{
-				ResizeHandle.TopLeft =>
-					new Point(-hs, -hs),
+				// ResizeHandle.TopLeft =>
+				// 	new Point(-hs, -hs),
 
 				ResizeHandle.TopRight =>
 					new Point(+Size.Width - hs, -hs),
@@ -140,16 +137,18 @@ public sealed class HaloMorph : Morph
 		}
 
 		Submorphs.OfType<MoveHandleMorph>().Single().Position = new Point(
-			 +Size.Width / 2 - 6,
-			 -16
+			 -4,
+			 -4
+		// +Size.Width / 2 - 6,
+		// -16
 		);
 		Submorphs.OfType<DeleteHandleMorph>().Single().Position = new Point(
-			 +Size.Width / 2 - 6,
-			 +Size.Height + 16
+			 Size.Width / 2 - 4,
+			 Size.Height - 4
 		);
 		Submorphs.OfType<InspectHandleMorph>().Single().Position = new Point(
-			 +Size.Width + 16,
-			 +Size.Height + 16
+			 Size.Width / 2 - 4,
+			 -4
 		);
 	}
 
