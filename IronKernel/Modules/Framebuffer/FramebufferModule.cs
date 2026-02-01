@@ -65,7 +65,7 @@ internal sealed class FramebufferModule(
 				var y = msg.Y;
 				for (var n = 0; n < msg.Data.Count && !ct.IsCancellationRequested; n++)
 				{
-					_virtualDisplay.SetPixel(x, y, msg.Data[n].Index);
+					_virtualDisplay.SetPixel(x, y, msg.Data[n]?.Index ?? 0);
 					x++;
 					if (x >= _virtualDisplay.Width)
 					{
