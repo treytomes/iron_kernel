@@ -24,6 +24,8 @@ public abstract class HandleMorph : Morph
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
+		base.OnPointerDown(e);
+
 		if (!TryGetWorld(out var world)) return;
 
 		StartMouse = e.Position;
@@ -38,5 +40,6 @@ public abstract class HandleMorph : Morph
 	{
 		if (TryGetWorld(out var world)) world.ReleasePointer(this);
 		e.MarkHandled();
+		base.OnPointerUp(e);
 	}
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -23,9 +24,12 @@ public sealed class PropertyRowMorph : Morph
 	#region Constructors
 
 	/// <summary>
-	/// Core constructor: explicit name and value provider.
+	/// Core constructor: explicit name, value provider, and optional setter.
 	/// </summary>
-	public PropertyRowMorph(string name, Func<object?> valueProvider)
+	public PropertyRowMorph(
+		string name,
+		Func<object?> valueProvider,
+		Action<object?>? valueSetter = null)
 	{
 		if (string.IsNullOrWhiteSpace(name))
 			throw new ArgumentException("Property name cannot be null or empty.", nameof(name));
@@ -35,7 +39,10 @@ public sealed class PropertyRowMorph : Morph
 		IsSelectable = false;
 
 		_nameLabel = CreateNameLabel(name);
-		_valueMorph = new ValueMorph(new InspectorFactory(), valueProvider);
+		_valueMorph = new ValueMorph(
+			new InspectorFactory(),
+			valueProvider,
+			valueSetter);
 
 		AddMorph(_nameLabel);
 		AddMorph(_valueMorph);
@@ -43,7 +50,7 @@ public sealed class PropertyRowMorph : Morph
 
 	/// <summary>
 	/// Expression-based constructor.
-	/// Extracts the member name and builds a live value provider.
+	/// Read-only unless a setter is supplied elsewhere.
 	/// </summary>
 	public PropertyRowMorph(Expression<Func<object?>> expression)
 		: this(ExtractName(expression), expression.Compile())
@@ -52,12 +59,15 @@ public sealed class PropertyRowMorph : Morph
 
 	/// <summary>
 	/// Reflection-based constructor.
-	/// Used by dynamic inspectors.
+	/// Produces a writable row if the property is writable.
 	/// </summary>
 	public PropertyRowMorph(PropertyInfo property, object target)
 		: this(
 			property?.Name ?? throw new ArgumentNullException(nameof(property)),
-			() => property.GetValue(target))
+			() => property.GetValue(target),
+			property.CanWrite
+				? value => property.SetValue(target, value)
+				: null)
 	{
 	}
 
@@ -88,10 +98,7 @@ public sealed class PropertyRowMorph : Morph
 	protected override void UpdateLayout()
 	{
 		_nameLabel.Position = new Point(Padding, Padding);
-
-		_valueMorph.Position = new Point(
-			_nameColumnWidth + Padding,
-			Padding);
+		_valueMorph.Position = new Point(_nameColumnWidth + Padding, Padding);
 
 		var height = Math.Max(
 			_nameLabel.Size.Height,

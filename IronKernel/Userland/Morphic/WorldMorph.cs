@@ -119,7 +119,7 @@ public sealed class WorldMorph : Morph
 		}
 		else if (action == InputAction.Release)
 		{
-			var e = new PointerUpEvent(position);
+			var e = new PointerUpEvent(button, position);
 
 			if (PointerCapture != null)
 			{
@@ -162,6 +162,8 @@ public sealed class WorldMorph : Morph
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
+		base.OnPointerDown(e);
+
 		if (e.Target == null)
 			return;
 

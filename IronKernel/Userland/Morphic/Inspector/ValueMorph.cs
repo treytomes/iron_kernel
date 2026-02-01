@@ -10,12 +10,14 @@ public class ValueMorph : Morph
 {
 	#region Fields
 
-	private InspectorFactory _inspectorFactory;
+	private IInspectorFactory _inspectorFactory;
 
 	/// <summary>
 	/// The runtime value being represented.
 	/// </summary>
-	private Func<object?> _valueProvider;
+	private readonly Func<object?> _valueProvider;
+
+	private readonly Action<object?>? _valueSetter;
 
 	private object? _lastValue;
 	protected Morph _content;
@@ -24,14 +26,26 @@ public class ValueMorph : Morph
 
 	#region Constructors
 
-	public ValueMorph(InspectorFactory inspectorFactory, Func<object?> valueProvider)
+	public ValueMorph(
+		InspectorFactory inspectorFactory,
+		Func<object?> valueProvider,
+		Action<object?>? valueSetter = null
+	)
 	{
 		_inspectorFactory = inspectorFactory;
 		_valueProvider = valueProvider ?? throw new ArgumentNullException(nameof(valueProvider));
+		_valueSetter = valueSetter;
 		_lastValue = _valueProvider();
 		IsSelectable = true;
 
-		_content = _inspectorFactory.GetInspectorFor(_lastValue?.GetType());
+		_content = _inspectorFactory.GetInspectorFor(
+			_lastValue?.GetType(),
+			value =>
+			{
+				_valueSetter?.Invoke(value);
+				_lastValue = value;
+			}
+		);
 
 		AddMorph(_content);
 		UpdateDisplay();
@@ -55,7 +69,14 @@ public class ValueMorph : Morph
 		if (!Equals(current?.GetType(), _lastValue?.GetType()))
 		{
 			RemoveMorph(_content);
-			_content = _inspectorFactory.GetInspectorFor(current?.GetType());
+			_content = _inspectorFactory.GetInspectorFor(
+				_lastValue?.GetType(),
+				value =>
+				{
+					_valueSetter?.Invoke(value);
+					_lastValue = value;
+				}
+			);
 			AddMorph(_content);
 		}
 		if (!Equals(current, _lastValue))

@@ -14,7 +14,6 @@ public sealed class ButtonMorph : Morph
 {
 	#region Fields
 
-	private bool _isPressed;
 	private readonly LabelMorph _label;
 
 	// Animated hover factor [0..1]
@@ -59,7 +58,11 @@ public sealed class ButtonMorph : Morph
 		set => Command = value == null ? null : new ActionCommand(value);
 	}
 
-	public bool IsEnabled => Command?.CanExecute() ?? false;
+	public override bool IsEnabled
+	{
+		get => (Command?.CanExecute() ?? false) && base.IsEnabled;
+		set => base.IsEnabled = value;
+	}
 
 	#endregion
 
@@ -162,12 +165,12 @@ public sealed class ButtonMorph : Morph
 		// Resolve background
 		var baseBg = !IsEnabled
 			? EffectiveDisabledBackground
-			: _isPressed
+			: IsPressed
 				? EffectiveActiveBackground
 				: EffectiveBackground.Lerp(EffectiveHoverBackground, _hoverT);
 
 		// Pressed offset (depth illusion)
-		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
+		var offset = IsPressed ? new Point(1, 1) : Point.Empty;
 		var body = new Rectangle(
 			offset.X,
 			offset.Y,
@@ -175,7 +178,7 @@ public sealed class ButtonMorph : Morph
 			Bounds.Height);
 
 		// Optional drop shadow
-		if (IsEnabled && !_isPressed)
+		if (IsEnabled && !IsPressed)
 		{
 			var shadow = new Rectangle(
 				2,
@@ -189,7 +192,7 @@ public sealed class ButtonMorph : Morph
 		rc.RenderFilledRect(body, baseBg);
 
 		// Bevel (classic button look)
-		DrawBevel(rc, body, !_isPressed);
+		DrawBevel(rc, body, !IsPressed);
 
 		// Outline
 		rc.RenderRect(body, RadialColor.Black);
@@ -216,25 +219,13 @@ public sealed class ButtonMorph : Morph
 
 	#region Pointer handling
 
-	protected override void OnPointerEnter()
-	{
-		Invalidate();
-	}
-
-	protected override void OnPointerLeave()
-	{
-		_isPressed = false;
-		Invalidate();
-	}
-
 	public override void OnPointerDown(PointerDownEvent e)
 	{
-		if (!IsEnabled)
-			return;
+		base.OnPointerDown(e);
 
-		_isPressed = true;
-		GetWorld()?.CapturePointer(this);
-		Invalidate();
+		if (IsPressed)
+			GetWorld()?.CapturePointer(this);
+
 		e.MarkHandled();
 	}
 
@@ -242,15 +233,14 @@ public sealed class ButtonMorph : Morph
 	{
 		GetWorld()?.CapturePointer(null);
 
-		if (_isPressed && IsEnabled && IsEffectivelyHovered)
+		if (IsPressed && IsEnabled && IsEffectivelyHovered)
 		{
 			if (TryGetWorld(out var world) && Command != null)
 				world.Commands.Submit(Command);
 		}
 
-		_isPressed = false;
-		Invalidate();
 		e.MarkHandled();
+		base.OnPointerUp(e);
 	}
 
 	#endregion
@@ -259,7 +249,7 @@ public sealed class ButtonMorph : Morph
 
 	protected override void UpdateLayout()
 	{
-		var offset = _isPressed ? new Point(1, 1) : Point.Empty;
+		var offset = IsPressed ? new Point(1, 1) : Point.Empty;
 		_label.Position = new Point(
 			(Size.Width - _label.Size.Width) / 2 + offset.X,
 			(Size.Height - _label.Size.Height) / 2 + offset.Y);

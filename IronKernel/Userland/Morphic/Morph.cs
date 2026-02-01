@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
@@ -15,6 +16,7 @@ public abstract class Morph : ICommandTarget
 	private bool _layoutInvalid = true;
 	private Point _position;
 	private Size _size;
+	private bool _isEnabled = true;
 
 	#endregion
 
@@ -49,6 +51,19 @@ public abstract class Morph : ICommandTarget
 	}
 
 	public bool Visible { get; set; } = true;
+
+	public virtual bool IsEnabled
+	{
+		get => _isEnabled;
+		set
+		{
+			if (_isEnabled == value) return;
+			_isEnabled = value;
+			Invalidate();
+		}
+	}
+
+	public bool IsPressed { get; private set; } = false;
 	public bool IsHovered { get; private set; } = false;
 
 	/// <summary>
@@ -223,11 +238,41 @@ public abstract class Morph : ICommandTarget
 
 	protected virtual void OnLoad(IAssetService assetService) { }
 
-	protected virtual void OnPointerEnter() { }
-	protected virtual void OnPointerLeave() { }
+	protected virtual void OnPointerEnter()
+	{
+		Invalidate();
+	}
 
-	public virtual void OnPointerDown(PointerDownEvent e) { }
-	public virtual void OnPointerUp(PointerUpEvent e) { }
+	protected void OnPointerLeave()
+	{
+		if (IsPressed)
+		{
+			IsPressed = false;
+			Invalidate();
+		}
+	}
+
+	public virtual void OnPointerDown(PointerDownEvent e)
+	{
+		if (!IsEnabled)
+			return;
+
+		if (e.Button == MouseButton.Left)
+		{
+			IsPressed = true;
+			Invalidate();
+		}
+	}
+
+	public virtual void OnPointerUp(PointerUpEvent e)
+	{
+		if (IsPressed && e.Button == MouseButton.Left)
+		{
+			IsPressed = false;
+			Invalidate();
+		}
+	}
+
 	public virtual void OnPointerMove(PointerMoveEvent e) { }
 	public virtual void OnKeyDown(AppKeyboardEvent e) { }
 

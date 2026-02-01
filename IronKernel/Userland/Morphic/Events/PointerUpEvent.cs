@@ -1,13 +1,10 @@
 using System.Drawing;
+using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Userland.Morphic.Events;
 
-public sealed class PointerUpEvent : MorphicEvent
+public sealed class PointerUpEvent(MouseButton button, Point position) : MorphicEvent
 {
-	public Point Position { get; }
-
-	public PointerUpEvent(Point position)
-	{
-		Position = position;
-	}
+	public MouseButton Button { get; init; } = button;
+	public Point Position { get; init; } = position;
 }
