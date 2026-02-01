@@ -2,6 +2,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Handles;
+using IronKernel.Userland.Morphic.Inspector;
 using System.Drawing;
 
 namespace IronKernel.Userland.Morphic;
@@ -10,7 +11,7 @@ namespace IronKernel.Userland.Morphic;
 /// A text morph whose size is derived from its content.
 /// Resizing adjusts wrapping width only; height is computed from layout.
 /// </summary>
-public sealed class LabelMorph : Morph, ISemanticResizeTarget
+public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorph
 {
 	#region Fields
 
@@ -283,6 +284,16 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget
 	{
 		_wrapWidth = (int?)state;
 		UpdateLayout();
+	}
+
+	public void Refresh(object? value)
+	{
+		Text = FormatValue(value);
+	}
+
+	private string FormatValue(object? value)
+	{
+		return value?.ToString() ?? "<null>";
 	}
 
 	#endregion

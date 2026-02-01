@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Inspector;
 
 /// <summary>
 /// Base morph for displaying a runtime value inside an Inspector.
@@ -10,31 +10,30 @@ public class ValueMorph : Morph
 {
 	#region Fields
 
+	private InspectorFactory _inspectorFactory;
+
 	/// <summary>
 	/// The runtime value being represented.
 	/// </summary>
 	private Func<object?> _valueProvider;
 
 	private object? _lastValue;
-	protected readonly LabelMorph _label;
+	protected Morph _content;
 
 	#endregion
 
 	#region Constructors
 
-	public ValueMorph(Func<object?> valueProvider)
+	public ValueMorph(InspectorFactory inspectorFactory, Func<object?> valueProvider)
 	{
+		_inspectorFactory = inspectorFactory;
 		_valueProvider = valueProvider ?? throw new ArgumentNullException(nameof(valueProvider));
 		_lastValue = _valueProvider();
 		IsSelectable = true;
 
-		_label = new LabelMorph()
-		{
-			IsSelectable = false,
-			BackgroundColor = null
-		};
+		_content = _inspectorFactory.GetInspectorFor(_lastValue?.GetType());
 
-		AddMorph(_label);
+		AddMorph(_content);
 		UpdateDisplay();
 	}
 
@@ -53,6 +52,12 @@ public class ValueMorph : Morph
 		base.Update(deltaTime);
 
 		var current = _valueProvider();
+		if (!Equals(current?.GetType(), _lastValue?.GetType()))
+		{
+			RemoveMorph(_content);
+			_content = _inspectorFactory.GetInspectorFor(current?.GetType());
+			AddMorph(_content);
+		}
 		if (!Equals(current, _lastValue))
 		{
 			_lastValue = current;
@@ -65,8 +70,8 @@ public class ValueMorph : Morph
 
 	protected override void UpdateLayout()
 	{
-		_label.Position = Point.Empty;
-		Size = _label.Size;
+		_content.Position = Point.Empty;
+		Size = _content.Size;
 	}
 
 	#endregion
@@ -79,12 +84,10 @@ public class ValueMorph : Morph
 	/// </summary>
 	protected virtual void UpdateDisplay()
 	{
-		_label.Text = FormatValue(_lastValue);
-	}
-
-	protected virtual string FormatValue(object? value)
-	{
-		return value?.ToString() ?? "<null>";
+		if (_content is IValueContentMorph refreshable)
+		{
+			refreshable.Refresh(_lastValue);
+		}
 	}
 
 	#endregion

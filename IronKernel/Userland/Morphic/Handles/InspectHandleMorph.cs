@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
+using IronKernel.Userland.Morphic.Inspector;
 
 namespace IronKernel.Userland.Morphic.Handles;
 

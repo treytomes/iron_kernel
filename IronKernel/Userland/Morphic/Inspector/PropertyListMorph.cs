@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Reflection;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Inspector;
 
 /// <summary>
 /// A vertical container for PropertyRowMorph instances.

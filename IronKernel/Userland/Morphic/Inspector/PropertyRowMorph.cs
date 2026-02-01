@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Inspector;
 
 /// <summary>
 /// A single row in an Inspector, displaying a property name
@@ -35,7 +35,7 @@ public sealed class PropertyRowMorph : Morph
 		IsSelectable = false;
 
 		_nameLabel = CreateNameLabel(name);
-		_valueMorph = new ValueMorph(valueProvider);
+		_valueMorph = new ValueMorph(new InspectorFactory(), valueProvider);
 
 		AddMorph(_nameLabel);
 		AddMorph(_valueMorph);

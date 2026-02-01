@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Linq;
 using System.Reflection;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Inspector;
 
 /// <summary>
 /// A live inspector for an arbitrary object.
