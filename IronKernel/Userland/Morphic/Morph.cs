@@ -243,7 +243,7 @@ public abstract class Morph : ICommandTarget
 		Invalidate();
 	}
 
-	protected void OnPointerLeave()
+	protected virtual void OnPointerLeave()
 	{
 		if (IsPressed)
 		{

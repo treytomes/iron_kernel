@@ -91,7 +91,7 @@ public sealed class DemoUserApplication(
 			"MouseButtonHandler",
 			async (e, ct) =>
 			{
-				world.PointerButton(e.Button, e.Action);
+				world.PointerButton(e.Button, e.Action, e.Modifiers);
 				await Task.CompletedTask;
 			}
 		);

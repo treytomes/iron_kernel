@@ -75,17 +75,17 @@ public sealed class WorldMorph : Morph
 		}
 	}
 
-	public void PointerButton(MouseButton button, InputAction action)
+	public void PointerButton(MouseButton button, InputAction action, KeyModifier modifiers)
 	{
 		var position = Hand.Position;
 		var target = FindMorphAt(position) ?? this;
 
 		if (action == InputAction.Press)
 		{
-			// Halo gesture (right click)
-			if (button == MouseButton.Right)
+			// Halo gesture (middle click)
+			if (button == MouseButton.Right && modifiers.HasFlag(KeyModifier.Control))
 			{
-				var e0 = new PointerDownEvent(button, position)
+				var e0 = new PointerDownEvent(button, position, modifiers)
 				{
 					Target = target
 				};
@@ -98,7 +98,7 @@ public sealed class WorldMorph : Morph
 			// Primary interaction (left click)
 			Commands.BeginTransaction();
 
-			var e = new PointerDownEvent(button, position)
+			var e = new PointerDownEvent(button, position, modifiers)
 			{
 				Target = target
 			};
@@ -119,7 +119,7 @@ public sealed class WorldMorph : Morph
 		}
 		else if (action == InputAction.Release)
 		{
-			var e = new PointerUpEvent(button, position);
+			var e = new PointerUpEvent(button, position, modifiers);
 
 			if (PointerCapture != null)
 			{
@@ -190,7 +190,7 @@ public sealed class WorldMorph : Morph
 			return;
 		}
 
-		if (e.Button == MouseButton.Right)
+		if (e.Button == MouseButton.Right && e.Modifiers.HasFlag(KeyModifier.Control))
 		{
 			SelectMorph(selectable);
 		}

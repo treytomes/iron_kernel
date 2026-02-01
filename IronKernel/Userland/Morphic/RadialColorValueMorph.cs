@@ -7,31 +7,57 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 {
-	private RadialColor? _color;
-	private readonly LabelMorph _label;
+	#region Constants
 
 	private const int SwatchSize = 6;
 	private const int Padding = 1;
 
-	public RadialColorValueMorph()
+	#endregion
+
+	#region Fields
+
+	private RadialColor? _color;
+	private readonly Action<RadialColor?>? _setter;
+
+	private ChannelStepperMorph _r;
+	private ChannelStepperMorph _g;
+	private ChannelStepperMorph _b;
+
+	#endregion
+
+	#region Constructors
+
+	public RadialColorValueMorph(Action<RadialColor?>? setter)
 	{
+		_setter = setter;
 		IsSelectable = false;
 
-		_label = new LabelMorph
-		{
-			IsSelectable = false,
-			BackgroundColor = null
-		};
+		_r = new ChannelStepperMorph("R", 0, OnRChanged);
+		_g = new ChannelStepperMorph("G", 0, OnGChanged);
+		_b = new ChannelStepperMorph("B", 0, OnBChanged);
 
-		AddMorph(_label);
+		AddMorph(_r);
+		AddMorph(_g);
+		AddMorph(_b);
 	}
+
+	#endregion
+
+	#region Methods
 
 	#region IValueContentMorph
 
 	public void Refresh(object? value)
 	{
-		_color = value as RadialColor;
-		_label.Text = _color?.ToString() ?? "<null>";
+		if (value is not RadialColor c)
+			return;
+
+		_color = c;
+
+		_r.Value = c.R;
+		_g.Value = c.G;
+		_b.Value = c.B;
+
 		Invalidate();
 		InvalidateLayout();
 	}
@@ -42,12 +68,24 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 
 	protected override void UpdateLayout()
 	{
-		_label.Position = new Point(SwatchSize + Padding * 2, Padding);
+		// Reserve space for the color swatch
+		var x = SwatchSize + Padding * 2;
 
-		var height = Math.Max(SwatchSize, _label.Size.Height);
+		foreach (var m in Submorphs)
+		{
+			m.Position = new Point(x, Padding);
+			x += m.Size.Width + Padding;
+		}
+
+		var height = Math.Max(
+			SwatchSize,
+			Submorphs.Max(m => m.Size.Height)
+		);
+
 		Size = new Size(
-			SwatchSize + _label.Size.Width + Padding * 3,
-			height + Padding * 2);
+			x + Padding,
+			height + Padding * 2
+		);
 	}
 
 	#endregion
@@ -69,7 +107,7 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 		// Swatch border
 		rc.RenderFilledRect(
 			new Rectangle(Padding, Padding, SwatchSize, SwatchSize),
-			s.Border);
+			IsEffectivelyHovered ? s.PrimaryHover : s.Border);
 
 		if (_color != null)
 		{
@@ -83,6 +121,36 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 				}
 		}
 	}
+
+	private void OnRChanged(byte r)
+	{
+		if (_color == null) _color = RadialColor.Black;
+		UpdateColor(_color.WithR(r));
+	}
+
+	private void OnGChanged(byte g)
+	{
+		if (_color == null) _color = RadialColor.Black;
+		UpdateColor(_color.WithG(g));
+	}
+
+	private void OnBChanged(byte b)
+	{
+		if (_color == null) _color = RadialColor.Black;
+		UpdateColor(_color.WithB(b));
+	}
+
+	private void UpdateColor(RadialColor newColor)
+	{
+		if (newColor.Equals(_color))
+			return;
+
+		_color = newColor;
+		_setter?.Invoke(newColor);
+		Invalidate();
+	}
+
+	#endregion
 
 	#endregion
 }

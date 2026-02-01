@@ -15,7 +15,12 @@ public class InspectorFactory : IInspectorFactory
 		}
 
 		if (contentType == typeof(RadialColor))
-			return new RadialColorValueMorph();
+		{
+			return new RadialColorValueMorph(b =>
+			{
+				setter?.Invoke(b);
+			});
+		}
 
 		return new LabelMorph
 		{
