@@ -131,6 +131,8 @@ public sealed class ChannelStepperMorph : Morph
 		Size = new Size(
 			_labelMorph.Size.Width + _valueMorph.Size.Width + Padding * 3,
 			height + Padding * 2);
+
+		base.UpdateLayout();
 	}
 
 	protected override void DrawSelf(IRenderingContext rc)

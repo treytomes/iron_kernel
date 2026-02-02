@@ -179,6 +179,8 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		Size = new Size(
 			Math.Max(40, _label.Size.Width + Padding * 2),
 			_label.Size.Height + Padding * 2);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

@@ -259,6 +259,8 @@ public sealed class ButtonMorph : Morph
 		_label.Position = new Point(
 			(Size.Width - _label.Size.Width) / 2 + offset.X,
 			(Size.Height - _label.Size.Height) / 2 + offset.Y);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

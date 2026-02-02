@@ -47,7 +47,9 @@ public sealed class WorldCommandManager
 	public void BeginTransaction()
 	{
 		if (_activeTransaction != null)
-			throw new InvalidOperationException("Transaction already active.");
+			// throw new InvalidOperationException("Transaction already active.");
+			// TODO: Keep adding to the existing transaction?  Is this a good idea?
+			return;
 
 		_activeTransaction = new CommandTransaction();
 	}

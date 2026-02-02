@@ -247,6 +247,8 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		var height = lines.Count * _font.TileSize.Height;
 
 		Size = new Size(width, height);
+
+		base.UpdateLayout();
 	}
 
 	private List<string> ComputeWrappedLines()

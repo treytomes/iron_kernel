@@ -117,6 +117,8 @@ public sealed class PropertyRowMorph : Morph
 		Size = new Size(
 			_nameColumnWidth + _valueMorph.Size.Width + Padding * 2,
 			height + Padding * 2);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

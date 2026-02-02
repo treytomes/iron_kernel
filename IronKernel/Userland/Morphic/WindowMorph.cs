@@ -108,6 +108,8 @@ public class WindowMorph : Morph
 		_content.Size = new Size(
 			Size.Width,
 			Size.Height - HeaderHeight);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

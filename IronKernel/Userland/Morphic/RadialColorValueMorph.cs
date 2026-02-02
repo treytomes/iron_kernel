@@ -102,6 +102,8 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 		Size = new Size(
 			x + Padding,
 			height + Padding * 2);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

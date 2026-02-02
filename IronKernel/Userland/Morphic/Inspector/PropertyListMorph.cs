@@ -104,6 +104,8 @@ public sealed class PropertyListMorph : Morph
 		Size = new Size(
 			maxWidth + Padding * 2,
 			y + Padding);
+
+		base.UpdateLayout();
 	}
 
 	#endregion

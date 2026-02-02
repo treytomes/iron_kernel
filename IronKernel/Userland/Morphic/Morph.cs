@@ -149,16 +149,16 @@ public abstract class Morph : ICommandTarget
 	public void Draw(IRenderingContext rc)
 	{
 		var isRoot = this is WorldMorph;
-		var offsetSize = rc.OffsetStackSize;
-		var clipSize = rc.ClipStackSize;
+
+		if (!isRoot)
+		{
+			rc.PushOffset(Position);
+			if (ShouldClipToBounds)
+				rc.PushClip(new Rectangle(Point.Empty, Size));
+		}
+
 		try
 		{
-			if (!isRoot)
-			{
-				rc.PushOffset(Position);
-				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
-			}
-
 			DrawSelf(rc);
 
 			foreach (var child in _submorphs.ToArray())
@@ -169,8 +169,13 @@ public abstract class Morph : ICommandTarget
 		}
 		finally
 		{
-			rc.PopOffset(offsetSize);
-			rc.PopClip(clipSize);
+			if (!isRoot)
+			{
+				if (ShouldClipToBounds)
+					rc.PopClip();
+
+				rc.PopOffset();
+			}
 		}
 	}
 
@@ -319,7 +324,10 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	protected virtual void UpdateLayout()
 	{
-		// Default: do nothing
+		foreach (var child in Submorphs)
+		{
+			child.UpdateLayout();
+		}
 	}
 
 	protected bool TryGetWorld(out WorldMorph world)

@@ -92,6 +92,8 @@ public class ValueMorph : Morph
 	{
 		_content.Position = Point.Empty;
 		Size = _content.Size;
+
+		base.UpdateLayout();
 	}
 
 	#endregion

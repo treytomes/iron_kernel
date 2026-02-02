@@ -6,7 +6,7 @@ We are building a **living retro computing platform**: a small, self-contained c
 
 At its core is a **microkernel-style architecture**. The kernel runs a set of **supervised modules**, each responsible for a narrow hardware-like concern—window hosting, framebuffer output, input devices, timing, and lifecycle management. These modules communicate exclusively through a typed message bus, enforcing strong boundaries and explicit causality.
 
-The primary display device exposed by the kernel is a **320×240 pixel framebuffer** backed by a **fixed 256-color palette**, composed of six discrete intensity levels each of red, green, and blue (in the spirit of the MiniCraft palette). This constraint is intentional: it defines the aesthetic, performance envelope, and programming model of the system.
+The primary display device exposed by the kernel is a **480x320 pixel framebuffer** backed by a **fixed 256-color palette**, composed of six discrete intensity levels each of red, green, and blue (in the spirit of the MiniCraft palette). This constraint is intentional: it defines the aesthetic, performance envelope, and programming model of the system.
 
 Above the kernel sits a **single userland application**. Userland does not directly touch OpenGL, OpenTK, or the host OS. Instead, it interacts with the system through a **bus bridge**, making explicit requests (syscalls) to kernel services and receiving forwarded kernel events.
 
