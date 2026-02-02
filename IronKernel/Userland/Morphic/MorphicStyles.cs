@@ -72,18 +72,18 @@ public static class MorphicStyles
 			Foreground = RadialColor.Green.Lerp(RadialColor.White, 0.5f),
 			ForegroundHover = RadialColor.Green.Lerp(RadialColor.White, 0.35f),
 		},
-		// DefaultFontStyle = new()
-		// {
-		// 	AssetId = "image.oem437_8",
-		// 	GlyphOffset = 0,
-		// 	TileSize = new Size(8, 8),
-		// },
 		DefaultFontStyle = new()
 		{
-			AssetId = "image.my-font-light",
-			GlyphOffset = -32,
-			TileSize = new Size(5, 6),
+			AssetId = "image.oem437_8",
+			GlyphOffset = 0,
+			TileSize = new Size(8, 8),
 		},
+		// DefaultFontStyle = new()
+		// {
+		// 	AssetId = "image.my-font-light",
+		// 	GlyphOffset = -32,
+		// 	TileSize = new Size(5, 6),
+		// },
 
 		// --- Structural ---
 		HaloOutline = RadialColor.Yellow,

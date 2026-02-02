@@ -46,6 +46,8 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 
 	#region Properties
 
+	public Size TileSize => _font?.TileSize ?? new Size(1, 1);
+
 	public RadialColor? ForegroundColor
 	{
 		get => _foregroundColorOverride;

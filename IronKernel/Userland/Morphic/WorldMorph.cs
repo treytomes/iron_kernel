@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Commands;
@@ -54,6 +55,17 @@ public sealed class WorldMorph : Morph
 			PointerCapture = null;
 	}
 
+	public void CaptureKeyboard(Morph? morph)
+	{
+		KeyboardFocus = morph;
+	}
+
+	public void ReleaseKeyboard(Morph? morph)
+	{
+		if (KeyboardFocus == morph)
+			KeyboardFocus = null;
+	}
+
 	public override void Update(double deltaTime)
 	{
 		// Execute all deferred mutation intents.
@@ -82,7 +94,7 @@ public sealed class WorldMorph : Morph
 
 		if (action == InputAction.Press)
 		{
-			// Halo gesture (middle click)
+			// --- Halo gesture (Ctrl + Right Click) ---
 			if (button == MouseButton.Right && modifiers.HasFlag(KeyModifier.Control))
 			{
 				var e0 = new PointerDownEvent(button, position, modifiers)
@@ -95,7 +107,7 @@ public sealed class WorldMorph : Morph
 				return;
 			}
 
-			// Primary interaction (left click)
+			// --- PRIMARY INTERACTION ---
 			Commands.BeginTransaction();
 
 			var e = new PointerDownEvent(button, position, modifiers)
@@ -105,13 +117,28 @@ public sealed class WorldMorph : Morph
 
 			OnPointerDown(e);
 
+			// Resolve focus candidate
+			var focusTarget = FindSelectableAncestor(target);
+
+			// --- KEYBOARD FOCUS POLICY ---
+			if (focusTarget != null && focusTarget.WantsKeyboardFocus)
+			{
+				// Clicking on a focusable morph → give it keyboard focus
+				CaptureKeyboard(focusTarget);
+			}
+			else if (KeyboardFocus != null)
+			{
+				// Clicking elsewhere → release keyboard focus
+				ReleaseKeyboard(KeyboardFocus);
+			}
+
+			// --- DISPATCH POINTER DOWN ---
 			if (!e.Handled)
 			{
-				if (target.WantsKeyboardFocus)
-					KeyboardFocus = target;
 				target.DispatchPointerDown(e);
 			}
 
+			// --- GRAB ---
 			if (!e.Handled && target != this && target != Hand && target.IsGrabbable)
 			{
 				Hand.Grab(target, position);
@@ -127,8 +154,16 @@ public sealed class WorldMorph : Morph
 			}
 
 			Hand.Release();
-
 			Commands.CommitTransaction();
+		}
+	}
+
+	public void KeyPress(InputAction action, KeyModifier modifiers, Key key)
+	{
+		var e = new KeyEvent(action, modifiers, key);
+		if (KeyboardFocus != null)
+		{
+			KeyboardFocus.OnKey(e);
 		}
 	}
 

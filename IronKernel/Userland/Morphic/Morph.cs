@@ -1,6 +1,5 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Modules.ApplicationHost;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
@@ -274,7 +273,7 @@ public abstract class Morph : ICommandTarget
 	}
 
 	public virtual void OnPointerMove(PointerMoveEvent e) { }
-	public virtual void OnKeyDown(AppKeyboardEvent e) { }
+	public virtual void OnKey(KeyEvent e) { }
 
 	public void DispatchPointerDown(PointerDownEvent e)
 	{

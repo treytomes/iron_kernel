@@ -52,6 +52,9 @@ public sealed class DemoUserApplication(
 			)
 		});
 
+		var text = "Name";
+		world.AddMorph(new TextEditMorph(new Point(0, 32), text, x => text = x));
+
 		world.AddMorph(new BoxMorph(new Point(50, 50), new Size(40, 30))
 		{
 			FillColor = RadialColor.Red,
@@ -79,13 +82,14 @@ public sealed class DemoUserApplication(
 		var canvas = new FramebufferCanvas(context.Bus);
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
-				"MouseMoveHandler",
-				async (e, ct) =>
-				{
-					var pnt = new Point(e.X, e.Y);
-					world.PointerMove(pnt);
-					await Task.CompletedTask;
-				});
+			"MouseMoveHandler",
+			async (e, ct) =>
+			{
+				var pnt = new Point(e.X, e.Y);
+				world.PointerMove(pnt);
+				await Task.CompletedTask;
+			}
+		);
 
 		context.Bus.Subscribe<AppMouseButtonEvent>(
 			"MouseButtonHandler",
@@ -100,10 +104,7 @@ public sealed class DemoUserApplication(
 			"KeyboardHandler",
 			async (e, ct) =>
 			{
-				if (world.KeyboardFocus != null)
-				{
-					world.KeyboardFocus.OnKeyDown(e);
-				}
+				world.KeyPress(e.Action, e.Modifiers, e.Key);
 				await Task.CompletedTask;
 			}
 		);
