@@ -497,7 +497,8 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 	{
 		if (_isDirty)
 		{
-			_bus.Publish(new AppFbWriteSpan(0, 0, _data!, true));
+			_bus.Publish(new AppFbWriteRect(0, 0, Size.Width, Size.Height, _data!, true));
+			// _bus.Publish(new AppFbWriteSpan(0, 0, _data!, true));
 			_isDirty = false;
 		}
 	}

@@ -7,6 +7,13 @@ namespace IronKernel.Modules.Framebuffer.ValueObjects;
 // Input
 
 public sealed record FbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data, bool IsComplete);
+public sealed record FbWriteRect(
+	int X,
+	int Y,
+	int Width,
+	int Height,
+	RadialColor[] Data,
+	bool IsComplete);
 public sealed record FbSetBorder(RadialColor Color);
 public sealed record FbFrameReady(ulong FrameId);
 

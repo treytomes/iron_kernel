@@ -1,3 +1,4 @@
+using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.Shaders;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -44,7 +45,7 @@ internal class VirtualDisplay : IVirtualDisplay
 
 	// Pixel data management  
 	private bool _textureNeedsUpdate = false;
-	private byte[] _pixelData;
+	private RadialColor[] _pixelData;
 
 	private bool _disposedValue;
 
@@ -63,7 +64,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	{
 		_settings = settings ?? throw new ArgumentNullException(nameof(settings));
 		_lastWindowSize = windowSize;
-		_pixelData = new byte[_settings.Width * _settings.Height];
+		_pixelData = new RadialColor[_settings.Width * _settings.Height];
 	}
 
 	#endregion
@@ -189,7 +190,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  
 	/// <exception cref="ArgumentNullException">Thrown if pixelData is null.</exception>  
 	/// <exception cref="ArgumentException">Thrown if pixelData length doesn't match display size.</exception>  
-	public void UpdatePixels(byte[] pixelData)
+	public void UpdatePixels(RadialColor[] pixelData)
 	{
 		if (pixelData == null)
 			throw new ArgumentNullException(nameof(pixelData));
@@ -197,7 +198,33 @@ internal class VirtualDisplay : IVirtualDisplay
 		if (pixelData.Length != Width * Height)
 			throw new ArgumentException($"Pixel data length must be {Width * Height}", nameof(pixelData));
 
-		System.Buffer.BlockCopy(pixelData, 0, _pixelData, 0, pixelData.Length);
+		Array.Copy(pixelData, _pixelData, pixelData.Length);
+		_textureNeedsUpdate = true;
+	}
+
+	public void SetPixels(
+		int x,
+		int y,
+		int width,
+		int height,
+		RadialColor[] data)
+	{
+		if (width <= 0 || height <= 0) return;
+
+		var expected = width * height;
+		if (data.Length != expected)
+			throw new ArgumentException("Data size mismatch.");
+
+		var srcOffset = 0;
+		var dstOffset = y * width + x;
+
+		for (var row = 0; row < height; row++)
+		{
+			Array.Copy(data, srcOffset, _pixelData, dstOffset, width);
+			srcOffset += width;
+			dstOffset += width;
+		}
+
 		_textureNeedsUpdate = true;
 	}
 
@@ -208,13 +235,13 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="y">The y-coordinate of the pixel.</param>  
 	/// <param name="colorIndex">The palette index to set.</param>  
 	/// <returns>True if the pixel was set, false if coordinates were out of bounds.</returns>  
-	public bool SetPixel(int x, int y, byte colorIndex)
+	public bool SetPixel(int x, int y, RadialColor color)
 	{
 		if (x < 0 || x >= Width || y < 0 || y >= Height)
 			return false;
 
-		int index = y * Width + x;
-		_pixelData[index] = colorIndex;
+		var index = y * Width + x;
+		_pixelData[index] = color;
 		_textureNeedsUpdate = true;
 		return true;
 	}
@@ -225,22 +252,22 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="x">The x-coordinate of the pixel.</param>  
 	/// <param name="y">The y-coordinate of the pixel.</param>  
 	/// <returns>The palette index at the specified pixel, or 0 if out of bounds.</returns>  
-	public byte GetPixel(int x, int y)
+	public RadialColor GetPixel(int x, int y)
 	{
 		if (x < 0 || x >= Width || y < 0 || y >= Height)
-			return 0;
+			return RadialColor.Black;
 
-		int index = y * Width + x;
+		var index = y * Width + x;
 		return _pixelData[index];
 	}
 
 	/// <summary>  
 	/// Clears the virtual display to the specified color index.  
 	/// </summary>  
-	/// <param name="colorIndex">The palette index to fill with.</param>  
-	public void Clear(byte colorIndex = 0)
+	/// <param name="color">The palette index to fill with.</param>  
+	public void Clear(RadialColor color)
 	{
-		Array.Fill(_pixelData, colorIndex);
+		Array.Fill(_pixelData, color);
 		_textureNeedsUpdate = true;
 	}
 
@@ -298,7 +325,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		// Update texture if needed  
 		if (_textureNeedsUpdate)
 		{
-			_texture.Data = _pixelData;
+			_texture.Data = _pixelData.Select(x => x.Index).ToArray();
 			_textureNeedsUpdate = false;
 		}
 

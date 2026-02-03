@@ -98,7 +98,7 @@ internal sealed class FramebufferModule(
 
 				for (var n = 0; n < msg.Data.Count && !ct.IsCancellationRequested; n++)
 				{
-					_virtualDisplay.SetPixel(x, y, msg.Data[n]?.Index ?? 0);
+					_virtualDisplay.SetPixel(x, y, msg.Data[n]);
 					x++;
 
 					if (x >= _virtualDisplay.Width)
@@ -109,6 +109,27 @@ internal sealed class FramebufferModule(
 							break;
 					}
 				}
+
+				if (msg.IsComplete)
+				{
+					_bus.Publish(new FbFrameReady(_currentFrameId));
+				}
+
+				return Task.CompletedTask;
+			}
+		));
+
+		_subscriptions.Add(_bus.Subscribe<FbWriteRect>(
+			runtime,
+			"WriteRectHandler",
+			(msg, ct) =>
+			{
+				_virtualDisplay.SetPixels(
+					msg.X,
+					msg.Y,
+					msg.Width,
+					msg.Height,
+					msg.Data);
 
 				if (msg.IsComplete)
 				{
@@ -171,5 +192,19 @@ internal sealed class FramebufferModule(
 		_subscriptions.Clear();
 		return ValueTask.CompletedTask;
 	}
+
+	private static byte[] Convert(IReadOnlyList<RadialColor?> data)
+	{
+		var result = new byte[data.Count];
+
+		for (int i = 0; i < data.Count; i++)
+		{
+			// Null means background / index 0
+			result[i] = data[i]?.Index ?? 0;
+		}
+
+		return result;
+	}
+
 	#endregion
 }

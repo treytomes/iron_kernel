@@ -22,6 +22,13 @@ public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers,
 
 
 public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data, bool IsComplete);
+public sealed record AppFbWriteRect(
+	int X,
+	int Y,
+	int Width,
+	int Height,
+	RadialColor[] Data,
+	bool IsComplete);
 public sealed record AppFbSetBorder(RadialColor Color);
 
 public sealed record AppFbInfoQuery(Guid CorrelationID) : Query(CorrelationID);

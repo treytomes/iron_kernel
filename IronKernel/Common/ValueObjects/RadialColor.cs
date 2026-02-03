@@ -1,7 +1,9 @@
+using System.Runtime.InteropServices;
 using OpenTK.Mathematics;
 
 namespace IronKernel.Common.ValueObjects;
 
+[StructLayout(LayoutKind.Sequential)]
 public sealed record RadialColor : IEquatable<RadialColor>
 {
 	#region Fields

@@ -163,6 +163,11 @@ internal sealed class ApplicationHostModule(
 			(e, ct) => new(e.X, e.Y, e.Data, e.IsComplete)
 		);
 
+		_bridge.Request<AppFbWriteRect, FbWriteRect>(
+			"AppFbWriteSpanHandler",
+			(e, ct) => new(e.X, e.Y, e.Width, e.Height, e.Data, e.IsComplete)
+		);
+
 		_bridge.Request<AppFbSetBorder, FbSetBorder>(
 			"AppFbSetBorderHandler",
 			(e, ct) => new(e.Color)

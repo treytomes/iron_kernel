@@ -1,3 +1,4 @@
+using IronKernel.Common.ValueObjects;
 using OpenTK.Mathematics;
 
 namespace IronKernel.Modules.Framebuffer;
@@ -57,16 +58,23 @@ internal interface IVirtualDisplay : IDisposable
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  
 	/// <exception cref="ArgumentNullException">Thrown if pixelData is null.</exception>  
 	/// <exception cref="ArgumentException">Thrown if pixelData length doesn't match display size.</exception>  
-	void UpdatePixels(byte[] pixelData);
+	void UpdatePixels(RadialColor[] pixelData);
+
+	void SetPixels(
+		int x,
+		int y,
+		int width,
+		int height,
+		RadialColor[] data);
 
 	/// <summary>  
 	/// Sets a single pixel in the virtual display.  
 	/// </summary>  
 	/// <param name="x">The x-coordinate of the pixel.</param>  
 	/// <param name="y">The y-coordinate of the pixel.</param>  
-	/// <param name="colorIndex">The palette index to set.</param>  
+	/// <param name="color">The palette index to set.</param>  
 	/// <returns>True if the pixel was set, false if coordinates were out of bounds.</returns>  
-	bool SetPixel(int x, int y, byte colorIndex);
+	bool SetPixel(int x, int y, RadialColor color);
 
 	/// <summary>  
 	/// Gets the color index at the specified pixel.  
@@ -74,13 +82,13 @@ internal interface IVirtualDisplay : IDisposable
 	/// <param name="x">The x-coordinate of the pixel.</param>  
 	/// <param name="y">The y-coordinate of the pixel.</param>  
 	/// <returns>The palette index at the specified pixel, or 0 if out of bounds.</returns>  
-	byte GetPixel(int x, int y);
+	RadialColor GetPixel(int x, int y);
 
 	/// <summary>  
 	/// Clears the virtual display to the specified color index.  
 	/// </summary>  
-	/// <param name="colorIndex">The palette index to fill with.</param>  
-	void Clear(byte colorIndex = 0);
+	/// <param name="color">The palette index to fill with.</param>  
+	void Clear(RadialColor color);
 
 	/// <summary>  
 	/// Resizes the display to fit the new window size.  
