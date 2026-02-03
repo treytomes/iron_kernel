@@ -5,7 +5,8 @@ namespace IronKernel.Modules.OpenTKHost.ValueObjects;
 
 public sealed record HostWindowReady();
 public sealed record HostUpdateTick(double TotalTime, double ElapsedTime);
-public sealed record HostRenderTick(double TotalTime, double ElapsedTime);
+public sealed record HostRenderTick(ulong FrameId, double TotalTime, double ElapsedTime);
+
 public sealed record HostResizeEvent(int Width, int Height);
 public sealed record HostShutdown();
 public sealed record HostAcquiredFocus();

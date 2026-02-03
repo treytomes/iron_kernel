@@ -6,7 +6,13 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class ImageMorph : Morph
 {
+	#region Fields
+
 	private RenderImage? _image;
+
+	#endregion
+
+	#region Constructors
 
 	public ImageMorph(Point position, string assetId)
 	{
@@ -15,9 +21,17 @@ public sealed class ImageMorph : Morph
 		IsSelectable = true;
 	}
 
+	#endregion
+
+	#region Properties
+
 	public string AssetId { get; }
 	public RadialColor? Foreground { get; set; }
 	public RenderImage.RenderFlag Flags { get; set; }
+
+	#endregion
+
+	#region Methods
 
 	protected override async void OnLoad(IAssetService assets)
 	{
@@ -33,4 +47,6 @@ public sealed class ImageMorph : Morph
 		if (Foreground != null) img.Recolor(RadialColor.White, Foreground);
 		img.Render(rc, new Point(0, 0), Flags);
 	}
+
+	#endregion
 }

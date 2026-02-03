@@ -7,7 +7,8 @@ namespace IronKernel.Modules.ApplicationHost;
 public sealed record AppUpdateTick(double TotalTime, double ElapsedTime);
 
 // The render tick is effectively the vsync signal.
-public sealed record AppRenderTick(double TotalTime, double ElapsedTime);
+public sealed record AppRenderTick(ulong FrameId, double TotalTime, double ElapsedTime);
+// public sealed record AppFrameReady(ulong FrameId);
 
 public sealed record AppResizeEvent(int Width, int Height);
 public sealed record AppShutdown();
@@ -20,8 +21,7 @@ public sealed record AppMouseButtonEvent(InputAction Action, MouseButton Button,
 public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
 
 
-public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data);
-public sealed record AppFbClear(RadialColor Color);
+public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data, bool IsComplete);
 public sealed record AppFbSetBorder(RadialColor Color);
 
 public sealed record AppFbInfoQuery(Guid CorrelationID) : Query(CorrelationID);

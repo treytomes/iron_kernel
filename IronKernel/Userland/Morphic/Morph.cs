@@ -149,16 +149,16 @@ public abstract class Morph : ICommandTarget
 	public void Draw(IRenderingContext rc)
 	{
 		var isRoot = this is WorldMorph;
-
-		if (!isRoot)
-		{
-			rc.PushOffset(Position);
-			if (ShouldClipToBounds)
-				rc.PushClip(new Rectangle(Point.Empty, Size));
-		}
-
+		var offsetSize = rc.OffsetStackSize;
+		var clipSize = rc.ClipStackSize;
 		try
 		{
+			if (!isRoot)
+			{
+				rc.PushOffset(Position, GetType().Name);
+				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size), GetType().Name);
+			}
+
 			DrawSelf(rc);
 
 			foreach (var child in _submorphs.ToArray())
@@ -169,12 +169,17 @@ public abstract class Morph : ICommandTarget
 		}
 		finally
 		{
-			if (!isRoot)
+			try
 			{
-				if (ShouldClipToBounds)
-					rc.PopClip();
-
-				rc.PopOffset();
+				if (!isRoot)
+				{
+					rc.PopOffset(offsetSize, GetType().Name);
+					if (ShouldClipToBounds) rc.PopClip(clipSize, GetType().Name);
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"Faulted in type: {GetType().Name}, owner: {Owner?.GetType().Name ?? "<none>"}", ex);
 			}
 		}
 	}
@@ -324,7 +329,7 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	protected virtual void UpdateLayout()
 	{
-		foreach (var child in Submorphs)
+		foreach (var child in _submorphs.ToArray())
 		{
 			child.UpdateLayout();
 		}

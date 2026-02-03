@@ -21,17 +21,19 @@ public interface IRenderingContext
 	int OffsetStackSize { get; }
 	int ClipStackSize { get; }
 
-	/// <returns>
-	/// The size of the stack.
-	/// </returns>
-	int PushOffset(Point offset);
-	void PopOffset(int targetCount);
+	void ResetTransform();
 
 	/// <returns>
 	/// The size of the stack.
 	/// </returns>
-	int PushClip(Rectangle rect);
-	void PopClip(int targetCount);
+	int PushOffset(Point offset, string source);
+	void PopOffset(int targetCount, string source);
+
+	/// <returns>
+	/// The size of the stack.
+	/// </returns>
+	int PushClip(Rectangle rect, string source);
+	void PopClip(int targetCount, string source);
 
 	/// <summary>  
 	/// Fills the entire rendering context with the specified color.  

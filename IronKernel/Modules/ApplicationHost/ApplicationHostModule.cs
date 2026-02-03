@@ -56,16 +56,24 @@ internal sealed class ApplicationHostModule(
 		_runtime = new ApplicationRuntime(runtime);
 		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
 
-		_bridge.ForwardClocked<HostUpdateTick, AppUpdateTick>(
+		// _bridge.ForwardClocked<HostUpdateTick, AppUpdateTick>(
+		// 	"UpdateTickHandler",
+		// 	TimeSpan.FromSeconds(1.0 / TARGET_UPDATE_FPS),
+		// 	(clock, _) => new(
+		// 		clock.TotalTime,
+		// 		clock.ElapsedTime
+		// 	)
+		// );
+
+		_bridge.Forward<HostUpdateTick, AppUpdateTick>(
 			"UpdateTickHandler",
-			TimeSpan.FromSeconds(1.0 / TARGET_UPDATE_FPS),
-			(clock, _) => new(
-				clock.TotalTime,
-				clock.ElapsedTime
+			(e, ct) => new(
+				e.TotalTime,
+				e.ElapsedTime
 			)
 		);
 
-		// _bridge.ForwardClocked<HostRenderTick, ApplicationRenderTick>(
+		// _bridge.ForwardClocked<HostRenderTick, AppRenderTick>(
 		// 	"RenderTickHandler",
 		// 	TimeSpan.FromSeconds(1.0 / TARGET_RENDER_FPS),
 		// 	(clock, _) => new(
@@ -73,6 +81,15 @@ internal sealed class ApplicationHostModule(
 		// 		clock.ElapsedTime
 		// 	)
 		// );
+
+		_bridge.Forward<HostRenderTick, AppRenderTick>(
+			"RenderTickHandler",
+			(e, ct) => new(
+				e.FrameId,
+				e.TotalTime,
+				e.ElapsedTime
+			)
+		);
 
 		_bridge.Forward<HostResizeEvent, AppResizeEvent>(
 			"ResizeEventHandler",
@@ -136,14 +153,14 @@ internal sealed class ApplicationHostModule(
 			)
 		);
 
+		// _bridge.Request<AppFrameReady, FbFrameReady>(
+		// 	"FrameReadyHandler",
+		// 	(e, ct) => new(e.FrameId)
+		// );
+
 		_bridge.Request<AppFbWriteSpan, FbWriteSpan>(
 			"AppFbWriteSpanHandler",
-			(e, ct) => new(e.X, e.Y, e.Data)
-		);
-
-		_bridge.Request<AppFbClear, FbClear>(
-			"AppFbClearHandler",
-			(e, ct) => new(e.Color)
+			(e, ct) => new(e.X, e.Y, e.Data, e.IsComplete)
 		);
 
 		_bridge.Request<AppFbSetBorder, FbSetBorder>(

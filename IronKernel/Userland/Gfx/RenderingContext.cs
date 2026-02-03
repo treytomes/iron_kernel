@@ -1,24 +1,26 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
+using Microsoft.Extensions.Logging;
 using System.Drawing;
 
 namespace IronKernel.Userland.Gfx;
 
 /// <inheritdoc/>
-public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
+public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRenderingContext
 {
 	#region Fields  
 
+	private ILogger _logger = logger;
 	private readonly IApplicationBus _bus = bus;
 	private bool _isDirty = true;
 	private RadialColor[]? _data = null;
 
 	// Transformation and clipping stack.
-	private readonly Stack<Point> _offsetStack = new(256);
+	private readonly Stack<Point> _offsetStack = new();
 	private Point _currentOffset = Point.Empty;
 
-	private readonly Stack<Rectangle> _clipStack = new(256);
+	private readonly Stack<Rectangle> _clipStack = new();
 	private Rectangle? _currentClip = null;
 
 	#endregion
@@ -38,8 +40,18 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 
 	#region Methods
 
-	public int PushOffset(Point offset)
+	public void ResetTransform()
 	{
+		_offsetStack.Clear();
+		_currentOffset = Point.Empty;
+
+		_clipStack.Clear();
+		_currentClip = new Rectangle(0, 0, Bounds.Width, Bounds.Height);
+	}
+
+	public int PushOffset(Point offset, string source)
+	{
+		// _logger.LogInformation($"{new string(' ', _offsetStack.Count)}Push offset source: {source}");
 		var size = _offsetStack.Count;
 		_offsetStack.Push(_currentOffset);
 		_currentOffset = new Point(
@@ -48,19 +60,17 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		return size;
 	}
 
-	public void PopOffset(int targetCount)
+	public void PopOffset(int targetCount, string source)
 	{
-		// if (_offsetStack.Count == 0)
-		// 	throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
-		while (_offsetStack.Count > targetCount && _offsetStack.Count > 0)
-		{
-			if (_offsetStack.TryPop(out var offset)) _currentOffset = offset;
-		}
-		// _currentOffset = _offsetStack.Pop();
+		if (_offsetStack.Count == 0)
+			throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
+		// _logger.LogInformation($"{new string(' ', _offsetStack.Count - 1)}Pop offset source: {source}");
+		_currentOffset = _offsetStack.Pop();
 	}
 
-	public int PushClip(Rectangle rect)
+	public int PushClip(Rectangle rect, string source)
 	{
+		// _logger.LogInformation($"{new string(' ', _clipStack.Count)}Push clip source: {source}");
 		var size = _clipStack.Count;
 		// rect is in *local* space → transform it
 		var transformed = new Rectangle(
@@ -78,15 +88,12 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		return size;
 	}
 
-	public void PopClip(int targetCount)
+	public void PopClip(int targetCount, string source)
 	{
-		// if (_offsetStack.Count == 0)
-		// 	throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
-		while (_clipStack.Count > targetCount && _clipStack.Count > 0)
-		{
-			if (_clipStack.TryPop(out var clip)) _currentClip = clip;
-		}
-		// _currentClip = _clipStack.Pop();
+		if (_clipStack.Count == 0)
+			throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
+		// _logger.LogInformation($"{new string(' ', _clipStack.Count - 1)}Pop clip source: {source}");
+		_currentClip = _clipStack.Pop();
 	}
 
 	public async Task InitializeAsync()
@@ -94,6 +101,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		var response = await _bus.QueryAsync<AppFbInfoQuery, AppFbInfoResponse>(id => new AppFbInfoQuery(id));
 		Size = response.Size;
 		_data = new RadialColor[Size.Width * Size.Height];
+		Array.Fill(_data, RadialColor.Black);
 	}
 
 	/// <inheritdoc/>
@@ -489,7 +497,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	{
 		if (_isDirty)
 		{
-			_bus.Publish(new AppFbWriteSpan(0, 0, _data!));
+			_bus.Publish(new AppFbWriteSpan(0, 0, _data!, true));
 			_isDirty = false;
 		}
 	}

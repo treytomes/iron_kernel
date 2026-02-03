@@ -25,33 +25,65 @@ internal sealed class FramebufferModule(
 
 	private readonly IMessageBus _bus = bus;
 	private readonly ILogger<FramebufferModule> _logger = logger;
-	private readonly IVirtualDisplay _virtualDisplay = virtualDisplay ?? throw new ArgumentNullException(nameof(virtualDisplay));
+	private readonly IVirtualDisplay _virtualDisplay =
+		virtualDisplay ?? throw new ArgumentNullException(nameof(virtualDisplay));
 	private readonly List<IDisposable> _subscriptions = new();
+	private ulong _currentFrameId;
+	private bool _isVideoReady = false;
 
 	#endregion
 
 	#region Methods
-
-	public Task StartAsync(IKernelState state, IModuleRuntime runtime, CancellationToken stoppingToken)
+	public Task StartAsync(
+		IKernelState state,
+		IModuleRuntime runtime,
+		CancellationToken stoppingToken)
 	{
 		_logger.LogInformation("Starting framebuffer.");
 
+		// // NEW: participate in frame cadence
 		// _subscriptions.Add(_bus.Subscribe<HostRenderTick>(
 		// 	runtime,
 		// 	"RenderTickHandler",
 		// 	(msg, ct) =>
 		// 	{
-		// 		_virtualDisplay.Clear(RadialColor.Green.Index);
+		// 		// At this point:
+		// 		// - All FbWriteSpan / FbClear messages already queued
+		// 		// - No GL work is required here
+		// 		// - Framebuffer state is coherent for rendering
+
+		// 		_bus.Publish(new FbFrameReady(msg.FrameId));
 		// 		return Task.CompletedTask;
 		// 	}
 		// ));
+
+		_subscriptions.Add(_bus.Subscribe<HostWindowReady>(
+			runtime,
+			"VideoReadyHandler",
+			(msg, ct) =>
+			{
+				_isVideoReady = true;
+				return Task.CompletedTask;
+			}
+		));
+
+		_subscriptions.Add(_bus.Subscribe<HostRenderTick>(
+			runtime,
+			"RenderTickHandler",
+			(msg, ct) =>
+			{
+				_currentFrameId = msg.FrameId;
+				return Task.CompletedTask;
+			}
+		));
 
 		_subscriptions.Add(_bus.Subscribe<HostResizeEvent>(
 			runtime,
 			"ResizeTickHandler",
 			(msg, ct) =>
 			{
-				_virtualDisplay.Resize(new OpenTK.Mathematics.Vector2i(msg.Width, msg.Height));
+				_virtualDisplay.Resize(
+					new OpenTK.Mathematics.Vector2i(msg.Width, msg.Height));
 				return Task.CompletedTask;
 			}
 		));
@@ -63,30 +95,26 @@ internal sealed class FramebufferModule(
 			{
 				var x = msg.X;
 				var y = msg.Y;
+
 				for (var n = 0; n < msg.Data.Count && !ct.IsCancellationRequested; n++)
 				{
 					_virtualDisplay.SetPixel(x, y, msg.Data[n]?.Index ?? 0);
 					x++;
+
 					if (x >= _virtualDisplay.Width)
 					{
 						x = 0;
 						y++;
 						if (y >= _virtualDisplay.Height)
-						{
 							break;
-						}
 					}
 				}
-				return Task.CompletedTask;
-			}
-		));
 
-		_subscriptions.Add(_bus.Subscribe<FbClear>(
-			runtime,
-			"ClearHandler",
-			(msg, ct) =>
-			{
-				_virtualDisplay.Clear(msg.Color.Index);
+				if (msg.IsComplete)
+				{
+					_bus.Publish(new FbFrameReady(_currentFrameId));
+				}
+
 				return Task.CompletedTask;
 			}
 		));
@@ -96,7 +124,8 @@ internal sealed class FramebufferModule(
 			"SetBorderHandler",
 			(msg, ct) =>
 			{
-				_bus.Publish(new HostSetBorderColor(msg.Color.ToColor()));
+				_bus.Publish(
+					new HostSetBorderColor(msg.Color.ToColor()));
 				return Task.CompletedTask;
 			}
 		));
@@ -106,36 +135,28 @@ internal sealed class FramebufferModule(
 			"InfoQueryHandler",
 			(msg, ct) =>
 			{
-				// if (!_virtualDisplay.IsInitialized) throw new InvalidOperationException("Virtual display is not initialized.");
-				while (!_virtualDisplay.IsInitialized) ; // TODO: This is working, but it's an odd construct.
+				if (!_isVideoReady)
+				{
+					// Wait a bit and try again.
+					_bus.Publish(msg);
+					return Task.CompletedTask;
+				}
+
 				var width = _virtualDisplay.Width;
 				var height = _virtualDisplay.Height;
-				var paletteSize = _virtualDisplay.Palette.Count;
-				var paddingX = _virtualDisplay.Padding.X;
-				var paddingY = _virtualDisplay.Padding.Y;
-				var scale = _virtualDisplay.Scale;
-				_bus.Publish(new FbInfoResponse(msg.CorrelationID, new Size(width, height)));
+
+				_bus.Publish(
+					new FbInfoResponse(
+						msg.CorrelationID,
+						new Size(width, height)));
+
 				return Task.CompletedTask;
 			}
 		));
 
-		_bus.Publish(new HostSetBorderColor(DEFAULT_BORDER_COLOR.ToColor()));
-
-		// _subscriptions.Add(_bus.Subscribe<HostWindowReady>(
-		// 	runtime,
-		// 	"ReadyHandler",
-		// 	(msg, ct) =>
-		// 	{
-		// 		_bus.Publish(new HostRenderCommand(() =>
-		// 		{
-		// 			var version = GL.GetString(StringName.Version);
-		// 			_logger.LogInformation("GL Version in Initialize: {Version}", version);
-
-		// 			_virtualDisplay.Initialize();
-		// 		}));
-		// 		return Task.CompletedTask;
-		// 	}
-		// ));
+		_bus.Publish(
+			new HostSetBorderColor(
+				DEFAULT_BORDER_COLOR.ToColor()));
 
 		return Task.CompletedTask;
 	}
@@ -143,11 +164,12 @@ internal sealed class FramebufferModule(
 	public ValueTask DisposeAsync()
 	{
 		_logger.LogInformation("Disposing framebuffer.");
+
 		foreach (var s in _subscriptions)
 			s.Dispose();
+
 		_subscriptions.Clear();
 		return ValueTask.CompletedTask;
 	}
-
 	#endregion
 }

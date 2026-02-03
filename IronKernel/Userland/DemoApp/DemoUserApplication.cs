@@ -17,6 +17,8 @@ public sealed class DemoUserApplication(
 ) : IUserApplication
 {
 	private readonly ILogger<DemoUserApplication> _logger = logger;
+	private readonly object _updateLock = new();
+	private readonly object _renderLock = new();
 
 	public async Task RunAsync(
 		IApplicationContext context,
@@ -24,7 +26,7 @@ public sealed class DemoUserApplication(
 	{
 		_logger.LogInformation("DemoUserApplication starting");
 
-		var rc = new RenderingContext(context.Bus);
+		var rc = new RenderingContext(_logger, context.Bus);
 		await rc.InitializeAsync();
 
 		// Initialize application state.
@@ -69,17 +71,16 @@ public sealed class DemoUserApplication(
 		});
 
 		var window = new WindowMorph(new Point(175, 175), new Size(128, 96), "Sample");
-		window.Content.AddMorph(new LabelMorph()
-		{
-			Text = "Here's a label.",
-		});
-		window.Content.AddMorph(new ButtonMorph(new Point(0, 8), new Size(56, 16), "Hello!")
-		{
-			Command = new ActionCommand(() => Console.WriteLine("Hello!")),
-		});
+		// window.Content.AddMorph(new LabelMorph()
+		// {
+		// 	Text = "Here's a label.",
+		// });
+		// window.Content.AddMorph(new ButtonMorph(new Point(0, 8), new Size(56, 16), "Hello!")
+		// {
+		// 	Command = new ActionCommand(() => Console.WriteLine("Hello!")),
+		// });
+		window.Content.AddMorph(new TextConsoleMorph());
 		world.AddMorph(window);
-
-		var canvas = new FramebufferCanvas(context.Bus);
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
 			"MouseMoveHandler",
@@ -109,48 +110,43 @@ public sealed class DemoUserApplication(
 			}
 		);
 
-		// context.Bus.Subscribe<AppKeyboardEvent>(
-		// 	"KeyboardHandler",
-		// 	async (msg, ct) =>
-		// 	{
-		// 		_logger.LogInformation(
-		// 			"Received keyboard event: {Key}, pressed: {}",
-		// 			msg.Key, msg.Action == InputAction.Press);
-
-		// 		if (msg.Action == InputAction.Press || msg.Action == InputAction.Repeat)
-		// 		{
-		// 			context.State.TryGet("position", out Point position);
-		// 			switch (msg.Key)
-		// 			{
-		// 				case Key.W:
-		// 					position.Y--;
-		// 					break;
-		// 				case Key.S:
-		// 					position.Y++;
-		// 					break;
-		// 				case Key.A:
-		// 					position.X--;
-		// 					break;
-		// 				case Key.D:
-		// 					position.X++;
-		// 					break;
-		// 			}
-		// 			context.State.Set("position", position);
-
-		// 			_logger.LogInformation("Position: {Position}", position);
-		// 		}
-		// 		await Task.CompletedTask;
-		// 	});
-
 		context.Bus.Subscribe<AppUpdateTick>(
 			"UpdateTickHandler",
 			async (e, ct) =>
 			{
-				world.Update(e.ElapsedTime);
-				rc.Clear();
-				world.Draw(rc);
-				rc.Present();
+				if (Monitor.TryEnter(_updateLock))
+				{
+					try
+					{
+						world.Update(e.ElapsedTime);
+					}
+					finally
+					{
+						Monitor.Exit(_updateLock);
+					}
+				}
 				await Task.CompletedTask;
+			}
+		);
+
+		context.Bus.Subscribe<AppRenderTick>(
+			"RenderTickHandler",
+			async (e, ct) =>
+			{
+				if (Monitor.TryEnter(_renderLock))
+				{
+					try
+					{
+						rc.Fill(new RadialColor(0, 2, 5));
+						world.Draw(rc);
+						rc.Present();
+						await Task.CompletedTask;
+					}
+					finally
+					{
+						Monitor.Exit(_renderLock);
+					}
+				}
 			}
 		);
 
