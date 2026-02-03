@@ -125,21 +125,22 @@ internal sealed class OpenTKHostModule(
 
 		_window.RenderFrame += e =>
 		{
-			GL.ClearColor(_borderColor);
-			GL.Clear(ClearBufferMask.ColorBufferBit);
-
-			// while (_renderCommands.TryDequeue(out var cmd))
-			// 	cmd();
-
 			if (!_isReady)
 			{
 				_bus.Publish(new HostWindowReady());
 				_virtualDisplay.Initialize();
 				_isReady = true;
 			}
-
 			_totalRenderTime += e.Time;
+
 			_bus.Publish(new HostRenderTick(_totalRenderTime, e.Time));
+			// Wait for userland to render...
+			// Then wait for framebuffer to finish...
+			// And now we have a frame?
+
+			GL.ClearColor(_borderColor);
+			GL.Clear(ClearBufferMask.ColorBufferBit);
+
 			_virtualDisplay.Render();
 			_window.SwapBuffers();
 		};
