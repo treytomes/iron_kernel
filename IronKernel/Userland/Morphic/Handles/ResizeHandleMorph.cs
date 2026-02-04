@@ -19,7 +19,7 @@ public sealed class ResizeHandleMorph : HandleMorph
 		: base(target)
 	{
 		Kind = kind;
-		Size = new Size(6, 6);
+		Size = new Size(8, 8);
 
 		_icon = new ImageMorph(new Point(0, 0), "image.resize_icon")
 		{

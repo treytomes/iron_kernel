@@ -114,7 +114,7 @@ public sealed class HaloMorph : Morph
 
 	private void LayoutHandles()
 	{
-		var hs = 3;
+		var hs = 4;
 
 		foreach (var m in Submorphs.OfType<ResizeHandleMorph>())
 		{
@@ -137,18 +137,16 @@ public sealed class HaloMorph : Morph
 		}
 
 		Submorphs.OfType<MoveHandleMorph>().Single().Position = new Point(
-			 -4,
-			 -4
-		// +Size.Width / 2 - 6,
-		// -16
+			 -hs,
+			 -hs
 		);
 		Submorphs.OfType<DeleteHandleMorph>().Single().Position = new Point(
-			 Size.Width / 2 - 4,
-			 Size.Height - 4
+			 Size.Width / 2 - hs,
+			 Size.Height - hs
 		);
 		Submorphs.OfType<InspectHandleMorph>().Single().Position = new Point(
-			 Size.Width / 2 - 4,
-			 -4
+			 Size.Width / 2 - hs,
+			 -hs
 		);
 	}
 
