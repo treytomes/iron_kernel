@@ -57,12 +57,16 @@ public sealed class WorldMorph : Morph
 	public void CaptureKeyboard(Morph? morph)
 	{
 		KeyboardFocus = morph;
+		if (morph != null) OnGainedKeyboardFocus(morph);
 	}
 
 	public void ReleaseKeyboard(Morph? morph)
 	{
 		if (KeyboardFocus == morph)
+		{
+			if (morph != null) OnLostKeyboardFocus(morph);
 			KeyboardFocus = null;
+		}
 	}
 
 	public override void Update(double deltaTime)

@@ -70,17 +70,8 @@ public sealed class DemoUserApplication(
 			Text = "Hello world!",
 		});
 
-		var window = new WindowMorph(new Point(175, 175), new Size(128, 96), "Sample");
-		// window.Content.AddMorph(new LabelMorph()
-		// {
-		// 	Text = "Here's a label.",
-		// });
-		// window.Content.AddMorph(new ButtonMorph(new Point(0, 8), new Size(56, 16), "Hello!")
-		// {
-		// 	Command = new ActionCommand(() => Console.WriteLine("Hello!")),
-		// });
-		window.Content.AddMorph(new TextConsoleMorph());
-		world.AddMorph(window);
+		world.AddMorph(new DummyReplMorph(new Point(175, 175)));
+		world.AddMorph(new MiniScriptReplMorph(new Point(250, 250)));
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
 			"MouseMoveHandler",

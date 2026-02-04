@@ -133,6 +133,10 @@ public abstract class Morph : ICommandTarget
 
 	public bool RemoveMorph(Morph morph)
 	{
+		// If we're already in a world, load immediately.
+		if (TryGetWorld(out var world))
+			morph.NotifyRemovedFromWorld(world);
+
 		if (morph.Owner == null) return true;
 		if (_submorphs.Remove(morph))
 		{
@@ -246,6 +250,11 @@ public abstract class Morph : ICommandTarget
 	}
 
 	protected virtual void OnLoad(IAssetService assetService) { }
+
+	protected virtual void OnUnload() { }
+
+	protected virtual void OnGainedKeyboardFocus(Morph morph) { }
+	protected virtual void OnLostKeyboardFocus(Morph morph) { }
 
 	protected virtual void OnPointerEnter()
 	{
@@ -362,6 +371,14 @@ public abstract class Morph : ICommandTarget
 
 		foreach (var child in _submorphs)
 			child.NotifyAddedToWorld(world);
+	}
+
+	internal void NotifyRemovedFromWorld(WorldMorph world)
+	{
+		foreach (var child in _submorphs)
+			child.NotifyRemovedFromWorld(world);
+
+		OnUnload();
 	}
 
 	#region ICommandTarget Implementation

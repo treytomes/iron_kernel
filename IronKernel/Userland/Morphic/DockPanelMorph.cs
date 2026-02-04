@@ -7,7 +7,7 @@ public sealed class DockPanelMorph : Morph
 {
 	private readonly Dictionary<Morph, Dock> _dockMap = new();
 
-	public int Padding { get; set; } = 0;
+	public int Padding { get; set; } = 1;
 
 	public void RemoveDock(Morph morph)
 	{

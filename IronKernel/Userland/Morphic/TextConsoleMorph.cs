@@ -1,4 +1,5 @@
 using System.Drawing;
+using System.Text;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
@@ -13,18 +14,27 @@ public sealed class TextConsoleMorph : Morph
 
 	private int _cursorX;
 	private int _cursorY;
+
+	private int _inputStartX;
+	private int _inputStartY;
+
+	private bool _isReadingLine;
+	private readonly StringBuilder _inputBuffer = new();
+	private TaskCompletionSource<string>? _pendingReadLine;
+
 	private Font? _font;
+	private bool _layoutInitialized = false;
+	private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	#endregion
 
-	#region Constructors
+	#region Constructor
 
 	public TextConsoleMorph()
 	{
 		CellSize = new Size(1, 1);
 		Columns = 1;
 		Rows = 1;
-
 		_buffer = new ConsoleCell[Rows, Columns];
 		Clear();
 	}
@@ -33,101 +43,74 @@ public sealed class TextConsoleMorph : Morph
 
 	#region Properties
 
+	public Task Ready => _ready.Task;
 	public int Columns { get; private set; }
 	public int Rows { get; private set; }
 	public Size CellSize { get; private set; }
+
+	public RadialColor CurrentForegroundColor { get; set; } = RadialColor.Orange;
+	public RadialColor CurrentBackgroundColor { get; set; } = RadialColor.Black;
+
 	public override bool WantsKeyboardFocus => true;
 
 	#endregion
 
-	#region Methods
+	#region Loading
 
 	protected override async void OnLoad(IAssetService assets)
 	{
-		if (Style == null) throw new Exception("Style is null.");
+		if (Style == null)
+			throw new Exception("Style is null.");
 
 		_font = await assets.LoadFontAsync(
 			Style.DefaultFontStyle.AssetId,
 			Style.DefaultFontStyle.TileSize,
 			Style.DefaultFontStyle.GlyphOffset
 		);
+
 		CellSize = _font.TileSize;
-		UpdateLayout();
+		InvalidateLayout();
 	}
 
-	/* -----------------------------------------------------------------
-     * Layout
-     * -----------------------------------------------------------------*/
+	#endregion
 
-	// protected override void UpdateLayout()
-	// {
-	// 	if (_font == null)
-	// 		return;
-
-	// 	var snappedColumns = Math.Max(1, Size.Width / CellSize.Width);
-	// 	var snappedRows = Math.Max(1, Size.Height / CellSize.Height);
-
-	// 	var snappedSize = new Size(
-	// 		snappedColumns * CellSize.Width,
-	// 		snappedRows * CellSize.Height
-	// 	);
-
-	// 	if (snappedSize != Size)
-	// 		Size = snappedSize;
-
-	// 	if (snappedColumns != Columns || snappedRows != Rows)
-	// 		ResizeGrid(snappedColumns, snappedRows);
-	// }
+	#region Layout
 
 	protected override void UpdateLayout()
 	{
-		// Font must be loaded
-		if (_font == null) return;
+		if (_font == null || Owner == null)
+			return;
 
-		// We must have a parent to size against
-		if (Owner == null) return;
+		var available = Owner.Size;
+		var cols = Math.Max(1, available.Width / CellSize.Width);
+		var rows = Math.Max(1, available.Height / CellSize.Height);
 
-		var availableSize = Owner.Size;
+		if (cols != Columns || rows != Rows)
+			ResizeGrid(cols, rows);
 
-		// Snap available size to whole cells
-		var snappedColumns = Math.Max(1, availableSize.Width / CellSize.Width);
-		var snappedRows = Math.Max(1, availableSize.Height / CellSize.Height);
-
-		var snappedSize = new Size(
-			snappedColumns * CellSize.Width,
-			snappedRows * CellSize.Height
+		Size = new Size(
+			Columns * CellSize.Width,
+			Rows * CellSize.Height
 		);
 
-		// Resize self to fit container (snapped)
-		if (Size != snappedSize)
-			Size = snappedSize;
-
-		// Resize backing grid if needed
-		if (snappedColumns != Columns || snappedRows != Rows)
-			ResizeGrid(snappedColumns, snappedRows);
+		if (!_layoutInitialized)
+		{
+			_layoutInitialized = true;
+			_ready.TrySetResult();
+		}
 	}
 
 	private void ResizeGrid(int newColumns, int newRows)
 	{
 		var newBuffer = new ConsoleCell[newRows, newColumns];
 
-		// Initialize entire grid explicitly
-		for (var y = 0; y < newRows; y++)
-		{
-			for (var x = 0; x < newColumns; x++)
-			{
+		for (int y = 0; y < newRows; y++)
+			for (int x = 0; x < newColumns; x++)
 				newBuffer[y, x] = ConsoleCell.Empty;
-			}
-		}
 
-		// Copy old contents into the new grid
-		for (var y = 0; y < Math.Min(Rows, newRows); y++)
-		{
-			for (var x = 0; x < Math.Min(Columns, newColumns); x++)
-			{
+		for (int y = 0; y < Math.Min(Rows, newRows); y++)
+			for (int x = 0; x < Math.Min(Columns, newColumns); x++)
 				newBuffer[y, x] = _buffer[y, x];
-			}
-		}
 
 		_buffer = newBuffer;
 		Columns = newColumns;
@@ -137,18 +120,17 @@ public sealed class TextConsoleMorph : Morph
 		_cursorY = Math.Min(_cursorY, Rows - 1);
 	}
 
-	/* -----------------------------------------------------------------
-     * Rendering
-     * -----------------------------------------------------------------*/
+	#endregion
+
+	#region Rendering
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		for (var y = 0; y < Rows; y++)
+		for (int y = 0; y < Rows; y++)
 		{
-			for (var x = 0; x < Columns; x++)
+			for (int x = 0; x < Columns; x++)
 			{
 				var cell = _buffer[y, x];
-
 				var px = x * CellSize.Width;
 				var py = y * CellSize.Height;
 
@@ -157,11 +139,20 @@ public sealed class TextConsoleMorph : Morph
 					cell.Background
 				);
 
-				_font?.WriteChar(rc, cell.Char, new Point(px, py), cell.Foreground, cell.Background);
+				_font?.WriteChar(
+					rc,
+					cell.Char,
+					new Point(px, py),
+					cell.Foreground,
+					cell.Background
+				);
 			}
 		}
 
-		DrawCursor(rc);
+		if (TryGetWorld(out var world) && world.KeyboardFocus == this)
+		{
+			DrawCursor(rc);
+		}
 	}
 
 	private void DrawCursor(IRenderingContext rc)
@@ -171,13 +162,13 @@ public sealed class TextConsoleMorph : Morph
 
 		rc.RenderFilledRect(
 			new Rectangle(px, py + CellSize.Height - 2, CellSize.Width, 2),
-			RadialColor.White
+			CurrentForegroundColor
 		);
 	}
 
-	/* -----------------------------------------------------------------
-     * Input
-     * -----------------------------------------------------------------*/
+	#endregion
+
+	#region Input
 
 	public override void OnKey(KeyEvent e)
 	{
@@ -186,66 +177,182 @@ public sealed class TextConsoleMorph : Morph
 
 		switch (e.Key)
 		{
+			case Key.Left:
+				MoveCursorLeft();
+				break;
+
+			case Key.Right:
+				MoveCursorRight();
+				break;
+
 			case Key.Backspace:
 				Backspace();
 				break;
 
 			case Key.Enter:
-				NewLine();
-				break;
-
-			case Key.Left:
-				if (_cursorX > 0) _cursorX--;
-				break;
-
-			case Key.Right:
-				if (_cursorX < Columns - 1) _cursorX++;
+				CommitLine();
 				break;
 
 			default:
-				// ✅ character input via extension method
 				var ch = e.ToText();
-				if (ch.HasValue)
-				{
-					PutChar(ch.Value);
-				}
+				if (ch.HasValue && _isReadingLine)
+					InsertChar(ch.Value);
 				break;
 		}
 	}
 
-	/* -----------------------------------------------------------------
-     * Console semantics
-     * -----------------------------------------------------------------*/
+	#endregion
 
-	public void PutChar(char ch, RadialColor? fg = null, RadialColor? bg = null)
+	#region Console API
+
+	public void Write(string text)
+	{
+		foreach (var ch in text)
+			PutChar(ch);
+	}
+
+	public void WriteLine(string text = "")
+	{
+		Write(text);
+		NewLine();
+	}
+
+	public Task<string> ReadLineAsync()
+	{
+		if (_isReadingLine)
+			throw new InvalidOperationException("ReadLine already in progress.");
+
+		_isReadingLine = true;
+		_inputBuffer.Clear();
+
+		_inputStartX = _cursorX;
+		_inputStartY = _cursorY;
+
+		_pendingReadLine = new TaskCompletionSource<string>(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+
+		return _pendingReadLine.Task;
+	}
+
+	#endregion
+
+	#region Editing Logic
+
+	private void InsertChar(char ch)
+	{
+		var index = GetInputIndex();
+		_inputBuffer.Insert(index, ch);
+		RedrawInput();
+		MoveCursorRight();
+	}
+
+	private void Backspace()
+	{
+		var index = GetInputIndex();
+		if (!_isReadingLine || index == 0)
+			return;
+
+		_inputBuffer.Remove(index - 1, 1);
+		MoveCursorLeft();
+		RedrawInput();
+	}
+
+	private void CommitLine()
+	{
+		if (!_isReadingLine)
+		{
+			NewLine();
+			return;
+		}
+
+		var result = _inputBuffer.ToString();
+		_inputBuffer.Clear();
+		_isReadingLine = false;
+
+		NewLine();
+
+		_pendingReadLine?.SetResult(result);
+		_pendingReadLine = null;
+	}
+
+	private void RedrawInput()
+	{
+		var x = _inputStartX;
+		var y = _inputStartY;
+
+		foreach (var ch in _inputBuffer.ToString())
+		{
+			_buffer[y, x] = new ConsoleCell
+			{
+				Char = ch,
+				Foreground = CurrentForegroundColor,
+				Background = CurrentBackgroundColor
+			};
+
+			x++;
+			if (x >= Columns)
+			{
+				x = 0;
+				y = Math.Min(y + 1, Rows - 1);
+			}
+		}
+	}
+
+	private int GetInputIndex()
+	{
+		return (_cursorY - _inputStartY) * Columns
+			 + (_cursorX - _inputStartX);
+	}
+
+	private void MoveCursorLeft()
+	{
+		if (!_isReadingLine)
+			return;
+
+		if (_cursorY > _inputStartY ||
+		   (_cursorY == _inputStartY && _cursorX > _inputStartX))
+			_cursorX--;
+	}
+
+	private void MoveCursorRight()
+	{
+		if (!_isReadingLine)
+			return;
+
+		if (GetInputIndex() < _inputBuffer.Length)
+			_cursorX++;
+	}
+
+	#endregion
+
+	#region Output Helpers
+
+	private void PutChar(char ch)
 	{
 		_buffer[_cursorY, _cursorX] = new ConsoleCell
 		{
 			Char = ch,
-			Foreground = fg ?? RadialColor.White,
-			Background = bg ?? RadialColor.Black
+			Foreground = CurrentForegroundColor,
+			Background = CurrentBackgroundColor
 		};
 
 		_cursorX++;
-
 		if (_cursorX >= Columns)
 			NewLine();
 	}
 
-	public void NewLine()
+	private void NewLine()
 	{
 		_cursorX = 0;
-		_cursorY = Math.Min(_cursorY + 1, Rows - 1);
-		// scrolling intentionally omitted
-	}
 
-	public void Backspace()
-	{
-		if (_cursorX == 0)
-			return;
-
-		_cursorX--;
-		_buffer[_cursorY, _cursorX] = ConsoleCell.Empty;
+		if (_cursorY == Rows - 1)
+		{
+			ScrollUp();
+		}
+		else
+		{
+			_cursorY++;
+		}
 	}
 
 	public void Clear()
@@ -258,7 +365,26 @@ public sealed class TextConsoleMorph : Morph
 		_cursorY = 0;
 	}
 
+	private void ScrollUp()
+	{
+		for (int y = 1; y < Rows; y++)
+		{
+			for (int x = 0; x < Columns; x++)
+			{
+				_buffer[y - 1, x] = _buffer[y, x];
+			}
+		}
+
+		// Clear last row
+		for (int x = 0; x < Columns; x++)
+		{
+			_buffer[Rows - 1, x] = ConsoleCell.Empty;
+		}
+	}
+
 	#endregion
+
+	#region ConsoleCell
 
 	private struct ConsoleCell
 	{
@@ -273,4 +399,6 @@ public sealed class TextConsoleMorph : Morph
 			Background = RadialColor.Black
 		};
 	}
+
+	#endregion
 }
