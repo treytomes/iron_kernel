@@ -32,41 +32,41 @@ public sealed class DemoUserApplication(
 		// Initialize application state.
 		// context.State.Set("position", new Point(100, 100));
 
-		var world = new WorldMorph(new Size(320, 240), new AssetService(context.Bus));
+		var world = new WorldMorph(new Size(960, 480), new AssetService(context.Bus));
 
-		world.AddMorph(new ButtonMorph(
-			new Point(10, 10),
-			new Size(48, 16),
-			"Undo")
+		var toolbar = new ToolbarMorph
 		{
-			Command = new ActionCommand(
-				world.Commands.Undo, canExecute: () => world.Commands.CanUndo
+			Position = new Point(4, 4)
+		};
+
+		toolbar.AddItem(
+			"Undo",
+			new ActionCommand(
+				world.Commands.Undo,
+				canExecute: () => world.Commands.CanUndo
 			)
-		});
+		);
 
-		world.AddMorph(new ButtonMorph(
-			new Point(64, 10),
-			new Size(48, 16),
-			"Redo")
-		{
-			Command = new ActionCommand(
-				world.Commands.Redo, canExecute: () => world.Commands.CanRedo
+		toolbar.AddItem(
+			"Redo",
+			new ActionCommand(
+				world.Commands.Redo,
+				canExecute: () => world.Commands.CanRedo
 			)
-		});
+		);
 
-		world.AddMorph(new ButtonMorph(
-			new Point(80, 120),
-			new Size(48, 16),
-			"Apps")
-		{
-			Command = new ActionCommand(() =>
+		toolbar.AddItem(
+			"Apps",
+			new ActionCommand(() =>
 			{
 				var launcher = new LauncherMorph(new Point(16, 16));
 				launcher.AddApp<DummyReplMorph>("Dummy REPL");
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
 				world.AddMorph(launcher);
 			})
-		});
+		);
+
+		world.AddMorph(toolbar);
 
 		var text = "Name";
 		world.AddMorph(new TextEditMorph(new Point(0, 32), text, x => text = x));

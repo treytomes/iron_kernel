@@ -82,7 +82,6 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void Undo()
 	{
-		Console.WriteLine("Undo");
 		_history.Undo();
 	}
 
@@ -91,7 +90,6 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void Redo()
 	{
-		Console.WriteLine("Redo");
 		_history.Redo();
 	}
 }

@@ -12,6 +12,12 @@ namespace IronKernel.Userland.Morphic;
 /// </summary>
 public sealed class ButtonMorph : Morph
 {
+	#region Constants
+
+	private const int PADDING = 2;
+
+	#endregion
+
 	#region Fields
 
 	private readonly LabelMorph _label;
@@ -48,6 +54,8 @@ public sealed class ButtonMorph : Morph
 	}
 
 	#endregion
+
+	#region Properties
 
 	#region Command wiring
 
@@ -146,7 +154,11 @@ public sealed class ButtonMorph : Morph
 
 	#endregion
 
+	#endregion
+
 	#region Update / animation
+
+	#region Methods
 
 	public override void Update(double deltaTime)
 	{
@@ -228,11 +240,12 @@ public sealed class ButtonMorph : Morph
 	public override void OnPointerDown(PointerDownEvent e)
 	{
 		base.OnPointerDown(e);
-
 		if (IsPressed)
+		{
+			InvalidateLayout();
 			GetWorld()?.CapturePointer(this);
-
-		e.MarkHandled();
+			e.MarkHandled();
+		}
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)
@@ -243,9 +256,10 @@ public sealed class ButtonMorph : Morph
 		{
 			if (TryGetWorld(out var world) && Command != null)
 				world.Commands.Submit(Command);
+			InvalidateLayout();
+			e.MarkHandled();
 		}
 
-		e.MarkHandled();
 		base.OnPointerUp(e);
 	}
 
@@ -256,12 +270,12 @@ public sealed class ButtonMorph : Morph
 	protected override void UpdateLayout()
 	{
 		var offset = IsPressed ? new Point(1, 1) : Point.Empty;
-		_label.Position = new Point(
-			(Size.Width - _label.Size.Width) / 2 + offset.X,
-			(Size.Height - _label.Size.Height) / 2 + offset.Y);
-
+		_label.Position = new Point(offset.X + PADDING, offset.Y + PADDING);
 		base.UpdateLayout();
+		Size = new Size(_label.Size.Width + PADDING * 2, _label.Size.Height + PADDING * 2);
 	}
+
+	#endregion
 
 	#endregion
 }

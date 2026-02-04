@@ -34,7 +34,6 @@ public sealed class CommandHistory
 		if (_undoStack.Count == 0) return;
 
 		var command = _undoStack.Pop();
-		Console.WriteLine($"Undo: {command}");
 		command.Undo();
 		_redoStack.Push(command);
 	}
@@ -47,7 +46,6 @@ public sealed class CommandHistory
 		if (_redoStack.Count == 0) return;
 
 		var command = _redoStack.Pop();
-		Console.WriteLine($"Redo: {command}");
 		command.Execute();
 		_undoStack.Push(command);
 	}

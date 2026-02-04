@@ -16,6 +16,8 @@ public abstract class Morph : ICommandTarget
 	private Point _position;
 	private Size _size;
 	private bool _isEnabled = true;
+	private bool _isPressed = false;
+	private bool _isHovered = false;
 
 	#endregion
 
@@ -62,8 +64,31 @@ public abstract class Morph : ICommandTarget
 		}
 	}
 
-	public bool IsPressed { get; private set; } = false;
-	public bool IsHovered { get; private set; } = false;
+	public bool IsPressed
+	{
+		get => _isPressed;
+		set
+		{
+			if (_isPressed != value)
+			{
+				_isPressed = value;
+				Invalidate();
+			}
+		}
+	}
+
+	public bool IsHovered
+	{
+		get => _isHovered;
+		set
+		{
+			if (_isHovered != value)
+			{
+				_isHovered = value;
+				Invalidate();
+			}
+		}
+	}
 
 	/// <summary>
 	/// The mouse hover is over either this morph directly, or one of it's descendants.
@@ -278,6 +303,7 @@ public abstract class Morph : ICommandTarget
 		if (e.Button == MouseButton.Left)
 		{
 			IsPressed = true;
+			BringToTop();
 			Invalidate();
 		}
 	}
@@ -287,6 +313,7 @@ public abstract class Morph : ICommandTarget
 		if (IsPressed && e.Button == MouseButton.Left)
 		{
 			IsPressed = false;
+			BringToTop();
 			Invalidate();
 		}
 	}
@@ -313,6 +340,17 @@ public abstract class Morph : ICommandTarget
 		OnPointerMove(e);
 		if (!e.Handled && Owner != null)
 			Owner.DispatchPointerMove(e);
+	}
+
+	public void BringToTop()
+	{
+		if (Owner == null) return;
+
+		if (Owner._submorphs.Remove(this))
+		{
+			Owner._submorphs.Add(this);
+			Owner.Invalidate();
+		}
 	}
 
 	/// <summary>

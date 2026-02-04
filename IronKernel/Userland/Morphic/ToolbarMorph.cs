@@ -1,0 +1,56 @@
+using System.Drawing;
+using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Commands;
+
+namespace IronKernel.Userland.Morphic;
+
+public sealed class ToolbarMorph : Morph
+{
+	private readonly HorizontalStackMorph _stack;
+
+	public ToolbarMorph()
+	{
+		_stack = new HorizontalStackMorph
+		{
+			ShouldClipToBounds = true
+		};
+		AddMorph(_stack);
+	}
+
+	public void AddItem(string label, ICommand command)
+	{
+		var button = new ButtonMorph(
+			Point.Empty,
+			new Size(48, 16),
+			label)
+		{
+			Command = command
+		};
+
+		_stack.AddMorph(button);
+	}
+
+	protected override void UpdateLayout()
+	{
+		_stack.Position = Point.Empty;
+		base.UpdateLayout();
+		Size = _stack.Size;
+	}
+
+	protected override void DrawSelf(IRenderingContext rc)
+	{
+		var semantic = GetWorld().Style.Semantic;
+
+		// Toolbar background
+		rc.RenderFilledRect(
+			new Rectangle(Point.Empty, Size),
+			semantic.Surface
+		);
+
+		// Toolbar border
+		rc.RenderRect(
+			new Rectangle(Point.Empty, Size),
+			semantic.Border
+		);
+	}
+}
