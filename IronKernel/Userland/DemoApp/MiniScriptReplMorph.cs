@@ -14,8 +14,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	private const string PrimaryPrompt = "> ";
 	private const string ContinuationPrompt = "| ";
 
-	public MiniScriptReplMorph(Point position)
-		: base(position, new Size(320, 200), "MiniScript REPL")
+	public MiniScriptReplMorph()
+		: base(Point.Empty, new Size(320, 200), "MiniScript REPL")
 	{
 		_console = new TextConsoleMorph();
 		Content.AddMorph(_console);

@@ -54,6 +54,20 @@ public sealed class DemoUserApplication(
 			)
 		});
 
+		world.AddMorph(new ButtonMorph(
+			new Point(80, 120),
+			new Size(48, 16),
+			"Apps")
+		{
+			Command = new ActionCommand(() =>
+			{
+				var launcher = new LauncherMorph(new Point(16, 16));
+				launcher.AddApp<DummyReplMorph>("Dummy REPL");
+				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
+				world.AddMorph(launcher);
+			})
+		});
+
 		var text = "Name";
 		world.AddMorph(new TextEditMorph(new Point(0, 32), text, x => text = x));
 
@@ -70,8 +84,7 @@ public sealed class DemoUserApplication(
 			Text = "Hello world!",
 		});
 
-		world.AddMorph(new DummyReplMorph(new Point(175, 175)));
-		world.AddMorph(new MiniScriptReplMorph(new Point(250, 250)));
+		// world.AddMorph(new DummyReplMorph(new Point(175, 175)));
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
 			"MouseMoveHandler",

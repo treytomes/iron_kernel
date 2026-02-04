@@ -8,8 +8,8 @@ public sealed class DummyReplMorph : WindowMorph
 	private readonly TextConsoleMorph _console;
 	private CancellationTokenSource? _cts;
 
-	public DummyReplMorph(Point position)
-		: base(position, new Size(256, 192), "Dummy REPL")
+	public DummyReplMorph()
+		: base(Point.Empty, new Size(256, 192), "Dummy REPL")
 	{
 		_console = new TextConsoleMorph();
 		Content.AddMorph(_console);
@@ -29,7 +29,7 @@ public sealed class DummyReplMorph : WindowMorph
 	private async Task RunAsync(CancellationToken ct)
 	{
 		await _console.Ready;
-		_console.WriteLine("IronKernel Dummy REPL");
+		_console.WriteLine("Dummy REPL");
 		_console.WriteLine();
 
 		while (!ct.IsCancellationRequested)

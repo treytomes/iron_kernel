@@ -15,7 +15,7 @@ public class WindowMorph : Morph
 
 	private readonly DockPanelMorph _rootLayout;
 	private readonly DockPanelMorph _header;
-	private readonly Morph _content;
+	private Morph _content;
 
 	private readonly LabelMorph _titleLabel;
 	private readonly ButtonMorph _closeButton;
@@ -92,7 +92,21 @@ public class WindowMorph : Morph
 	/// <summary>
 	/// Container for window contents (local coordinates).
 	/// </summary>
-	public Morph Content => _content;
+	public Morph Content
+	{
+		get => _content;
+		protected set
+		{
+			_rootLayout.RemoveDock(_content);
+			_rootLayout.RemoveMorph(_content);
+			_content = value;
+			if (_content != null)
+			{
+				_rootLayout.AddMorph(_content);
+				_rootLayout.SetDock(_content, Dock.Fill);
+			}
+		}
+	}
 
 	public string Title
 	{
