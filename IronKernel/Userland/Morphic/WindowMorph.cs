@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
+using IronKernel.Userland.Morphic.ValueObjects;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -12,36 +13,47 @@ public class WindowMorph : Morph
 {
 	#region Fields
 
-	private readonly ContainerMorph _header;
-	private readonly ContainerMorph _content;
+	private readonly DockPanelMorph _rootLayout;
+	private readonly DockPanelMorph _header;
+	private readonly Morph _content;
+
 	private readonly LabelMorph _titleLabel;
 	private readonly ButtonMorph _closeButton;
 
 	private const int HeaderHeight = 6 * 2;
-	private const int Padding = 3;
 
 	#endregion
 
-	#region Constructors
+	#region Constructor
 
 	public WindowMorph(Point position, Size size, string title)
 	{
 		Position = position;
 		Size = size;
+
 		IsSelectable = true;
 		ShouldClipToBounds = true;
 
-		// --- Header ---
-		_header = new ContainerMorph
+		// Root layout: header (Top) + content (Fill)
+		_rootLayout = new DockPanelMorph
 		{
 			IsSelectable = false,
 			ShouldClipToBounds = true
 		};
+		AddMorph(_rootLayout);
 
-		_titleLabel = new LabelMorph()
+		// Header layout: title (Fill) + close button (Right)
+		_header = new DockPanelMorph
 		{
 			IsSelectable = false,
+			ShouldClipToBounds = true,
+			Size = new Size(size.Width, HeaderHeight) // semantic invariant
+		};
+
+		_titleLabel = new LabelMorph
+		{
 			Text = title,
+			IsSelectable = false,
 			BackgroundColor = null
 		};
 
@@ -51,21 +63,26 @@ public class WindowMorph : Morph
 			"X")
 		{
 			IsSelectable = false,
-			Command = new ActionCommand(() => MarkForDeletion())
+			Command = new ActionCommand(MarkForDeletion)
 		};
 
 		_header.AddMorph(_titleLabel);
 		_header.AddMorph(_closeButton);
-		AddMorph(_header);
+		_header.SetDock(_titleLabel, Dock.Fill);
+		_header.SetDock(_closeButton, Dock.Right);
 
-		// --- Content ---
+		// Content container (passive by design)
 		_content = new ContainerMorph
 		{
 			IsSelectable = false,
 			ShouldClipToBounds = true
 		};
 
-		AddMorph(_content);
+		// Compose window
+		_rootLayout.AddMorph(_header);
+		_rootLayout.AddMorph(_content);
+		_rootLayout.SetDock(_header, Dock.Top);
+		_rootLayout.SetDock(_content, Dock.Fill);
 	}
 
 	#endregion
@@ -91,23 +108,9 @@ public class WindowMorph : Morph
 
 	protected override void UpdateLayout()
 	{
-		// Header
-		_header.Position = Point.Empty;
-		_header.Size = new Size(Size.Width, HeaderHeight);
-
-		_titleLabel.Position = new Point(
-			Padding,
-			(HeaderHeight - _titleLabel.Size.Height) / 2);
-
-		_closeButton.Position = new Point(
-			_header.Size.Width - _closeButton.Size.Width - Padding,
-			(HeaderHeight - _closeButton.Size.Height) / 2);
-
-		// Content
-		_content.Position = new Point(0, HeaderHeight);
-		_content.Size = new Size(
-			Size.Width,
-			Size.Height - HeaderHeight);
+		// Window provides only outer constraints.
+		_rootLayout.Position = Point.Empty;
+		_rootLayout.Size = Size;
 
 		base.UpdateLayout();
 	}
