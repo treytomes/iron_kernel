@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.Morphic.Layout;
 
 public sealed class ContainerMorph : Morph
 {

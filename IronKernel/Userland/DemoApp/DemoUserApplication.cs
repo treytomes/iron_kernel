@@ -84,6 +84,12 @@ public sealed class DemoUserApplication(
 			Text = "Hello world!",
 		});
 
+		world.AddMorph(new MiniScriptMorph()
+		{
+			Position = new Point(200, 200),
+			Size = new Size(200, 200)
+		});
+
 		// world.AddMorph(new DummyReplMorph(new Point(175, 175)));
 
 		context.Bus.Subscribe<AppMouseMoveEvent>(
