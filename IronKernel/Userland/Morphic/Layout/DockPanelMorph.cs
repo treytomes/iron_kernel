@@ -42,7 +42,7 @@ public sealed class DockPanelMorph : Morph
 			Size.Width - Padding * 2,
 			Size.Height - Padding * 2);
 
-		foreach (var child in Submorphs)
+		foreach (var child in Submorphs.ToArray())
 		{
 			switch (GetDock(child))
 			{

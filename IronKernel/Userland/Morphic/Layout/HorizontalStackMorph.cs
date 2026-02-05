@@ -12,7 +12,7 @@ public sealed class HorizontalStackMorph : Morph
 		int x = Padding;
 		int maxHeight = 0;
 
-		foreach (var child in Submorphs)
+		foreach (var child in Submorphs.ToArray())
 		{
 			child.Position = new Point(x, Padding);
 			x += child.Size.Width + Spacing;
