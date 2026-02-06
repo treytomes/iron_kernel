@@ -42,6 +42,7 @@ public sealed class DockPanelMorph : Morph
 			Size.Width - Padding * 2,
 			Size.Height - Padding * 2);
 
+		// Pass 1: edge docks
 		foreach (var child in Submorphs.ToArray())
 		{
 			switch (GetDock(child))
@@ -75,14 +76,20 @@ public sealed class DockPanelMorph : Morph
 						remaining.Bottom - child.Size.Height);
 					remaining.Height -= child.Size.Height + Padding;
 					break;
-
-				case Dock.Fill:
-					child.Position = remaining.Location;
-					child.Size = remaining.Size;
-					break;
 			}
 		}
 
+		// Pass 2: fill (exactly once)
+		foreach (var child in Submorphs.ToArray())
+		{
+			if (GetDock(child) == Dock.Fill)
+			{
+				child.Position = remaining.Location;
+				child.Size = remaining.Size;
+			}
+		}
+
+		// Children now lay out inside correct bounds
 		base.UpdateLayout();
 	}
 }
