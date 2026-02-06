@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
@@ -136,9 +137,6 @@ public abstract class Morph : ICommandTarget
 			throw new ArgumentNullException(nameof(morph));
 		if (morph.Owner != null)
 			morph.Owner.RemoveMorph(morph);
-		// if (morph.Owner != null)
-		// 	throw new InvalidOperationException("Morph already has an owner");
-
 
 		morph.Owner = this;
 		if (index >= 0)
@@ -154,15 +152,22 @@ public abstract class Morph : ICommandTarget
 		// If we're already in a world, load immediately.
 		if (TryGetWorld(out var world))
 			morph.NotifyAddedToWorld(world);
+
+		Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
 	}
 
 	public bool RemoveMorph(Morph morph)
 	{
+		Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
+
 		// If we're already in a world, load immediately.
 		if (TryGetWorld(out var world))
 			morph.NotifyRemovedFromWorld(world);
 
-		if (morph.Owner == null) return true;
+		if (morph.Owner == null)
+		{
+			return true;
+		}
 		if (_submorphs.Remove(morph))
 		{
 			morph.Owner = null;
@@ -217,6 +222,8 @@ public abstract class Morph : ICommandTarget
 
 	public virtual void Update(double deltaTime)
 	{
+		Debug.Assert(!_submorphs.Contains(null!), $"Null sub-morph in {GetType().Name}");
+
 		if (_layoutInvalid)
 		{
 			UpdateLayout();
@@ -325,6 +332,7 @@ public abstract class Morph : ICommandTarget
 
 	public void DispatchPointerDown(PointerDownEvent e)
 	{
+		Debug.Assert(!_submorphs.Contains(null!), $"Null sub-morph in {GetType().Name}");
 		OnPointerDown(e);
 		if (!e.Handled && Owner != null)
 			Owner.DispatchPointerDown(e);

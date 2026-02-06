@@ -58,6 +58,8 @@ public sealed class DeleteHandleMorph : HandleMorph
 
 	public override void OnPointerUp(PointerUpEvent e)
 	{
+		if (TryGetWorld(out var world)) world.ReleasePointer(this);
+
 		var owner = Target.Owner;
 		if (owner == null) return;
 		Target.MarkForDeletion();

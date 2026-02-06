@@ -75,34 +75,25 @@ public sealed class PropertyListMorph : Morph
 		var list = new PropertyListMorph();
 
 		foreach (var prop in properties)
-		{
 			list.AddMorph(new PropertyRowMorph(prop, target));
-		}
 
+		list.RecalculateNameColumnWidth();
 		return list;
 	}
 
-	#region Layout
-
 	protected override void UpdateLayout()
 	{
-		// 1. Measure name labels
-		var maxNameWidth = Submorphs.OfType<PropertyRowMorph>().Max(x => x.NameLabelWidth);
+		if (NameColumnWidth == 0)
+			RecalculateNameColumnWidth();
 
-		// 2. Apply uniform column width (with padding)
-		NameColumnWidth = maxNameWidth;
-
-		// 3. Lay out rows vertically
 		int y = Padding;
 		int maxWidth = 0;
 
-		foreach (var morph in Submorphs)
+		foreach (var row in Submorphs.OfType<PropertyRowMorph>())
 		{
-			if (morph is not PropertyRowMorph row)
-				continue;
-
 			row.Position = new Point(Padding, y);
 			row.NameColumnWidth = NameColumnWidth;
+
 			y += row.Size.Height + _rowSpacing;
 			maxWidth = Math.Max(maxWidth, row.Size.Width);
 		}
@@ -114,7 +105,16 @@ public sealed class PropertyListMorph : Morph
 		base.UpdateLayout();
 	}
 
-	#endregion
+	private void RecalculateNameColumnWidth()
+	{
+		var max = Submorphs
+			.OfType<PropertyRowMorph>()
+			.Select(r => r.NameLabelWidth)
+			.DefaultIfEmpty(0)
+			.Max();
+
+		NameColumnWidth = max;
+	}
 
 	#endregion
 }

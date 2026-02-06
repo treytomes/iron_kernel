@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Commands;
@@ -73,6 +74,8 @@ public sealed class WorldMorph : Morph
 	{
 		// Execute all deferred mutation intents.
 		_commandManager.Flush();
+
+		Debug.Assert(!Submorphs.Any(m => m == null), "Null sub-morph introduced during command flush");
 
 		base.Update(deltaTime);
 		CommitDeletions();
@@ -271,6 +274,9 @@ public sealed class WorldMorph : Morph
 	{
 		if (_halo != null)
 		{
+			if (TryGetWorld(out var world))
+				world.ReleasePointer(_halo);
+
 			_halo.Owner?.RemoveMorph(_halo);
 			_halo = null;
 		}

@@ -106,6 +106,8 @@ public sealed class HaloMorph : Morph
 
 	private void UpdateFromTarget()
 	{
+		if (_target.Owner == null) return;
+
 		Position = _target.Position;
 		Size = _target.Size;
 
@@ -136,18 +138,17 @@ public sealed class HaloMorph : Morph
 			};
 		}
 
-		Submorphs.OfType<MoveHandleMorph>().Single().Position = new Point(
-			 -hs,
-			 -hs
-		);
-		Submorphs.OfType<DeleteHandleMorph>().Single().Position = new Point(
-			 Size.Width / 2 - hs,
-			 Size.Height - hs
-		);
-		Submorphs.OfType<InspectHandleMorph>().Single().Position = new Point(
-			 Size.Width / 2 - hs,
-			 -hs
-		);
+		var move = Submorphs.OfType<MoveHandleMorph>().FirstOrDefault();
+		if (move != null)
+			move.Position = new Point(-hs, -hs);
+
+		var delete = Submorphs.OfType<DeleteHandleMorph>().FirstOrDefault();
+		if (delete != null)
+			delete.Position = new Point(Size.Width / 2 - hs, Size.Height - hs);
+
+		var resize = Submorphs.OfType<InspectHandleMorph>().FirstOrDefault();
+		if (resize != null)
+			resize.Position = new Point(Size.Width / 2 - hs, -hs);
 	}
 
 	#endregion
