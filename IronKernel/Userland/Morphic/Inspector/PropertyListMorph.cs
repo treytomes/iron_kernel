@@ -86,6 +86,13 @@ public sealed class PropertyListMorph : Morph
 
 	protected override void UpdateLayout()
 	{
+		// 1. Measure name labels
+		var maxNameWidth = Submorphs.OfType<PropertyRowMorph>().Max(x => x.NameLabelWidth);
+
+		// 2. Apply uniform column width (with padding)
+		NameColumnWidth = maxNameWidth;
+
+		// 3. Lay out rows vertically
 		int y = Padding;
 		int maxWidth = 0;
 
@@ -94,9 +101,8 @@ public sealed class PropertyListMorph : Morph
 			if (morph is not PropertyRowMorph row)
 				continue;
 
-			row.NameColumnWidth = _nameColumnWidth;
 			row.Position = new Point(Padding, y);
-
+			row.NameColumnWidth = NameColumnWidth;
 			y += row.Size.Height + _rowSpacing;
 			maxWidth = Math.Max(maxWidth, row.Size.Width);
 		}

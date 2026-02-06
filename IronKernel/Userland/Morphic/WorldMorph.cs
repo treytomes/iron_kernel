@@ -170,6 +170,21 @@ public sealed class WorldMorph : Morph
 		}
 	}
 
+	public void PointerWheel(Point delta)
+	{
+		var e = new PointerWheelEvent(delta);
+
+		// If a morph has pointer capture, it exclusively receives wheel events
+		if (PointerCapture != null)
+		{
+			PointerCapture.DispatchPointerWheel(e);
+			return;
+		}
+
+		// Otherwise, deliver to the currently hovered morph
+		HoveredMorph?.DispatchPointerWheel(e);
+	}
+
 	public void PointerMove(Point p)
 	{
 		Hand.MoveTo(p);

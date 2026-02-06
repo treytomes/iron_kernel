@@ -85,6 +85,8 @@ public sealed class PropertyRowMorph : Morph
 
 	#region Properties
 
+	public int NameLabelWidth => _nameLabel.Size.Width;
+
 	/// <summary>
 	/// Width of the name column, controlled by the parent list.
 	/// </summary>

@@ -34,6 +34,11 @@ public sealed class DockPanelMorph : Morph
 			: Dock.Left; // or whatever your default is
 	}
 
+	public bool TryGetDock(Morph morph, out Dock dock)
+	{
+		return _dockMap.TryGetValue(morph, out dock);
+	}
+
 	protected override void UpdateLayout()
 	{
 		var remaining = new Rectangle(
@@ -77,12 +82,15 @@ public sealed class DockPanelMorph : Morph
 					remaining.Height -= child.Size.Height + Padding;
 					break;
 			}
+
+			remaining.Width = Math.Max(remaining.Width, 1);
+			remaining.Height = Math.Max(remaining.Height, 1);
 		}
 
 		// Pass 2: fill (exactly once)
 		foreach (var child in Submorphs.ToArray())
 		{
-			if (GetDock(child) == Dock.Fill)
+			if (TryGetDock(child, out var dock) && dock == Dock.Fill)
 			{
 				child.Position = remaining.Location;
 				child.Size = remaining.Size;

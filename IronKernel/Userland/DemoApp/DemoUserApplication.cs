@@ -92,6 +92,17 @@ public sealed class DemoUserApplication(
 
 		// world.AddMorph(new DummyReplMorph(new Point(175, 175)));
 
+		context.Bus.Subscribe<AppMouseWheelEvent>(
+			"MouseWheelHandler",
+			async (e, ct) =>
+			{
+				// Console.WriteLine($"Mouse wheel: {e.OffsetX}, {e.OffsetY}");
+				var pnt = new Point(e.OffsetX, e.OffsetY);
+				world.PointerWheel(pnt);
+				await Task.CompletedTask;
+			}
+		);
+
 		context.Bus.Subscribe<AppMouseMoveEvent>(
 			"MouseMoveHandler",
 			async (e, ct) =>

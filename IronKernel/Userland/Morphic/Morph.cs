@@ -318,6 +318,8 @@ public abstract class Morph : ICommandTarget
 		}
 	}
 
+	public virtual void OnPointerWheel(PointerWheelEvent e) { }
+
 	public virtual void OnPointerMove(PointerMoveEvent e) { }
 	public virtual void OnKey(KeyEvent e) { }
 
@@ -333,6 +335,13 @@ public abstract class Morph : ICommandTarget
 		OnPointerUp(e);
 		if (!e.Handled && Owner != null)
 			Owner.DispatchPointerUp(e);
+	}
+
+	public void DispatchPointerWheel(PointerWheelEvent e)
+	{
+		OnPointerWheel(e);
+		if (!e.Handled && Owner != null)
+			Owner.DispatchPointerWheel(e);
 	}
 
 	public void DispatchPointerMove(PointerMoveEvent e)
@@ -378,6 +387,7 @@ public abstract class Morph : ICommandTarget
 	{
 		foreach (var child in _submorphs.ToArray())
 		{
+			if (child == null) throw new NullReferenceException("Child morph is null?");
 			child.UpdateLayout();
 		}
 	}
