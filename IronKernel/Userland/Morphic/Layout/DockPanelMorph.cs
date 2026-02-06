@@ -3,7 +3,7 @@ using IronKernel.Userland.Morphic.ValueObjects;
 
 namespace IronKernel.Userland.Morphic.Layout;
 
-public sealed class DockPanelMorph : Morph
+public class DockPanelMorph : Morph
 {
 	private readonly Dictionary<Morph, Dock> _dockMap = new();
 
