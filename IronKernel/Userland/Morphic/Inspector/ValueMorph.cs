@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Inspector;
 
@@ -129,6 +130,12 @@ public class ValueMorph : Morph
 	{
 		// Declared type always wins if present
 		return _declaredType ?? value?.GetType();
+	}
+
+	public override void OnPointerDown(PointerDownEvent e)
+	{
+		base.OnPointerDown(e);
+		e.MarkHandled();
 	}
 
 	#endregion

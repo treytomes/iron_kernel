@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
+using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic.Inspector;
 
@@ -164,6 +165,14 @@ public sealed class PropertyRowMorph : Morph
 			body = unary.Operand;
 
 		return body.Type;
+	}
+
+	public override void OnPointerDown(PointerDownEvent e)
+	{
+		// We're deliberately not calling base behavior, in order to avoid "BringToTop".
+		// base.OnPointerDown(e);
+
+		e.MarkHandled();
 	}
 
 	#endregion
