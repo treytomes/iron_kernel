@@ -6,232 +6,239 @@ using IronKernel.Userland.Morphic.ValueObjects;
 
 namespace IronKernel.Userland.Morphic.Inspector;
 
-/// <summary>
-/// A live inspector for an arbitrary object.
-/// Displays public instance properties in a PropertyListMorph.
-/// </summary>
 public sealed class InspectorMorph : WindowMorph
 {
-	#region Constants
-
 	private const int ScrollStep = 16;
-
-	#endregion
-
-	#region Fields
+	private const int MinThumbSize = 12;
 
 	private readonly PropertyListMorph _propertyList;
 	private readonly DockPanelMorph _layoutPanel;
-	private readonly ContainerMorph _content;
+	private readonly ContainerMorph _viewport;
+
+	private DockPanelMorph _hScrollBar;
+	private DockPanelMorph _vScrollBar;
+
+	private ScrollTrackMorph _hTrack = null!;
+	private ScrollTrackMorph _vTrack = null!;
+
+	private HorizontalScrollThumbMorph _hThumb = null!;
+	private VerticalScrollThumbMorph _vThumb = null!;
 
 	private Point _scrollOffset = Point.Empty;
 
-	private VerticalScrollThumbMorph _vThumb = null!;
-	private HorizontalScrollThumbMorph _hThumb = null!;
-
-	#endregion
-
-	#region Constructors
-
 	public InspectorMorph(object target)
-		: this(
-			target,
-			new Point(32, 32),
-			new Size(240, 180))
-	{
-	}
-
-	public InspectorMorph(object target, Point position, Size size)
-		: base(position, size, GetTitle(target))
+		: base(Point.Empty, new Size(256, 192), target.GetType().Name)
 	{
 		IsSelectable = true;
 
-		_layoutPanel = new DockPanelMorph()
+		_layoutPanel = new DockPanelMorph
 		{
-			ShouldClipToBounds = true,
-			Size = Content.Size
+			ShouldClipToBounds = true
 		};
 
 		_propertyList = BuildPropertyList(target);
-		_propertyList.Size = new Size(128, 128); // TODO: Sizing might not be needed.
 
-		_content = new ContainerMorph()
+		_viewport = new ContainerMorph
 		{
-			Size = new Size(128, 128), // TODO: Sizing might not be needed.
 			ShouldClipToBounds = true
 		};
-		_content.AddMorph(_propertyList);
+		_viewport.AddMorph(_propertyList);
 
-		_layoutPanel.AddMorph(_content);
-		_layoutPanel.SetDock(_content, Dock.Fill);
+		_layoutPanel.AddMorph(_viewport);
+		_layoutPanel.SetDock(_viewport, Dock.Fill);
 
-		var hScrollBar = BuildHorizontalScrollBar();
-		_layoutPanel.AddMorph(hScrollBar);
-		_layoutPanel.SetDock(hScrollBar, Dock.Bottom);
+		_hScrollBar = BuildHorizontalScrollBar();
+		_layoutPanel.AddMorph(_hScrollBar);
+		_layoutPanel.SetDock(_hScrollBar, Dock.Bottom);
 
-		var vScrollBar = BuildVerticalScrollBar();
-		_layoutPanel.AddMorph(vScrollBar);
-		_layoutPanel.SetDock(vScrollBar, Dock.Right);
+		_vScrollBar = BuildVerticalScrollBar();
+		_layoutPanel.AddMorph(_vScrollBar);
+		_layoutPanel.SetDock(_vScrollBar, Dock.Right);
 
 		Content.AddMorph(_layoutPanel);
 	}
 
-	#endregion
+	#region Scrollbars
 
-	#region Helpers
-
-	private Morph BuildHorizontalScrollBar()
+	private DockPanelMorph BuildHorizontalScrollBar()
 	{
-		var bar = new DockPanelMorph()
-		{
-			IsSelectable = true,
-			Size = new Size(128, 12),
-		};
+		var bar = new DockPanelMorph { Size = new Size(128, 12) };
 
-		var scrollLeftButton = new ButtonMorph(Point.Empty, new Size(12, 12), "<")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "<")
 		{
 			Command = new ActionCommand(() => ScrollBy(-ScrollStep, 0))
-		};
-		bar.AddMorph(scrollLeftButton);
-		bar.SetDock(scrollLeftButton, Dock.Left);
+		});
+		bar.SetDock(bar.Submorphs[^1], Dock.Left);
 
-		var spacer = new ContainerMorph()
-		{
-			Size = new Size(12, 12)
-		};
-		bar.AddMorph(spacer);
-		bar.SetDock(spacer, Dock.Right);
-
-		var scrollRightButton = new ButtonMorph(Point.Empty, new Size(12, 12), ">")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ">")
 		{
 			Command = new ActionCommand(() => ScrollBy(ScrollStep, 0))
-		};
-		bar.AddMorph(scrollRightButton);
-		bar.SetDock(scrollRightButton, Dock.Right);
+		});
+		bar.SetDock(bar.Submorphs[^1], Dock.Right);
 
-		var track = new ScrollTrackMorph();
-		bar.AddMorph(track);
-		bar.SetDock(track, Dock.Fill);
+		_hTrack = new ScrollTrackMorph();
+		bar.AddMorph(_hTrack);
+		bar.SetDock(_hTrack, Dock.Fill);
 
 		_hThumb = new HorizontalScrollThumbMorph(
-			getMaxScroll: () => Math.Max(0, _propertyList.Size.Width - _content.Size.Width),
+			getMaxScroll: () => MaxScrollX,
 			setScroll: x =>
 			{
 				_scrollOffset = new Point(x, _scrollOffset.Y);
 				InvalidateLayout();
 			});
 
-		track.AddMorph(_hThumb);
+		_hTrack.AddMorph(_hThumb);
 		return bar;
 	}
 
-	private Morph BuildVerticalScrollBar()
+	private DockPanelMorph BuildVerticalScrollBar()
 	{
-		var bar = new DockPanelMorph()
-		{
-			IsSelectable = true,
-			Size = new Size(12, 128)
-		};
+		var bar = new DockPanelMorph { Size = new Size(12, 128) };
 
-		var scrollUpButton = new ButtonMorph(Point.Empty, new Size(12, 12), "^")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "^")
 		{
 			Command = new ActionCommand(() => ScrollBy(0, -ScrollStep))
-		};
-		bar.AddMorph(scrollUpButton);
-		bar.SetDock(scrollUpButton, Dock.Top);
+		});
+		bar.SetDock(bar.Submorphs[^1], Dock.Top);
 
-		var scrollDownButton = new ButtonMorph(Point.Empty, new Size(12, 12), "v")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "v")
 		{
 			Command = new ActionCommand(() => ScrollBy(0, ScrollStep))
-		};
-		bar.AddMorph(scrollDownButton);
-		bar.SetDock(scrollDownButton, Dock.Bottom);
+		});
+		bar.SetDock(bar.Submorphs[^1], Dock.Bottom);
 
-		var track = new ScrollTrackMorph();
-		bar.AddMorph(track);
-		bar.SetDock(track, Dock.Fill);
+		_vTrack = new ScrollTrackMorph();
+		bar.AddMorph(_vTrack);
+		bar.SetDock(_vTrack, Dock.Fill);
 
 		_vThumb = new VerticalScrollThumbMorph(
-			getMaxScroll: () => Math.Max(0, _propertyList.Size.Height - _content.Size.Height),
-			getViewportHeight: () => _content.Size.Height,
+			getMaxScroll: () => MaxScrollY,
+			getViewportHeight: () => _viewport.Size.Height,
 			setScroll: y =>
 			{
 				_scrollOffset = new Point(_scrollOffset.X, y);
 				InvalidateLayout();
 			});
 
-		track.AddMorph(_vThumb);
+		_vTrack.AddMorph(_vThumb);
 		return bar;
 	}
 
-	private static string GetTitle(object target)
-	{
-		return target.GetType().Name;
-	}
+	#endregion
 
-	private static PropertyListMorph BuildPropertyList(object target)
-	{
-		var properties = target
-			.GetType()
-			.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0);
-
-		// This assumes you added FromProperties(IEnumerable<PropertyInfo>, object)
-		return PropertyListMorph.FromProperties(properties, target);
-	}
+	#region Layout
 
 	protected override void UpdateLayout()
 	{
 		_layoutPanel.Size = Content.Size;
 		base.UpdateLayout();
 
+		// Apply scroll transform
 		_propertyList.Position = new Point(-_scrollOffset.X, -_scrollOffset.Y);
 
-		UpdateThumbPositions();
+		UpdateScrollbars();
 	}
 
-	private void UpdateThumbPositions()
+	private void UpdateScrollbars()
 	{
-		if (_vThumb?.Owner != null)
-		{
-			var track = _vThumb.Owner;
-			var maxScroll = Math.Max(0, _propertyList.Size.Height - _content.Size.Height);
-			var maxThumb = Math.Max(0, track.Size.Height - _vThumb.Size.Height);
+		bool canScrollX = MaxScrollX > 0;
+		bool canScrollY = MaxScrollY > 0;
 
-			if (maxScroll > 0 && maxThumb > 0)
-			{
-				var y = (int)((float)_scrollOffset.Y / maxScroll * maxThumb);
-				_vThumb.Position = new Point(_vThumb.Position.X, y);
-			}
-		}
+		_hScrollBar.Visible = canScrollX;
+		_vScrollBar.Visible = canScrollY;
 
-		if (_hThumb?.Owner != null)
-		{
-			var track = _hThumb.Owner;
-			var maxScroll = Math.Max(0, _propertyList.Size.Width - _content.Size.Width);
-			var maxThumb = Math.Max(0, track.Size.Width - _hThumb.Size.Width);
+		if (canScrollX)
+			UpdateHorizontalThumb();
 
-			if (maxScroll > 0 && maxThumb > 0)
-			{
-				var x = (int)((float)_scrollOffset.X / maxScroll * maxThumb);
-				_hThumb.Position = new Point(x, _hThumb.Position.Y);
-			}
-		}
+		if (canScrollY)
+			UpdateVerticalThumb();
 	}
+
+	private void UpdateHorizontalThumb()
+	{
+		if (MaxScrollX <= 0 || _propertyList.Size.Width <= 0)
+		{
+			_hThumb.Visible = false;
+			return;
+		}
+
+		var trackWidth = _hTrack.Size.Width;
+		if (trackWidth <= MinThumbSize)
+			return;
+
+		_hThumb.Visible = true;
+
+		var ratio = (float)_viewport.Size.Width / _propertyList.Size.Width;
+		var thumbWidth = Math.Clamp(
+			(int)(trackWidth * ratio),
+			MinThumbSize,
+			trackWidth
+		);
+
+		_hThumb.Size = new Size(thumbWidth, _hThumb.Size.Height);
+
+		var maxThumbX = trackWidth - thumbWidth;
+		var x = (int)((float)_scrollOffset.X / MaxScrollX * maxThumbX);
+		_hThumb.Position = new Point(x, _hThumb.Position.Y);
+	}
+
+	private void UpdateVerticalThumb()
+	{
+		if (MaxScrollY <= 0 || _propertyList.Size.Height <= 0)
+		{
+			_vThumb.Visible = false;
+			return;
+		}
+
+		var trackHeight = _hTrack.Size.Height;
+		if (trackHeight <= MinThumbSize)
+			return;
+
+		_vThumb.Visible = true;
+
+		var ratio = (float)_viewport.Size.Height / _propertyList.Size.Height;
+		var thumbHeight = Math.Clamp(
+			(int)(trackHeight * ratio),
+			MinThumbSize,
+			trackHeight
+		);
+
+		_vThumb.Size = new Size(thumbHeight, _vThumb.Size.Height);
+
+		var maxThumbY = trackHeight - thumbHeight;
+		var y = (int)((float)_scrollOffset.Y / MaxScrollY * maxThumbY);
+		_vThumb.Position = new Point(_vThumb.Position.X, y);
+	}
+
+	#endregion
+
+	#region Scrolling helpers
+
+	private int MaxScrollX =>
+		Math.Max(0, _propertyList.Size.Width - _viewport.Size.Width);
+
+	private int MaxScrollY =>
+		Math.Max(0, _propertyList.Size.Height - _viewport.Size.Height);
 
 	private void ScrollBy(int dx, int dy)
 	{
-		var child = _content.Submorphs[0];
-		var maxX = Math.Max(0, child.Size.Width - _content.Size.Width);
-		var maxY = Math.Max(0, child.Size.Height - _content.Size.Height);
-
 		_scrollOffset = new Point(
-			Math.Clamp(_scrollOffset.X + dx, 0, maxX),
-			Math.Clamp(_scrollOffset.Y + dy, 0, maxY)
+			Math.Clamp(_scrollOffset.X + dx, 0, MaxScrollX),
+			Math.Clamp(_scrollOffset.Y + dy, 0, MaxScrollY)
 		);
 
 		InvalidateLayout();
 	}
 
 	#endregion
+
+	private static PropertyListMorph BuildPropertyList(object target)
+	{
+		var props = target.GetType()
+			.GetProperties(BindingFlags.Instance | BindingFlags.Public)
+			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0);
+
+		return PropertyListMorph.FromProperties(props, target);
+	}
 }
