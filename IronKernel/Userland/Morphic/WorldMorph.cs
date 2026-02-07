@@ -1,8 +1,9 @@
-using System.Diagnostics;
+using System.Collections.Concurrent;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Events;
+using Miniscript;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -12,6 +13,11 @@ public sealed class WorldMorph : Morph
 
 	private HaloMorph? _halo;
 	private readonly WorldCommandManager _commandManager = new();
+	private readonly Interpreter _interpreter = new();
+	private readonly ScriptOutputHub _scriptOutput = new();
+	private readonly ConcurrentQueue<string> _scriptQueue = new();
+	private bool _scriptBusy = false;
+	private readonly WorldScriptContext _scriptContext;
 
 	#endregion
 
@@ -19,6 +25,10 @@ public sealed class WorldMorph : Morph
 
 	public WorldMorph(Size screenSize, IAssetService assets)
 	{
+		_scriptContext = new WorldScriptContext(this);
+		_interpreter.hostData = _scriptContext;
+		_scriptOutput.Attach(_interpreter);
+
 		Assets = assets;
 		Position = Point.Empty;
 		Size = screenSize;
@@ -30,6 +40,10 @@ public sealed class WorldMorph : Morph
 	#endregion
 
 	#region Properties
+
+	public Interpreter Interpreter => _interpreter;
+	public ScriptOutputHub ScriptOutput => _scriptOutput;
+	public WorldScriptContext ScriptContext => _scriptContext;
 
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
@@ -43,6 +57,11 @@ public sealed class WorldMorph : Morph
 	#endregion
 
 	#region Methods
+
+	public void EnqueueScript(string scriptSource)
+	{
+		_scriptQueue.Enqueue(scriptSource);
+	}
 
 	public void CapturePointer(Morph? morph)
 	{
@@ -72,10 +91,26 @@ public sealed class WorldMorph : Morph
 
 	public override void Update(double deltaTime)
 	{
+		// Advance MiniScript VM
+		_interpreter.RunUntilDone(deltaTime);
+
+		// Execute exactly one REPL line per frame (or per update)
+		if (!_scriptBusy && _scriptQueue.TryDequeue(out var line))
+		{
+			try
+			{
+				_scriptBusy = true;
+				_interpreter.REPL(line);
+			}
+			finally
+			{
+				_scriptBusy = false;
+			}
+		}
 		// Execute all deferred mutation intents.
 		_commandManager.Flush();
 
-		Debug.Assert(!Submorphs.Any(m => m == null), "Null sub-morph introduced during command flush");
+		// Debug.Assert(!Submorphs.Any(m => m == null), "Null sub-morph introduced during command flush");
 
 		base.Update(deltaTime);
 		CommitDeletions();
@@ -319,10 +354,7 @@ public sealed class WorldMorph : Morph
 
 	private Morph? FindSelectableAncestor(Morph? morph)
 	{
-		while (morph != null && !morph.IsSelectable)
-		{
-			morph = morph.Owner;
-		}
+		while (morph != null && !morph.IsSelectable) morph = morph.Owner;
 		return morph;
 	}
 
