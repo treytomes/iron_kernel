@@ -13,6 +13,7 @@ public sealed class VerticalStackMorph : Morph
 
 		foreach (var child in Submorphs.ToArray())
 		{
+			if (child == null) continue;
 			child.Position = new Point(Padding, y);
 			y += child.Size.Height + Spacing;
 		}
