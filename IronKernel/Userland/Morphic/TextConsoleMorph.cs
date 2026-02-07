@@ -6,6 +6,7 @@ using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic;
 
+// TODO: Backspacing from end of string isn't erasing the cell at the cursor like it should.
 public sealed class TextConsoleMorph : Morph
 {
 	#region Fields
@@ -329,6 +330,12 @@ public sealed class TextConsoleMorph : Morph
 
 	private void PutChar(char ch)
 	{
+		if (ch == '\n')
+		{
+			NewLine();
+			return;
+		}
+
 		_buffer[_cursorY, _cursorX] = new ConsoleCell
 		{
 			Char = ch,
