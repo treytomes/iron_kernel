@@ -1,0 +1,296 @@
+using System.Drawing;
+using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic.Events;
+using IronKernel.Userland.Morphic.Inspector;
+
+namespace IronKernel.Userland.Morphic;
+
+public sealed class TextEditMorph : Morph, IValueContentMorph
+{
+	#region Constants
+	private const int Padding = 2;
+	private const double CaretBlinkMs = 500;
+	#endregion
+
+	#region Fields
+	private string _text;
+	private string _originalText;
+	private int _caretIndex;
+
+	private readonly Action<string>? _setter;
+	private readonly Func<string, bool>? _validator;
+
+	private readonly LabelMorph _label;
+
+	private double _caretBlinkTime;
+	private bool _caretVisible = true;
+	#endregion
+
+	#region Constructors
+
+	public TextEditMorph(string initialText, Action<string>? setter)
+		: this(Point.Empty, initialText, setter, null)
+	{
+	}
+
+	public TextEditMorph(
+		Point position,
+		string initialText,
+		Action<string>? setter,
+		Func<string, bool>? validator = null)
+	{
+		Position = position;
+
+		_text = initialText ?? string.Empty;
+		_originalText = _text;
+		_caretIndex = _text.Length;
+
+		_setter = setter;
+		_validator = validator;
+
+		IsSelectable = true;
+
+		_label = new LabelMorph(Point.Empty)
+		{
+			IsSelectable = false,
+			Text = _text,
+			BackgroundColor = null
+		};
+
+		AddMorph(_label);
+		InvalidateLayout();
+	}
+
+	#endregion
+
+	#region Focus
+
+	public override bool WantsKeyboardFocus => true;
+
+	public override void OnPointerDown(PointerDownEvent e)
+	{
+		base.OnPointerDown(e);
+
+		if (HasKeyboardFocus())
+		{
+			_originalText = _text;
+			_caretVisible = true;
+			_caretBlinkTime = 0;
+			Invalidate();
+		}
+
+		e.MarkHandled();
+	}
+
+	#endregion
+
+	#region Update (caret blink)
+
+	public override void Update(double deltaMs)
+	{
+		base.Update(deltaMs);
+
+		if (!HasKeyboardFocus())
+		{
+			_caretVisible = false;
+			_caretBlinkTime = 0;
+			return;
+		}
+
+		_caretBlinkTime += deltaMs;
+		if (_caretBlinkTime >= CaretBlinkMs)
+		{
+			_caretBlinkTime = 0;
+			_caretVisible = !_caretVisible;
+			Invalidate();
+		}
+	}
+
+	#endregion
+
+	#region Keyboard Input
+
+	public override void OnKey(KeyEvent e)
+	{
+		if (e.Action != InputAction.Press)
+			return;
+
+		switch (e.Key)
+		{
+			case Key.Enter:
+				CommitOrCancel();
+				ReleaseFocus();
+				break;
+
+			case Key.Escape:
+				CancelEdit();
+				ReleaseFocus();
+				break;
+
+			case Key.Left:
+				if (_caretIndex > 0) _caretIndex--;
+				break;
+
+			case Key.Right:
+				if (_caretIndex < _text.Length) _caretIndex++;
+				break;
+
+			case Key.Home:
+				_caretIndex = 0;
+				break;
+
+			case Key.End:
+				_caretIndex = _text.Length;
+				break;
+
+			case Key.Backspace:
+				if (_caretIndex > 0)
+				{
+					_text = _text.Remove(_caretIndex - 1, 1);
+					_caretIndex--;
+					OnTextChanged();
+				}
+				break;
+
+			case Key.Delete:
+				if (_caretIndex < _text.Length)
+				{
+					_text = _text.Remove(_caretIndex, 1);
+					OnTextChanged();
+				}
+				break;
+
+			default:
+				var ch = e.ToText();
+				if (ch != null)
+				{
+					_text = _text.Insert(_caretIndex, ch.Value.ToString());
+					_caretIndex++;
+					OnTextChanged();
+				}
+				break;
+		}
+
+		_caretIndex = Math.Clamp(_caretIndex, 0, _text.Length);
+		Invalidate();
+		e.MarkHandled();
+	}
+
+	#endregion
+
+	#region Layout
+
+	protected override void UpdateLayout()
+	{
+		_label.Position = new Point(Padding, Padding);
+		Size = new Size(
+			Math.Max(40, _label.Size.Width + Padding * 2),
+			_label.Size.Height + Padding * 2);
+
+		base.UpdateLayout();
+	}
+
+	#endregion
+
+	#region Rendering
+
+	protected override void DrawSelf(IRenderingContext rc)
+	{
+		if (Style == null)
+			return;
+
+		var s = Style.Semantic;
+
+		rc.RenderFilledRect(
+			new Rectangle(Point.Empty, Size),
+			s.Surface);
+
+		rc.RenderRect(
+			new Rectangle(Point.Empty, Size),
+			HasKeyboardFocus() ? s.Primary : s.Border);
+
+		if (HasKeyboardFocus() && _caretVisible)
+		{
+			var caretX = Padding + MeasureCaretOffset();
+			rc.RenderLine(
+				new Point(caretX, Padding),
+				new Point(caretX, Padding + _label.Size.Height),
+				s.Text);
+		}
+	}
+
+	#endregion
+
+	#region Value Refresh (external updates)
+
+	public void Refresh(object? value)
+	{
+		var newText = value?.ToString() ?? string.Empty;
+		if (_text == newText)
+			return;
+
+		_text = newText;
+		_originalText = newText;
+
+		_label.Text = _text;
+		_caretIndex = _text.Length;
+
+		_caretVisible = true;
+		_caretBlinkTime = 0;
+
+		InvalidateLayout();
+		Invalidate();
+	}
+
+	#endregion
+
+	#region Helpers
+
+	private void OnTextChanged()
+	{
+		_label.Text = _text;
+		_caretVisible = true;
+		_caretBlinkTime = 0;
+		InvalidateLayout();
+	}
+
+	private void CommitOrCancel()
+	{
+		if (_validator == null || _validator(_text))
+		{
+			_setter?.Invoke(_text);
+		}
+		else
+		{
+			CancelEdit();
+		}
+	}
+
+	private void CancelEdit()
+	{
+		_text = _originalText;
+		_label.Text = _text;
+		_caretIndex = _text.Length;
+		InvalidateLayout();
+		Invalidate();
+	}
+
+	private void ReleaseFocus()
+	{
+		if (TryGetWorld(out var world))
+			world.ReleaseKeyboard(this);
+	}
+
+	private bool HasKeyboardFocus()
+	{
+		return TryGetWorld(out var world) && world.KeyboardFocus == this;
+	}
+
+	private int MeasureCaretOffset()
+	{
+		return _caretIndex * _label.TileSize.Width;
+	}
+
+	#endregion
+}

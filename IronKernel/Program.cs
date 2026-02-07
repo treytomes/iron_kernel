@@ -1,16 +1,21 @@
-﻿using IronKernel.Logging;
-using IronKernel.Kernel;
+﻿using IronKernel.Kernel;
 using IronKernel.Kernel.State;
+using IronKernel.Kernel.Bus;
+using IronKernel.Logging;
+using IronKernel.Modules.ApplicationHost;
+using IronKernel.Modules.Framebuffer;
+using IronKernel.Modules.OpenTKHost;
+using IronKernel.State;
+using IronKernel.Userland.DemoApp;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using OpenTK.Mathematics;
 using System.CommandLine;
-using IronKernel.State;
-using IronKernel.Kernel.Bus;
-using IronKernel.Modules.Clock;
-using IronKernel.Modules.ApplicationHost;
-using IronKernel.Applications.DemoApp;
+using IronKernel.Modules.AssetLoader;
+using IronKernel.Common;
 
 namespace IronKernel;
 
@@ -46,9 +51,19 @@ internal sealed class Program
 			};
 
 			using var host = CreateHostBuilder(props).Build();
+			var logger = host.Services.GetRequiredService<ILogger<Program>>();
+			var kernel = host.Services.GetRequiredService<KernelService>();
+			var cts = new CancellationTokenSource();
+			var ct = cts.Token;
 
-			Console.WriteLine("Starting IronKernel...");
-			await host.RunAsync();
+			Console.CancelKeyPress += (sender, e) =>
+			{
+				e.Cancel = true;        // prevent hard process kill
+				cts.Cancel();           // signal kernel shutdown
+			};
+
+			Console.WriteLine($"Starting {nameof(IronKernel)}...");
+			await kernel.StartAsync(cts.Token);
 		}, configFileOption, debugOption);
 
 		return root;
@@ -114,18 +129,49 @@ internal sealed class Program
 	{
 		// Configuration
 		services.Configure<AppSettings>(ctx.Configuration);
+		services.AddSingleton(sp => sp.GetRequiredService<IOptions<AppSettings>>().Value);
 
 		// Kernel infrastructure
 		services.AddSingleton<IKernelState, KernelStateStore>();
 		services.AddSingleton<KernelService>();
-		services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
+		// services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
 
 		services.AddSingleton<IKernelMessageBus, MessageBus>();
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
-		services.AddSingleton<IKernelModule, ClockModule>();
+		// Register IVirtualDisplay as a factory.
+		services.AddSingleton<IVirtualDisplay>(serviceProvider =>
+		{
+			// Get window settings from configuration.
+			var appSettings = serviceProvider.GetRequiredService<IOptions<AppSettings>>().Value;
+
+			// Get or create window.
+			var windowSize = new Vector2i(
+				appSettings.Window.Width,
+				appSettings.Window.Height
+			);
+
+			// Create virtual display settings.
+			var virtualDisplaySettings = new AppSettings.VirtualDisplaySettings
+			{
+				Width = appSettings.VirtualDisplay.Width,
+				Height = appSettings.VirtualDisplay.Height,
+				VertexShaderPath = appSettings.VirtualDisplay.VertexShaderPath,
+				FragmentShaderPath = appSettings.VirtualDisplay.FragmentShaderPath
+			};
+
+			// Create and return the virtual display.
+			return new VirtualDisplay(windowSize, virtualDisplaySettings);
+		});
+
+		services.AddSingleton<IResourceManager, ResourceManager>();
+		// services.AddTransient<IResourceLoader<Image>, ImageLoader>();
+
 		// services.AddSingleton<IKernelModule, HelloModule>();
 		// services.AddSingleton<IKernelModule, ChaosModule>();
+		services.AddSingleton<IKernelModule, OpenTKHostModule>();
+		services.AddSingleton<IKernelModule, FramebufferModule>();
+		services.AddSingleton<IKernelModule, AssetLoaderModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
 		services.AddSingleton<DemoUserApplication>();

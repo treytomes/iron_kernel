@@ -41,10 +41,10 @@ public sealed class ModuleRuntime : IModuleRuntime
 	}
 
 	public Task RunAsync(
-		string name,
-		ModuleTaskKind kind,
-		Func<CancellationToken, Task> work,
-		CancellationToken stoppingToken)
+	string name,
+	ModuleTaskKind kind,
+	Func<CancellationToken, Task> work,
+	CancellationToken stoppingToken)
 	{
 		if (work is null)
 			throw new ArgumentNullException(nameof(work));
@@ -52,9 +52,16 @@ public sealed class ModuleRuntime : IModuleRuntime
 		var startedAt = DateTime.UtcNow;
 		var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
 
-		ModuleTask? entry = null;
+		// Create entry FIRST
+		var entry = new ModuleTask(
+			name,
+			kind,
+			watchdogCts)
+		{
+			State = ModuleTaskState.Running
+		};
 
-		var task = Task.Run(async () =>
+		Task task = Task.Run(async () =>
 		{
 			ModuleContext.CurrentModule.Value = _moduleType;
 			var sw = Stopwatch.StartNew();
@@ -66,9 +73,8 @@ public sealed class ModuleRuntime : IModuleRuntime
 
 				if (kind == ModuleTaskKind.Finite)
 				{
-					MarkSlowIfNeeded(entry!, sw.Elapsed);
-
-					entry!.State = ModuleTaskState.Completed;
+					MarkSlowIfNeeded(entry, sw.Elapsed);
+					entry.State = ModuleTaskState.Completed;
 
 					_bus.Publish(new ModuleTaskCompleted(
 						_moduleType,
@@ -79,9 +85,8 @@ public sealed class ModuleRuntime : IModuleRuntime
 			{
 				sw.Stop();
 
-				MarkSlowIfNeeded(entry!, sw.Elapsed);
-
-				entry!.State = ModuleTaskState.Cancelled;
+				MarkSlowIfNeeded(entry, sw.Elapsed);
+				entry.State = ModuleTaskState.Cancelled;
 
 				_bus.Publish(new ModuleTaskCancelled(
 					_moduleType,
@@ -91,9 +96,8 @@ public sealed class ModuleRuntime : IModuleRuntime
 			{
 				sw.Stop();
 
-				MarkSlowIfNeeded(entry!, sw.Elapsed);
-
-				entry!.State = ModuleTaskState.Faulted;
+				MarkSlowIfNeeded(entry, sw.Elapsed);
+				entry.State = ModuleTaskState.Faulted;
 
 				_logger.LogError(
 					ex,
@@ -113,14 +117,12 @@ public sealed class ModuleRuntime : IModuleRuntime
 			}
 		}, CancellationToken.None);
 
-		entry = new ModuleTask(
-			name,
-			task,
-			kind,
-			watchdogCts)
+		entry.Task = task;
+
+		lock (_tasks)
 		{
-			State = ModuleTaskState.Running
-		};
+			_tasks.Add(entry);
+		}
 
 		if (kind == ModuleTaskKind.Finite)
 		{
@@ -128,11 +130,6 @@ public sealed class ModuleRuntime : IModuleRuntime
 				entry,
 				startedAt,
 				watchdogCts.Token);
-		}
-
-		lock (_tasks)
-		{
-			_tasks.Add(entry);
 		}
 
 		return task;

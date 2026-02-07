@@ -1,3 +1,5 @@
+using IronKernel.Common;
+
 namespace IronKernel.Modules.ApplicationHost;
 
 public sealed class ApplicationContext : IApplicationContext

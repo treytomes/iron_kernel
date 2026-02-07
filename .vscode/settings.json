@@ -20,8 +20,25 @@
 	"dotnet.defaultSolution": "IronKernel.sln",
 	"cSpell.words": [
 		"appsettings",
+		"Bresenham's",
+		"finalizer",
+		"glsl",
+		"Grabbable",
+		"inspectable",
+		"Lerp",
 		"microkernel",
+		"Miniscript",
+		"Rects",
 		"reentrancy",
+		"refreshable",
+		"roguelike",
+		"scanline",
+		"Submorphs",
+		"syscalls",
+		"undoable",
+		"Unshifted",
+		"userland",
+		"vsync",
 		"waitables"
 	]
 }

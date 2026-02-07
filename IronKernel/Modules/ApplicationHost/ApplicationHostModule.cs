@@ -1,6 +1,11 @@
+using System.Drawing;
+using IronKernel.Common;
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.AssetLoader.ValueObjects;
+using IronKernel.Modules.Framebuffer.ValueObjects;
+using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -8,48 +13,186 @@ namespace IronKernel.Modules.ApplicationHost;
 /// <summary>
 /// Kernel module responsible for hosting a single user application.
 /// </summary>
-public sealed class ApplicationHostModule : IKernelModule
+internal sealed class ApplicationHostModule(
+	IUserApplicationFactory factory,
+	IMessageBus kernelBus,
+	ILogger<ApplicationHostModule> logger
+) : IKernelModule
 {
-	private readonly IUserApplicationFactory _factory;
-	private readonly ILogger<ApplicationHostModule> _logger;
-	private readonly IMessageBus _kernelBus;
+	#region Constants
+
+	private const double TARGET_UPDATE_FPS = 60.0;
+	private const double TARGET_RENDER_FPS = 60.0;
+
+	#endregion
+
+	#region Fields
+
+	private readonly IUserApplicationFactory _factory = factory;
+	private readonly ILogger<ApplicationHostModule> _logger = logger;
+	private readonly IMessageBus _kernelBus = kernelBus;
 
 	private IUserApplication? _application;
 	private ApplicationRuntime? _runtime;
 	private ApplicationBus? _bus;
 	private ApplicationState? _state;
+	private ApplicationBusBridge? _bridge;
 
-	public ApplicationHostModule(
-		IUserApplicationFactory factory,
-		IMessageBus kernelBus,
-		ILogger<ApplicationHostModule> logger)
-	{
-		_factory = factory;
-		_kernelBus = kernelBus;
-		_logger = logger;
-	}
+	#endregion
+
+	#region Methods
 
 	public Task StartAsync(
 		IKernelState kernelState,
-		IModuleRuntime kernelRuntime,
+		IModuleRuntime runtime,
 		CancellationToken stoppingToken)
 	{
 		_application = _factory.Create();
 
-		_logger.LogInformation(
-			"Starting application {Application}",
-			_application.GetType().Name);
+		_logger.LogInformation("Starting application {Application}", _application.GetType().Name);
 
 		_state = new ApplicationState();
-		_bus = new ApplicationBus(kernelRuntime, _kernelBus);
-		_runtime = new ApplicationRuntime(kernelRuntime);
+		_bus = new ApplicationBus(runtime, _kernelBus);
+		_runtime = new ApplicationRuntime(runtime);
+		_bridge = new ApplicationBusBridge(_kernelBus, _bus, runtime);
+
+		// _bridge.ForwardClocked<HostUpdateTick, AppUpdateTick>(
+		// 	"UpdateTickHandler",
+		// 	TimeSpan.FromSeconds(1.0 / TARGET_UPDATE_FPS),
+		// 	(clock, _) => new(
+		// 		clock.TotalTime,
+		// 		clock.ElapsedTime
+		// 	)
+		// );
+
+		_bridge.Forward<HostUpdateTick, AppUpdateTick>(
+			"UpdateTickHandler",
+			(e, ct) => new(
+				e.TotalTime,
+				e.ElapsedTime
+			)
+		);
+
+		// _bridge.ForwardClocked<HostRenderTick, AppRenderTick>(
+		// 	"RenderTickHandler",
+		// 	TimeSpan.FromSeconds(1.0 / TARGET_RENDER_FPS),
+		// 	(clock, _) => new(
+		// 		clock.TotalTime,
+		// 		clock.ElapsedTime
+		// 	)
+		// );
+
+		_bridge.Forward<HostRenderTick, AppRenderTick>(
+			"RenderTickHandler",
+			(e, ct) => new(
+				e.FrameId,
+				e.TotalTime,
+				e.ElapsedTime
+			)
+		);
+
+		_bridge.Forward<HostResizeEvent, AppResizeEvent>(
+			"ResizeEventHandler",
+			(e, ct) => new(
+				e.Width,
+				e.Height
+			)
+		);
+
+		_bridge.Forward<HostShutdown, AppShutdown>(
+			"ShutdownHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostAcquiredFocus, AppAcquiredFocus>(
+			"AcquiredFocusHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostLostFocus, AppLostFocus>(
+			"LostFocusHandler",
+			(e, ct) => new(
+			)
+		);
+
+		_bridge.Forward<HostMouseWheelEvent, AppMouseWheelEvent>(
+			"MouseWheelHandler",
+			(e, ct) => new(
+				e.OffsetX,
+				e.OffsetY
+			)
+		);
+
+		_bridge.Forward<HostMouseMoveEvent, AppMouseMoveEvent>(
+			"MouseMoveHandler",
+			(e, ct) => new(
+				e.X,
+				e.Y,
+				e.DeltaX,
+				e.DeltaY
+			)
+		);
+
+		_bridge.Forward<HostMouseButtonEvent, AppMouseButtonEvent>(
+			"MouseButtonHandler",
+			(e, ct) => new(
+				e.Action,
+				e.Button,
+				e.Modifiers
+			)
+		);
+
+		_bridge.Forward<HostKeyboardEvent, AppKeyboardEvent>(
+			"KeyboardHandler",
+			(e, ct) => new(
+				e.Action,
+				e.Modifiers,
+				e.Key
+			)
+		);
+
+		// _bridge.Request<AppFrameReady, FbFrameReady>(
+		// 	"FrameReadyHandler",
+		// 	(e, ct) => new(e.FrameId)
+		// );
+
+		_bridge.Request<AppFbWriteSpan, FbWriteSpan>(
+			"AppFbWriteSpanHandler",
+			(e, ct) => new(e.X, e.Y, e.Data, e.IsComplete)
+		);
+
+		_bridge.Request<AppFbWriteRect, FbWriteRect>(
+			"AppFbWriteSpanHandler",
+			(e, ct) => new(e.X, e.Y, e.Width, e.Height, e.Data, e.IsComplete)
+		);
+
+		_bridge.Request<AppFbSetBorder, FbSetBorder>(
+			"AppFbSetBorderHandler",
+			(e, ct) => new(e.Color)
+		);
+
+		_bridge.Forward<FbInfoResponse, AppFbInfoResponse>(
+			"FbInfoHandler",
+			(e, ct) => new(e.CorrelationID, e.Size)
+		);
+
+		_bridge.Request<AppFbInfoQuery, FbInfoQuery>(
+			"AppFbInfoHandler",
+			(e, ct) => new(e.CorrelationID)
+		);
+
+		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.AssetId));
+		_bridge.Forward<AssetImageResponse, AppAssetImageResponse>("AppAssetImageResponse", (e, ct) => new(e.CorrelationID, e.AssetId, e.Image));
 
 		var context = new ApplicationContext(
 			_bus,
 			_runtime,
-			_state);
+			_state
+		);
 
-		kernelRuntime.RunDetached(
+		runtime.RunDetached(
 			"ApplicationMain",
 			ModuleTaskKind.Resident,
 			ct => _application.RunAsync(context, ct),
@@ -60,6 +203,8 @@ public sealed class ApplicationHostModule : IKernelModule
 
 	public ValueTask DisposeAsync()
 	{
+		_bridge?.Dispose();
+
 		if (_application is not null)
 		{
 			_logger.LogInformation(
@@ -70,4 +215,6 @@ public sealed class ApplicationHostModule : IKernelModule
 		_bus?.Dispose();
 		return ValueTask.CompletedTask;
 	}
+
+	#endregion
 }

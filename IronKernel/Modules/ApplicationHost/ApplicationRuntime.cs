@@ -1,3 +1,4 @@
+using IronKernel.Common;
 using IronKernel.Kernel;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -15,7 +16,8 @@ internal sealed class ApplicationRuntime : IApplicationScheduler
 		string name,
 		ApplicationTaskKind kind,
 		Func<CancellationToken, Task> work,
-		CancellationToken stoppingToken)
+		CancellationToken stoppingToken
+	)
 	{
 		var moduleKind =
 			kind == ApplicationTaskKind.Finite
