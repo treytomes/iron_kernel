@@ -94,7 +94,7 @@ public abstract class Morph : ICommandTarget
 	/// <summary>
 	/// The mouse hover is over either this morph directly, or one of it's descendants.
 	/// </summary>
-	public bool IsEffectivelyHovered => IsHovered || Submorphs.Any(x => x.IsEffectivelyHovered);
+	public bool IsEffectivelyHovered => IsHovered || Submorphs.Any(x => x?.IsEffectivelyHovered ?? false);
 
 	public Morph? Owner { get; private set; }
 
@@ -222,8 +222,6 @@ public abstract class Morph : ICommandTarget
 
 	public virtual void Update(double deltaTime)
 	{
-		Debug.Assert(!_submorphs.Contains(null!), $"Null sub-morph in {GetType().Name}");
-
 		if (_layoutInvalid)
 		{
 			UpdateLayout();

@@ -72,13 +72,22 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 	public void SetContent(Morph content)
 	{
 		if (content == null) throw new ArgumentNullException(nameof(content));
+
 		if (_content != null)
 		{
 			_viewport.RemoveMorph(_content);
 		}
+
 		_content = content;
+
+		// Reset scroll state
+		_scrollOffset = Point.Empty;
 		_content.Position = Point.Empty;
+
 		_viewport.AddMorph(_content);
+
+		// Ensure scrollbars and thumbs recompute
+		InvalidateLayout();
 	}
 
 	#region Scrollbars

@@ -114,7 +114,7 @@ public sealed class InspectorMorph : WindowMorph
 
 	#endregion
 
-	#region Property list builder (STRUCT-SAFE)
+	#region Property list builder
 
 	private PropertyListMorph BuildPropertyList(object target)
 	{

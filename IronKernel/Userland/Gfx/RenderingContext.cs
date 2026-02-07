@@ -196,9 +196,11 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 	public void RenderHLine(Point pnt, int len, RadialColor color)
 	{
 		var y = pnt.Y + _currentOffset.Y;
-		if (y < 0 || y >= Size.Height) return;
-
 		var clip = _currentClip ?? Bounds;
+
+		// ✅ clip Y
+		if (y < clip.Top || y >= clip.Bottom)
+			return;
 
 		var xStart = pnt.X + _currentOffset.X;
 		var xEnd = xStart + len;
@@ -207,7 +209,6 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 		xEnd = Math.Min(xEnd, clip.Right);
 
 		var rowOffset = y * Size.Width;
-
 		for (var x = xStart; x < xEnd; x++)
 		{
 			if (x < 0 || x >= Size.Width) continue;
@@ -221,9 +222,11 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 	public void RenderVLine(Point pnt, int len, RadialColor color)
 	{
 		var x = pnt.X + _currentOffset.X;
-		if (x < 0 || x >= Size.Width) return;
-
 		var clip = _currentClip ?? Bounds;
+
+		// ✅ clip X
+		if (x < clip.Left || x >= clip.Right)
+			return;
 
 		var yStart = pnt.Y + _currentOffset.Y;
 		var yEnd = yStart + len;

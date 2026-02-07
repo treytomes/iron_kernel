@@ -43,7 +43,6 @@ public sealed class InspectHandleMorph : HandleMorph
 
 		if (StyleForHandle == null) return;
 
-		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
 		var bg = IsEffectivelyHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
@@ -61,7 +60,10 @@ public sealed class InspectHandleMorph : HandleMorph
 	{
 		if (TryGetWorld(out var world))
 		{
-			world.AddMorph(new InspectorMorph(Target));
+			world.ClearSelection();
+			var inspector = new InspectorMorph(Target);
+			world.AddMorph(inspector);
+			inspector.CenterOnOwner();
 			e.MarkHandled();
 		}
 	}

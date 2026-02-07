@@ -1,6 +1,5 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Events;
+using IronKernel.Userland.Morphic.Commands;
 
 namespace IronKernel.Userland.Morphic.Inspector;
 
@@ -8,7 +7,7 @@ public sealed class NavigableValueMorph : Morph
 {
 	private readonly Func<object?> _valueProvider;
 	private readonly Action<object> _navigate;
-	private readonly LabelMorph _label;
+	private readonly ButtonMorph _button;
 
 	public NavigableValueMorph(
 		Func<object?> valueProvider,
@@ -17,15 +16,21 @@ public sealed class NavigableValueMorph : Morph
 		_valueProvider = valueProvider;
 		_navigate = navigate;
 
-		IsSelectable = true;
+		IsSelectable = false;
 
-		_label = new LabelMorph(Point.Empty)
+		_button = new ButtonMorph(Point.Empty, Size.Empty, string.Empty)
 		{
-			IsSelectable = false,
-			BackgroundColor = null
+			Command = new ActionCommand(() =>
+			{
+				var value = _valueProvider();
+				if (value != null)
+				{
+					_navigate(value);
+				}
+			})
 		};
 
-		AddMorph(_label);
+		AddMorph(_button);
 		UpdateLabel();
 	}
 
@@ -38,25 +43,17 @@ public sealed class NavigableValueMorph : Morph
 	private void UpdateLabel()
 	{
 		var value = _valueProvider();
-		_label.Text = value != null
+		_button.Text = value != null
 			? value.GetType().Name
 			: "<null>";
+
+		InvalidateLayout();
 	}
 
 	protected override void UpdateLayout()
 	{
-		_label.Position = Point.Empty;
-		Size = _label.Size;
+		_button.Position = Point.Empty;
+		Size = _button.Size;
 		base.UpdateLayout();
-	}
-
-	public override void OnPointerDown(PointerDownEvent e)
-	{
-		var value = _valueProvider();
-		if (value != null)
-		{
-			_navigate(value);
-			e.MarkHandled();
-		}
 	}
 }
