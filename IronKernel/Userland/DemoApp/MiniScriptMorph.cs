@@ -2,8 +2,9 @@ using System.Drawing;
 using Miniscript;
 using IronKernel.Userland.Gfx;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Morphic;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.DemoApp;
 
 public sealed class MiniScriptMorph : Morph
 {
