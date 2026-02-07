@@ -1,7 +1,7 @@
-using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using Miniscript;
+using System.Drawing;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -15,17 +15,8 @@ public sealed class MiniScriptMorph : Morph
 		IsSelectable = true;
 		ShouldClipToBounds = true;
 
-		var backgroundColor = new ValMap();
-		backgroundColor["red"] = new ValNumber(5);
-		backgroundColor["green"] = new ValNumber(0);
-		backgroundColor["blue"] = new ValNumber(0);
-		SetSlot("backgroundColor", backgroundColor);
-
-		var foregroundColor = new ValMap();
-		foregroundColor["red"] = new ValNumber(0);
-		foregroundColor["green"] = new ValNumber(5);
-		foregroundColor["blue"] = new ValNumber(0);
-		SetSlot("foregroundColor", foregroundColor);
+		SetSlot("fillColor", new RadialColor(5, 0, 0).ToMiniScriptValue());
+		SetSlot("borderColor", new RadialColor(0, 5, 0).ToMiniScriptValue());
 	}
 
 	public bool HasSlot(string key) => _slots.ContainsKey(key);
@@ -35,24 +26,17 @@ public sealed class MiniScriptMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		base.DrawSelf(rc);
-		var backgroundColor = GetSlot<ValMap>("backgroundColor");
+		var backgroundColor = GetSlot<ValMap>("fillColor");
 		if (backgroundColor != null)
 		{
-			var red = (byte)backgroundColor["red"].IntValue();
-			var green = (byte)backgroundColor["green"].IntValue();
-			var blue = (byte)backgroundColor["blue"].IntValue();
-			var color = new RadialColor(red, green, blue);
+			var color = backgroundColor.ToRadialColor();
 			rc.RenderFilledRect(new Rectangle(Point.Empty, Size), color);
 		}
 
-		var foregroundColor = GetSlot<ValMap>("foregroundColor");
+		var foregroundColor = GetSlot<ValMap>("borderColor");
 		if (foregroundColor != null)
 		{
-			var red = (byte)foregroundColor["red"].IntValue();
-			var green = (byte)foregroundColor["green"].IntValue();
-			var blue = (byte)foregroundColor["blue"].IntValue();
-			var color = new RadialColor(red, green, blue);
+			var color = foregroundColor.ToRadialColor();
 			rc.RenderRect(new Rectangle(Point.Empty, Size), color);
 		}
 	}
