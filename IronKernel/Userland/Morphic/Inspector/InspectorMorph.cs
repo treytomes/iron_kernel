@@ -15,14 +15,13 @@ public sealed class InspectorMorph : WindowMorph
 
 	#endregion
 
-	#region Constructors
+	#region Constructor
 
 	public InspectorMorph(object target)
 		: base(Point.Empty, new Size(256, 192), target.GetType().Name)
 	{
 		IsSelectable = true;
 
-		// Root context
 		_path.Add(new InspectionContext(target, target.GetType().Name));
 
 		_breadcrumbs = new ToolbarMorph();
@@ -44,14 +43,14 @@ public sealed class InspectorMorph : WindowMorph
 	{
 		_breadcrumbs.Position = Point.Empty;
 
-		_scrollPane.Position = new Point(
-			0,
-			_breadcrumbs.Visible ? _breadcrumbs.Size.Height : 0
-		);
+		var breadcrumbHeight = _breadcrumbs.Visible
+			? _breadcrumbs.Size.Height
+			: 0;
 
+		_scrollPane.Position = new Point(0, breadcrumbHeight);
 		_scrollPane.Size = new Size(
 			Content.Size.Width,
-			Content.Size.Height - (_breadcrumbs.Visible ? _breadcrumbs.Size.Height : 0)
+			Content.Size.Height - breadcrumbHeight
 		);
 
 		base.UpdateLayout();
@@ -73,10 +72,9 @@ public sealed class InspectorMorph : WindowMorph
 		if (index < 0 || index >= _path.Count)
 			return;
 
-		// Truncate path
 		_path.RemoveRange(index + 1, _path.Count - index - 1);
 
-		var ctx = _path[index];
+		var ctx = _path[^1];
 		ReplacePropertyList(ctx.Target);
 		RebuildBreadcrumbs();
 	}
@@ -94,7 +92,6 @@ public sealed class InspectorMorph : WindowMorph
 	{
 		_breadcrumbs.Clear();
 
-		// Hide breadcrumbs at root
 		if (_path.Count <= 1)
 		{
 			_breadcrumbs.Visible = false;
@@ -117,17 +114,10 @@ public sealed class InspectorMorph : WindowMorph
 
 	#endregion
 
-	#region Helpers
+	#region Property list builder (STRUCT-SAFE)
 
 	private PropertyListMorph BuildPropertyList(object target)
 	{
-		var inspectorFactory = new InspectorFactory(
-			navigate: obj => NavigateForward(
-				obj,
-				obj.GetType().Name
-			)
-		);
-
 		var props = target.GetType()
 			.GetProperties(BindingFlags.Instance | BindingFlags.Public)
 			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0);
@@ -136,17 +126,57 @@ public sealed class InspectorMorph : WindowMorph
 
 		foreach (var prop in props)
 		{
-			list.AddMorph(
-				new PropertyRowMorph(
-					inspectorFactory,
-					prop.Name,
-					() => prop.GetValue(target),
-					prop.CanWrite
-						? v => prop.SetValue(target, v)
-						: null,
-					prop.PropertyType
-				)
+			var localProp = prop;
+			var localTarget = target;
+
+			object? value = localProp.GetValue(localTarget);
+
+			// --- Struct properties: live commit ---
+			if (value != null && localProp.PropertyType.IsValueType && localProp.CanWrite)
+			{
+				// Single working copy of the struct
+				object workingCopy = value;
+
+				// Commit immediately when setter invoked
+				void CommitStruct()
+				{
+					localProp.SetValue(localTarget, workingCopy);
+				}
+
+				var factory = new InspectorFactory(
+					navigate: obj =>
+					{
+						NavigateForward(obj, localProp.Name);
+					}
+				);
+
+				list.AddMorph(new PropertyRowMorph(
+					factory,
+					localProp.Name,
+					() => workingCopy,
+					v =>
+					{
+						workingCopy = v!;
+						CommitStruct(); // ✅ immediate persistence
+					},
+					localProp.PropertyType
+				));
+
+				continue;
+			}
+
+			// --- Reference / primitive properties ---
+			var defaultFactory = new InspectorFactory(
+				navigate: obj => NavigateForward(obj, obj.GetType().Name)
 			);
+
+			list.AddMorph(new PropertyRowMorph(
+				defaultFactory,
+				localProp.Name,
+				() => localProp.GetValue(localTarget),
+				localProp.CanWrite ? v => localProp.SetValue(localTarget, v) : null,
+				localProp.PropertyType
+			));
 		}
 
 		list.RecalculateNameColumnWidth();

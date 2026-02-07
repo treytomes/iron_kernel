@@ -5,5 +5,6 @@ namespace IronKernel.Userland.Morphic.Inspector;
 /// </summary>
 internal sealed record InspectionContext(
 	object Target,
-	string Label
+	string Label,
+	Action<object>? Commit = null
 );

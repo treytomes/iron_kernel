@@ -1,8 +1,9 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic;
 
-namespace IronKernel.Userland.Morphic;
+namespace IronKernel.Userland.DemoApp;
 
 public sealed class BoxMorph : Morph
 {
@@ -16,6 +17,8 @@ public sealed class BoxMorph : Morph
 
 	public RadialColor FillColor { get; set; }
 	public RadialColor BorderColor { get; set; }
+
+	public Size EditMe { get; set; } = new Size(128, 96);
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{

@@ -50,6 +50,7 @@ public class DockPanelMorph : Morph
 		// Pass 1: edge docks
 		foreach (var child in Submorphs.ToArray())
 		{
+			if (child == null) continue;
 			switch (GetDock(child))
 			{
 				case Dock.Left:
@@ -90,6 +91,7 @@ public class DockPanelMorph : Morph
 		// Pass 2: fill (exactly once)
 		foreach (var child in Submorphs.ToArray())
 		{
+			if (child == null) continue;
 			if (TryGetDock(child, out var dock) && dock == Dock.Fill)
 			{
 				child.Position = remaining.Location;
