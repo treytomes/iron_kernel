@@ -116,9 +116,9 @@ public class ValueMorph : Morph
 	private Morph CreateContent(object? value)
 	{
 		var type = ResolveType(value);
-
 		return _inspectorFactory.GetInspectorFor(
 			type,
+			_valueProvider,
 			v =>
 			{
 				_valueSetter?.Invoke(v);

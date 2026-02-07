@@ -14,6 +14,7 @@ public sealed class HorizontalStackMorph : Morph
 
 		foreach (var child in Submorphs.ToArray())
 		{
+			if (child == null) continue;
 			child.Position = new Point(x, Padding);
 			x += child.Size.Width + Spacing;
 			maxHeight = Math.Max(maxHeight, child.Size.Height);

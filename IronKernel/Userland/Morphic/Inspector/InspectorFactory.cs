@@ -5,7 +5,14 @@ namespace IronKernel.Userland.Morphic.Inspector;
 
 public class InspectorFactory : IInspectorFactory
 {
-	public Morph GetInspectorFor(Type? declaredType, Action<object?>? setter = null)
+	private readonly Action<object>? _navigate;
+
+	public InspectorFactory(Action<object>? navigate = null)
+	{
+		_navigate = navigate;
+	}
+
+	public Morph GetInspectorFor(Type? declaredType, Func<object?> valueProvider, Action<object?>? setter = null)
 	{
 		if (declaredType == typeof(bool) || declaredType == typeof(bool?))
 		{
@@ -31,10 +38,30 @@ public class InspectorFactory : IInspectorFactory
 				s => setter?.Invoke(s));
 		}
 
+		// Console.WriteLine($"Navigable type [{declaredType?.Name}]: {IsNavigableType(declaredType)}");
+		if (_navigate != null && IsNavigableType(declaredType))
+		{
+			return new NavigableValueMorph(valueProvider, _navigate);
+		}
+
 		return new LabelMorph
 		{
 			IsSelectable = false,
 			BackgroundColor = null
 		};
+	}
+
+	private static bool IsNavigableType(Type? type)
+	{
+		if (type == null)
+			return false;
+
+		if (type.IsPrimitive)
+			return false;
+
+		if (type == typeof(string))
+			return false;
+
+		return !type.IsEnum;
 	}
 }

@@ -136,7 +136,8 @@ public class WindowMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		var semantic = GetWorld().Style.Semantic;
+		if (!TryGetWorld(out var world)) return;
+		var semantic = world.Style.Semantic;
 
 		// Window background
 		rc.RenderFilledRect(

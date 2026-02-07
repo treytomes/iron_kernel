@@ -7,7 +7,13 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class ToolbarMorph : Morph
 {
+	#region Fields
+
 	private readonly HorizontalStackMorph _stack;
+
+	#endregion
+
+	#region Constructors
 
 	public ToolbarMorph()
 	{
@@ -16,6 +22,18 @@ public sealed class ToolbarMorph : Morph
 			ShouldClipToBounds = true
 		};
 		AddMorph(_stack);
+	}
+
+	#endregion
+
+	#region Methods
+
+	public void Clear()
+	{
+		while (_stack.Submorphs.Any())
+		{
+			_stack.RemoveMorph(_stack.Submorphs.First());
+		}
 	}
 
 	public void AddItem(string label, ICommand command)
@@ -54,4 +72,6 @@ public sealed class ToolbarMorph : Morph
 			semantic.Border
 		);
 	}
+
+	#endregion
 }

@@ -70,12 +70,12 @@ public sealed class PropertyListMorph : Morph
 
 	#region Methods
 
-	public static PropertyListMorph FromProperties(IEnumerable<PropertyInfo> properties, object target)
+	public static PropertyListMorph FromProperties(IInspectorFactory inspectorFactory, IEnumerable<PropertyInfo> properties, object target)
 	{
 		var list = new PropertyListMorph();
 
 		foreach (var prop in properties)
-			list.AddMorph(new PropertyRowMorph(prop, target));
+			list.AddMorph(new PropertyRowMorph(inspectorFactory, prop, target));
 
 		list.RecalculateNameColumnWidth();
 		return list;
@@ -105,7 +105,7 @@ public sealed class PropertyListMorph : Morph
 		base.UpdateLayout();
 	}
 
-	private void RecalculateNameColumnWidth()
+	public void RecalculateNameColumnWidth()
 	{
 		var max = Submorphs
 			.OfType<PropertyRowMorph>()

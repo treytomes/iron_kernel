@@ -15,7 +15,7 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 
 	#region Fields
 
-	private readonly Morph _content;
+	private Morph _content;
 	private readonly ContainerMorph _viewport;
 
 	private DockPanelMorph _hScrollBar;
@@ -68,6 +68,18 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 	#endregion
 
 	#region Methods
+
+	public void SetContent(Morph content)
+	{
+		if (content == null) throw new ArgumentNullException(nameof(content));
+		if (_content != null)
+		{
+			_viewport.RemoveMorph(_content);
+		}
+		_content = content;
+		_content.Position = Point.Empty;
+		_viewport.AddMorph(_content);
+	}
 
 	#region Scrollbars
 

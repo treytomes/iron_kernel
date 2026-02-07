@@ -2,5 +2,5 @@ namespace IronKernel.Userland.Morphic.Inspector;
 
 public interface IInspectorFactory
 {
-	Morph GetInspectorFor(Type? contentType, Action<object?>? setter = null);
+	Morph GetInspectorFor(Type? contentType, Func<object?> valueProvider, Action<object?>? setter = null);
 }

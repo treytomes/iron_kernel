@@ -294,6 +294,7 @@ public sealed class WorldMorph : Morph
 		for (var i = parent.Submorphs.Count - 1; i >= 0; i--)
 		{
 			var child = parent.Submorphs[i];
+			if (child == null) continue;
 
 			if (child.IsMarkedForDeletion)
 			{

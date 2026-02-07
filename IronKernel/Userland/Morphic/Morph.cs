@@ -231,7 +231,10 @@ public abstract class Morph : ICommandTarget
 		}
 
 		foreach (var child in _submorphs.ToArray())
+		{
+			if (child == null) continue;
 			child.Update(deltaTime);
+		}
 	}
 
 	/// <summary>
@@ -395,7 +398,8 @@ public abstract class Morph : ICommandTarget
 	{
 		foreach (var child in _submorphs.ToArray())
 		{
-			if (child == null) throw new NullReferenceException("Child morph is null?");
+			if (child == null) continue;
+			// if (child == null) throw new NullReferenceException("Child morph is null?");
 			child.UpdateLayout();
 		}
 	}

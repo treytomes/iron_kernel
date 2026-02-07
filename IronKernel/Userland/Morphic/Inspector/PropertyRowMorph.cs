@@ -29,10 +29,12 @@ public sealed class PropertyRowMorph : Morph
 	/// and optional declared type.
 	/// </summary>
 	public PropertyRowMorph(
+		IInspectorFactory inspectorFactory,
 		string name,
 		Func<object?> valueProvider,
 		Action<object?>? valueSetter = null,
-		Type? declaredType = null)
+		Type? declaredType = null
+	)
 	{
 		if (string.IsNullOrWhiteSpace(name))
 			throw new ArgumentException("Property name cannot be null or empty.", nameof(name));
@@ -44,7 +46,7 @@ public sealed class PropertyRowMorph : Morph
 		_nameLabel = CreateNameLabel(name);
 
 		_valueMorph = new ValueMorph(
-			new InspectorFactory(),
+			inspectorFactory,
 			valueProvider,
 			valueSetter,
 			declaredType
@@ -58,12 +60,14 @@ public sealed class PropertyRowMorph : Morph
 	/// Expression-based constructor.
 	/// Read-only unless a setter is supplied elsewhere.
 	/// </summary>
-	public PropertyRowMorph(Expression<Func<object?>> expression)
+	public PropertyRowMorph(IInspectorFactory inspectorFactory, Expression<Func<object?>> expression)
 		: this(
+			inspectorFactory,
 			ExtractName(expression),
 			expression.Compile(),
 			null,
-			ExtractDeclaredType(expression))
+			ExtractDeclaredType(expression)
+		)
 	{
 	}
 
@@ -71,14 +75,16 @@ public sealed class PropertyRowMorph : Morph
 	/// Reflection-based constructor.
 	/// Produces a writable row if the property is writable.
 	/// </summary>
-	public PropertyRowMorph(PropertyInfo property, object target)
+	public PropertyRowMorph(IInspectorFactory inspectorFactory, PropertyInfo property, object target)
 		: this(
+			inspectorFactory,
 			property?.Name ?? throw new ArgumentNullException(nameof(property)),
 			() => property.GetValue(target),
 			property.CanWrite
 				? value => property.SetValue(target, value)
 				: null,
-			property.PropertyType)
+			property.PropertyType
+		)
 	{
 	}
 
