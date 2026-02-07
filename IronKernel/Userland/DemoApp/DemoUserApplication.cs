@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
+using Game.Morphs;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -82,6 +83,14 @@ public sealed class DemoUserApplication(
 			ForegroundColor = RadialColor.Red,
 			BackgroundColor = RadialColor.Blue,
 			Text = "Hello world!",
+		});
+
+		world.AddMorph(new MapTileMorph()
+		{
+			Position = new Point(100, 100),
+			ForegroundColor = RadialColor.Red,
+			BackgroundColor = RadialColor.Blue,
+			TileIndex = 176
 		});
 
 		world.AddMorph(new MiniScriptMorph()
