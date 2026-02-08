@@ -6,7 +6,6 @@ using IronKernel.Userland.Morphic.Events;
 
 namespace IronKernel.Userland.Morphic;
 
-// TODO: Backspacing from end of string isn't erasing the cell at the cursor like it should.
 public sealed class TextConsoleMorph : Morph
 {
 	#region Fields
@@ -21,11 +20,13 @@ public sealed class TextConsoleMorph : Morph
 
 	private bool _isReadingLine;
 	private readonly StringBuilder _inputBuffer = new();
+
 	private TaskCompletionSource<string>? _pendingReadLine;
 
 	private Font? _font;
-	private bool _layoutInitialized = false;
-	private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+	private bool _layoutInitialized;
+	private readonly TaskCompletionSource _ready =
+		new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	#endregion
 
@@ -45,6 +46,7 @@ public sealed class TextConsoleMorph : Morph
 	#region Properties
 
 	public Task Ready => _ready.Task;
+
 	public int Columns { get; private set; }
 	public int Rows { get; private set; }
 	public Size CellSize { get; private set; }
@@ -117,8 +119,7 @@ public sealed class TextConsoleMorph : Morph
 		Columns = newColumns;
 		Rows = newRows;
 
-		_cursorX = Math.Min(_cursorX, Columns - 1);
-		_cursorY = Math.Min(_cursorY, Rows - 1);
+		SetCursorFromInputIndex(GetInputIndex());
 	}
 
 	#endregion
@@ -151,9 +152,7 @@ public sealed class TextConsoleMorph : Morph
 		}
 
 		if (TryGetWorld(out var world) && world.KeyboardFocus == this)
-		{
 			DrawCursor(rc);
-		}
 	}
 
 	private void DrawCursor(IRenderingContext rc)
@@ -179,11 +178,11 @@ public sealed class TextConsoleMorph : Morph
 		switch (e.Key)
 		{
 			case Key.Left:
-				MoveCursorLeft();
+				MoveCursor(-1);
 				break;
 
 			case Key.Right:
-				MoveCursorRight();
+				MoveCursor(+1);
 				break;
 
 			case Key.Backspace:
@@ -243,19 +242,24 @@ public sealed class TextConsoleMorph : Morph
 	{
 		var index = GetInputIndex();
 		_inputBuffer.Insert(index, ch);
+		SetCursorFromInputIndex(index + 1);
 		RedrawInput();
-		MoveCursorRight();
+		ClearInputTail();
 	}
 
 	private void Backspace()
 	{
+		if (!_isReadingLine)
+			return;
+
 		var index = GetInputIndex();
-		if (!_isReadingLine || index == 0)
+		if (index == 0)
 			return;
 
 		_inputBuffer.Remove(index - 1, 1);
-		MoveCursorLeft();
+		SetCursorFromInputIndex(index - 1);
 		RedrawInput();
+		ClearInputTail();
 	}
 
 	private void CommitLine()
@@ -283,6 +287,9 @@ public sealed class TextConsoleMorph : Morph
 
 		foreach (var ch in _inputBuffer.ToString())
 		{
+			if (y >= Rows)
+				break;
+
 			_buffer[y, x] = new ConsoleCell
 			{
 				Char = ch,
@@ -294,8 +301,28 @@ public sealed class TextConsoleMorph : Morph
 			if (x >= Columns)
 			{
 				x = 0;
-				y = Math.Min(y + 1, Rows - 1);
+				y++;
 			}
+		}
+	}
+
+	private void ClearInputTail()
+	{
+		var index = _inputBuffer.Length;
+		var absolute = _inputStartX + index;
+
+		var y = _inputStartY + (absolute / Columns);
+		var x = absolute % Columns;
+
+		while (y < Rows)
+		{
+			while (x < Columns)
+			{
+				_buffer[y, x] = ConsoleCell.Empty;
+				x++;
+			}
+			x = 0;
+			y++;
 		}
 	}
 
@@ -305,23 +332,23 @@ public sealed class TextConsoleMorph : Morph
 			 + (_cursorX - _inputStartX);
 	}
 
-	private void MoveCursorLeft()
+	private void SetCursorFromInputIndex(int index)
 	{
-		if (!_isReadingLine)
-			return;
+		var absolute = _inputStartX + index;
+		_cursorY = _inputStartY + (absolute / Columns);
+		_cursorX = absolute % Columns;
 
-		if (_cursorY > _inputStartY ||
-		   (_cursorY == _inputStartY && _cursorX > _inputStartX))
-			_cursorX--;
+		_cursorY = Math.Min(_cursorY, Rows - 1);
 	}
 
-	private void MoveCursorRight()
+	private void MoveCursor(int delta)
 	{
 		if (!_isReadingLine)
 			return;
 
-		if (GetInputIndex() < _inputBuffer.Length)
-			_cursorX++;
+		var index = GetInputIndex();
+		var newIndex = Math.Clamp(index + delta, 0, _inputBuffer.Length);
+		SetCursorFromInputIndex(newIndex);
 	}
 
 	#endregion
@@ -353,13 +380,9 @@ public sealed class TextConsoleMorph : Morph
 		_cursorX = 0;
 
 		if (_cursorY == Rows - 1)
-		{
 			ScrollUp();
-		}
 		else
-		{
 			_cursorY++;
-		}
 	}
 
 	public void Clear()
@@ -375,18 +398,11 @@ public sealed class TextConsoleMorph : Morph
 	private void ScrollUp()
 	{
 		for (int y = 1; y < Rows; y++)
-		{
 			for (int x = 0; x < Columns; x++)
-			{
 				_buffer[y - 1, x] = _buffer[y, x];
-			}
-		}
 
-		// Clear last row
 		for (int x = 0; x < Columns; x++)
-		{
 			_buffer[Rows - 1, x] = ConsoleCell.Empty;
-		}
 	}
 
 	#endregion

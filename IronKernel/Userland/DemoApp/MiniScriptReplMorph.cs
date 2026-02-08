@@ -7,15 +7,15 @@ namespace IronKernel.Userland.DemoApp;
 
 public sealed class MiniScriptReplMorph : WindowMorph
 {
+	private const string PROMPT_PRIMARY = "> ";
+	private const string PROMPT_CONTINUATION = "| ";
+
 	private readonly TextConsoleMorph _console;
 	private readonly Interpreter _interpreter;
 	private CancellationTokenSource? _cts;
 
-	private const string PrimaryPrompt = "> ";
-	private const string ContinuationPrompt = "| ";
-
 	public MiniScriptReplMorph()
-		: base(Point.Empty, new Size(320, 200), "MiniScript REPL")
+		: base(Point.Empty, new Size(480, 240), "MiniScript REPL")
 	{
 		_console = new TextConsoleMorph();
 		Content.AddMorph(_console);
@@ -78,8 +78,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		{
 			// Prompt depends on parser state
 			var prompt = _interpreter.NeedMoreInput()
-				? ContinuationPrompt
-				: PrimaryPrompt;
+				? PROMPT_CONTINUATION
+				: PROMPT_PRIMARY;
 
 			_console.Write(prompt);
 
