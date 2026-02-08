@@ -25,8 +25,13 @@ public sealed class TextConsoleMorph : Morph
 
 	private Font? _font;
 	private bool _layoutInitialized;
-	private readonly TaskCompletionSource _ready =
-		new(TaskCreationOptions.RunContinuationsAsynchronously);
+	private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+	private readonly List<string> _commandHistory = new();
+	private int _historyIndex = 0;
+	// 0 = current (empty / live input)
+	// 1 = last command
+	// 2 = second-to-last, etc.
 
 	#endregion
 
@@ -177,6 +182,14 @@ public sealed class TextConsoleMorph : Morph
 
 		switch (e.Key)
 		{
+			case Key.Up:
+				HistoryUp();
+				break;
+
+			case Key.Down:
+				HistoryDown();
+				break;
+
 			case Key.Left:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
 					MoveCursorWordLeft();
@@ -333,6 +346,16 @@ public sealed class TextConsoleMorph : Morph
 		}
 
 		var result = _inputBuffer.ToString();
+
+		// Save to history if non-empty (optional policy)
+		if (!string.IsNullOrWhiteSpace(result))
+		{
+			_commandHistory.Add(result);
+		}
+
+		// Reset history navigation
+		_historyIndex = 0;
+
 		_inputBuffer.Clear();
 		_isReadingLine = false;
 
@@ -411,6 +434,54 @@ public sealed class TextConsoleMorph : Morph
 		var index = GetInputIndex();
 		var newIndex = Math.Clamp(index + delta, 0, _inputBuffer.Length);
 		SetCursorFromInputIndex(newIndex);
+	}
+
+	private void HistoryUp()
+	{
+		if (!_isReadingLine)
+			return;
+
+		if (_commandHistory.Count == 0)
+			return;
+
+		// Clamp to max history depth
+		if (_historyIndex < _commandHistory.Count)
+			_historyIndex++;
+
+		ApplyHistoryEntry();
+	}
+
+	private void HistoryDown()
+	{
+		if (!_isReadingLine)
+			return;
+
+		if (_historyIndex > 0)
+			_historyIndex--;
+
+		ApplyHistoryEntry();
+	}
+
+	private void ApplyHistoryEntry()
+	{
+		_inputBuffer.Clear();
+
+		if (_historyIndex == 0)
+		{
+			// Live input (empty line)
+		}
+		else
+		{
+			var index = _commandHistory.Count - _historyIndex;
+			if (index >= 0 && index < _commandHistory.Count)
+			{
+				_inputBuffer.Append(_commandHistory[index]);
+			}
+		}
+
+		SetCursorFromInputIndex(_inputBuffer.Length);
+		RedrawInput();
+		ClearInputTail();
 	}
 
 	private static bool IsWordChar(char ch)
