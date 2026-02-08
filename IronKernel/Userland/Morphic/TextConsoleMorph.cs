@@ -178,15 +178,39 @@ public sealed class TextConsoleMorph : Morph
 		switch (e.Key)
 		{
 			case Key.Left:
-				MoveCursor(-1);
+				if (e.Modifiers.HasFlag(KeyModifier.Control))
+					MoveCursorWordLeft();
+				else
+					MoveCursor(-1);
 				break;
 
 			case Key.Right:
-				MoveCursor(+1);
+				if (e.Modifiers.HasFlag(KeyModifier.Control))
+					MoveCursorWordRight();
+				else
+					MoveCursor(+1);
 				break;
 
 			case Key.Backspace:
-				Backspace();
+				if (e.Modifiers.HasFlag(KeyModifier.Control))
+					DeleteWordLeft();
+				else
+					Backspace();
+				break;
+
+			case Key.Delete:
+				if (e.Modifiers.HasFlag(KeyModifier.Control))
+					DeleteWordRight();
+				else
+					DeleteChar();
+				break;
+
+			case Key.Home:
+				MoveCursorToStart();
+				break;
+
+			case Key.End:
+				MoveCursorToEnd();
 				break;
 
 			case Key.Enter:
@@ -260,6 +284,44 @@ public sealed class TextConsoleMorph : Morph
 		SetCursorFromInputIndex(index - 1);
 		RedrawInput();
 		ClearInputTail();
+	}
+
+	private void DeleteChar()
+	{
+		if (!_isReadingLine)
+			return;
+
+		var index = GetInputIndex();
+
+		// Nothing to delete if cursor is at end
+		if (index >= _inputBuffer.Length)
+			return;
+
+		// Remove character at cursor
+		_inputBuffer.Remove(index, 1);
+
+		// Cursor stays in the same logical position
+		SetCursorFromInputIndex(index);
+
+		// Redraw buffer and clear stale cells
+		RedrawInput();
+		ClearInputTail();
+	}
+
+	private void MoveCursorToStart()
+	{
+		if (!_isReadingLine)
+			return;
+
+		SetCursorFromInputIndex(0);
+	}
+
+	private void MoveCursorToEnd()
+	{
+		if (!_isReadingLine)
+			return;
+
+		SetCursorFromInputIndex(_inputBuffer.Length);
 	}
 
 	private void CommitLine()
@@ -349,6 +411,115 @@ public sealed class TextConsoleMorph : Morph
 		var index = GetInputIndex();
 		var newIndex = Math.Clamp(index + delta, 0, _inputBuffer.Length);
 		SetCursorFromInputIndex(newIndex);
+	}
+
+	private static bool IsWordChar(char ch)
+	{
+		return char.IsLetterOrDigit(ch) || ch == '_';
+	}
+
+	private void DeleteWordLeft()
+	{
+		if (!_isReadingLine)
+			return;
+
+		int index = GetInputIndex();
+		if (index == 0)
+			return;
+
+		int start = index;
+
+		// Skip separators to the left
+		while (start > 0 && !IsWordChar(_inputBuffer[start - 1]))
+			start--;
+
+		// Skip word characters to the left
+		while (start > 0 && IsWordChar(_inputBuffer[start - 1]))
+			start--;
+
+		int length = index - start;
+		if (length <= 0)
+			return;
+
+		_inputBuffer.Remove(start, length);
+
+		SetCursorFromInputIndex(start);
+		RedrawInput();
+		ClearInputTail();
+	}
+
+	private void DeleteWordRight()
+	{
+		if (!_isReadingLine)
+			return;
+
+		int index = GetInputIndex();
+		int len = _inputBuffer.Length;
+
+		if (index >= len)
+			return;
+
+		int end = index;
+
+		// Skip separators to the right
+		while (end < len && !IsWordChar(_inputBuffer[end]))
+			end++;
+
+		// Skip word characters to the right
+		while (end < len && IsWordChar(_inputBuffer[end]))
+			end++;
+
+		int length = end - index;
+		if (length <= 0)
+			return;
+
+		_inputBuffer.Remove(index, length);
+
+		SetCursorFromInputIndex(index);
+		RedrawInput();
+		ClearInputTail();
+	}
+
+	private void MoveCursorWordLeft()
+	{
+		if (!_isReadingLine)
+			return;
+
+		int index = GetInputIndex();
+		if (index == 0)
+			return;
+
+		// Step 1: skip separators to the left
+		while (index > 0 && !IsWordChar(_inputBuffer[index - 1]))
+			index--;
+
+		// Step 2: skip word characters to the left
+		while (index > 0 && IsWordChar(_inputBuffer[index - 1]))
+			index--;
+
+		SetCursorFromInputIndex(index);
+	}
+
+	private void MoveCursorWordRight()
+	{
+		if (!_isReadingLine)
+			return;
+
+		int index = GetInputIndex();
+		int len = _inputBuffer.Length;
+
+		if (index >= len)
+			return;
+
+		// Step 1: skip separators to the right
+		while (index < len && !IsWordChar(_inputBuffer[index]))
+			index++;
+
+		// Step 2: skip word characters to the right
+		while (index < len && IsWordChar(_inputBuffer[index]))
+			index++;
+
+		SetCursorFromInputIndex(index);
 	}
 
 	#endregion
