@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
-using Game.Morphs;
+using IronKernel.Userland.Roguey;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -26,6 +26,8 @@ public sealed class DemoUserApplication(
 		CancellationToken stoppingToken)
 	{
 		_logger.LogInformation("DemoUserApplication starting");
+
+		RogueyIntrinsics.Create();
 
 		var rc = new RenderingContext(_logger, context.Bus);
 		await rc.InitializeAsync();

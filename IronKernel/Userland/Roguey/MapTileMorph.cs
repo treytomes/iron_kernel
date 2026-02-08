@@ -1,46 +1,26 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic;
+using Miniscript;
 
-namespace Game.Morphs;
+namespace IronKernel.Userland.Roguey;
 
-public sealed class MapTileMorph : Morph
+/// <summary>
+/// A single map tile backed entirely by MiniScript slots.
+/// Rendering and collision read from slot-backed properties.
+/// </summary>
+public sealed class MapTileMorph : MiniScriptMorph
 {
-	#region Fields
+	#region Constants
 
-	private int _tileIndex = (int)'.';
-	private RadialColor _foreground = RadialColor.White;
-	private RadialColor? _background;
-	private GlyphSet<Bitmap>? _glyphs;
+	private static readonly Size TILE_SIZE = new Size(8, 8);
 
 	#endregion
 
-	#region Properties
+	#region Fields
 
-	public int TileIndex
-	{
-		get => _tileIndex;
-		set { _tileIndex = value; Invalidate(); }
-	}
-
-	public RadialColor ForegroundColor
-	{
-		get => _foreground;
-		set { _foreground = value; Invalidate(); }
-	}
-
-	public RadialColor? BackgroundColor
-	{
-		get => _background;
-		set { _background = value; Invalidate(); }
-	}
-
-	public bool BlocksMovement { get; set; }
-	public bool BlocksVision { get; set; }
-
-	public string TileTag { get; set; } = "floor";
+	private GlyphSet<Bitmap>? _glyphs;
 
 	#endregion
 
@@ -49,30 +29,126 @@ public sealed class MapTileMorph : Morph
 	public MapTileMorph()
 	{
 		IsSelectable = true;
-		Size = new Size(8, 8); // matches OEM437 tile size
+		Size = TILE_SIZE;
+
+		// Sensible defaults (written once, script may override)
+		if (!HasSlot(nameof(TileIndex)))
+			SetSlot(nameof(TileIndex), new ValNumber((int)'.'));
+
+		if (!HasSlot(nameof(ForegroundColor)))
+			SetSlot(nameof(ForegroundColor), RadialColor.White.ToMiniScriptValue());
+
+		// BackgroundColor is optional (null means transparent)
+
+		if (!HasSlot(nameof(BlocksMovement)))
+			SetSlot(nameof(BlocksMovement), ValNumber.zero);
+
+		if (!HasSlot(nameof(BlocksVision)))
+			SetSlot(nameof(BlocksVision), ValNumber.zero);
+
+		if (!HasSlot(nameof(TileTag)))
+			SetSlot(nameof(TileTag), new ValString("floor"));
 	}
 
 	#endregion
 
-	#region Methods
+	#region Slot-backed Properties
+
+	public int TileIndex
+	{
+		get =>
+			HasSlot(nameof(TileIndex))
+				? GetSlot<ValNumber>(nameof(TileIndex))!.IntValue()
+				: 0;
+		set =>
+			SetSlot(nameof(TileIndex), new ValNumber(value));
+	}
+
+	public RadialColor ForegroundColor
+	{
+		get =>
+			HasSlot(nameof(ForegroundColor))
+				? GetSlot<ValMap>(nameof(ForegroundColor))!.ToRadialColor()
+				: RadialColor.White;
+		set =>
+			SetSlot(nameof(ForegroundColor), value.ToMiniScriptValue());
+	}
+
+	public RadialColor? BackgroundColor
+	{
+		get
+		{
+			if (!HasSlot(nameof(BackgroundColor)))
+				return null;
+
+			var map = GetSlot<ValMap>(nameof(BackgroundColor));
+			return map != null ? map.ToRadialColor() : null;
+		}
+		set
+		{
+			if (value == null)
+				DeleteSlot(nameof(BackgroundColor));
+			else
+				SetSlot(nameof(BackgroundColor), value.ToMiniScriptValue());
+		}
+	}
+
+	public bool BlocksMovement
+	{
+		get =>
+			HasSlot(nameof(BlocksMovement))
+				&& GetSlot<ValNumber>(nameof(BlocksMovement))!.BoolValue();
+		set =>
+			SetSlot(nameof(BlocksMovement), value ? ValNumber.one : ValNumber.zero);
+	}
+
+	public bool BlocksVision
+	{
+		get =>
+			HasSlot(nameof(BlocksVision))
+				&& GetSlot<ValNumber>(nameof(BlocksVision))!.BoolValue();
+		set =>
+			SetSlot(nameof(BlocksVision), value ? ValNumber.one : ValNumber.zero);
+	}
+
+	public string TileTag
+	{
+		get =>
+			HasSlot(nameof(TileTag))
+				? GetSlot<ValString>(nameof(TileTag))!.ToString()
+				: "floor";
+		set =>
+			SetSlot(nameof(TileTag), new ValString(value ?? string.Empty));
+	}
+
+	#endregion
+
+	#region Asset Loading
 
 	protected override async void OnLoad(IAssetService assets)
 	{
-		if (Style == null) throw new Exception("Style is null.");
+		_glyphs = await assets.LoadGlyphSetAsync(
+			"image.oem437_8",
+			TILE_SIZE
+		);
 
-		_glyphs = await assets.LoadGlyphSetAsync("image.oem437_8", new Size(8, 8));
 		UpdateLayout();
 	}
+
+	#endregion
+
+	#region Rendering
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
 		if (_glyphs == null)
 			return;
 
-		if (TileIndex < 0 || TileIndex >= _glyphs.Count)
+		var index = TileIndex;
+		if (index < 0 || index >= _glyphs.Count)
 			return;
 
-		var glyph = _glyphs[TileIndex];
+		var glyph = _glyphs[index];
 
 		glyph.Render(
 			rc,
