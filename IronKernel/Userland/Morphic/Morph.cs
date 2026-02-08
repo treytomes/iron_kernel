@@ -182,14 +182,12 @@ public abstract class Morph : ICommandTarget
 	public void Draw(IRenderingContext rc)
 	{
 		var isRoot = this is WorldMorph;
-		var offsetSize = rc.OffsetStackSize;
-		var clipSize = rc.ClipStackSize;
 		try
 		{
 			if (!isRoot)
 			{
-				rc.PushOffset(Position, GetType().Name);
-				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size), GetType().Name);
+				rc.PushOffset(Position);
+				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
 			}
 
 			DrawSelf(rc);
@@ -206,8 +204,8 @@ public abstract class Morph : ICommandTarget
 			{
 				if (!isRoot)
 				{
-					rc.PopOffset(offsetSize, GetType().Name);
-					if (ShouldClipToBounds) rc.PopClip(clipSize, GetType().Name);
+					rc.PopOffset();
+					if (ShouldClipToBounds) rc.PopClip();
 				}
 			}
 			catch (Exception ex)
@@ -256,6 +254,7 @@ public abstract class Morph : ICommandTarget
 		for (int i = Submorphs.Count - 1; i >= 0; i--)
 		{
 			var child = Submorphs[i];
+			if (child == null) continue;
 			if (!child.Visible) continue;
 
 			var found = child.FindMorphAt(localPoint);

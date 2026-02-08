@@ -1,6 +1,8 @@
 # ROGUEY SCRIPTING
 
-This document describes the **Roguey MiniScript API**, which builds on IronKernel’s morphic and MiniScript infrastructure to support a roguelike-style game. It focuses on **map tiles**, their creation from MiniScript, and how they integrate with the shared Morph/slot system.
+This document describes the **Roguey MiniScript API**, which builds on IronKernel’s morphic and MiniScript infrastructure to support a roguelike-style game.
+
+It focuses on **tile maps**, **tile data**, and how they are created, accessed, and mutated from MiniScript.
 
 This is a **game-level API**, layered on top of the core MiniScript and Morph APIs.
 
@@ -8,91 +10,128 @@ This is a **game-level API**, layered on top of the core MiniScript and Morph AP
 
 ## Overview
 
-Roguey extends the generic `Morph` scripting model with **tile-specific behavior**.  
-Tiles are implemented as `MapTileMorph` instances, which:
+Roguey uses a **data-driven tile map model**:
 
-- Inherit from `MiniScriptMorph`
-- Store all gameplay-relevant state in **MiniScript slots**
-- Render using a glyph-based tileset
-- Are fully scriptable from the MiniScript REPL
+- A **TileMap** is a single Morph that renders a grid of tiles.
+- Individual tiles are **data objects** (`TileInfo`), not Morphs.
+- MiniScript operates on **handles** that reference tile data.
+- Rendering is performed in bulk by the `TileMapMorph`, not per tile.
 
-All tile interaction in scripts happens through **handles**, just like Morph handles.
+This design avoids per-tile Morph overhead and scales to large maps.
 
 ---
 
-## Tile Handles
+## TileMap
 
-A Tile handle is a MiniScript map that represents a live `MapTileMorph`.
+A **TileMap** represents a 2D grid of tiles rendered using a glyph tileset.
+
+### Creating a TileMap
+
+```miniscript
+map = TileMap.create(
+    [viewportWidth, viewportHeight],  -- pixels
+    [mapWidth, mapHeight],             -- tiles
+    "image.oem437_8",                  -- tileset asset id
+    [tileWidth, tileHeight]            -- pixels per tile
+)
+```
+
+Example:
+
+```miniscript
+map = TileMap.create(
+    [320, 240],
+    [256, 256],
+    "image.oem437_8",
+    [8, 8]
+)
+```
+
+Behavior:
+- Creates a `TileMapMorph`
+- Allocates a 2D array of `TileInfo`
+- Loads the glyph set defined by the tileset
+- Registers the TileMap with the world
+- Returns a **TileMap handle**
+
+---
+
+### TileMap Instance Methods
+
+#### `map.getTile(x, y)`
+
+Retrieve a handle to the tile at `(x, y)`.
+
+```miniscript
+tile = map.getTile(10, 5)
+```
+
+- Returns `null` if `(x, y)` is out of bounds
+- Returned object is a **Tile handle**, not a Morph
+
+---
+
+## Tile (TileInfo)
+
+A **Tile** is a data-backed object representing one cell in a tile map.
+
+Tiles are not Morphs and cannot be moved or destroyed independently.
+They are accessed and modified through the TileMap.
 
 Conceptually:
 
 ```miniscript
 {
-  "__isa": "Morph",
-  "__id": 42,
+  "__isa": "Tile",
   get: <function>,
-  set: <function>,
-  has: <function>,
-  delete: <function>,
-  destroy: <function>,
-  isAlive: <function>
+  set: <function>
 }
 ```
 
-Tile handles:
-- Are safe to store and pass around
-- Detect dead tiles automatically
-- Expose instance-style methods (`t.set(...)`, `t.get(...)`)
-
 ---
 
-## Creating Tiles
+### Tile Instance Methods
 
-### `Tile.create([x, y])`
+#### `tile.get(key)`
 
-Create a new map tile at the given position.
+Retrieve a tile property.
 
 ```miniscript
-t = Tile.create([10, 5])
+index = tile.get("TileIndex")
 ```
 
-Behavior:
-- Creates a new `MapTileMorph`
-- Sets its position to `(x, y)`
-- Registers it with the world
-- Returns a **fully bound tile handle**
+#### `tile.set(key, value)`
 
-Errors:
-- Invalid arguments result in a MiniScript error message
-- No engine crash or REPL hang
+Set a tile property.
+
+```miniscript
+tile.set("TileIndex", 176)
+```
+
+All changes immediately affect rendering.
 
 ---
 
-## Tile Properties (Slot-Backed)
+### Tile Properties
 
-All tile properties are backed by **MiniScript slots**.  
-You access them using the standard Morph instance methods.
+All tile properties map directly to fields on `TileInfo`.
 
-### `TileIndex`
+#### `TileIndex`
 
 Glyph index used for rendering.
 
 ```miniscript
-t.set("TileIndex", 35)
-index = t.get("TileIndex")
+tile.set("TileIndex", 176)
 ```
-
-Default:
-- `'.'` (ASCII dot)
 
 ---
 
-### `ForegroundColor`
+#### `ForegroundColor`
 
 Glyph foreground color (`RadialColor`).
 
 ```miniscript
-t.set("ForegroundColor", RadialColor.create(5, 5, 5))
+tile.set("ForegroundColor", RadialColor.create(5, 5, 5))
 ```
 
 Default:
@@ -100,124 +139,126 @@ Default:
 
 ---
 
-### `BackgroundColor`
+#### `BackgroundColor`
 
-Optional glyph background color (`RadialColor`).
+Glyph background color (`RadialColor`).
 
 ```miniscript
-t.set("BackgroundColor", RadialColor.create(0, 0, 2))
-t.delete("BackgroundColor")   -- makes background transparent
+tile.set("BackgroundColor", RadialColor.create(0, 0, 2))
 ```
 
 Default:
-- None (transparent)
+- Black
 
 ---
 
-### `BlocksMovement`
+#### `BlocksMovement`
 
 Whether the tile blocks movement.
 
 ```miniscript
-t.set("BlocksMovement", true)
+tile.set("BlocksMovement", true)
 ```
-
-Default:
-- `false`
 
 ---
 
-### `BlocksVision`
+#### `BlocksVision`
 
 Whether the tile blocks line of sight.
 
 ```miniscript
-t.set("BlocksVision", true)
+tile.set("BlocksVision", true)
 ```
-
-Default:
-- `false`
 
 ---
 
-### `TileTag`
+#### `Tag`
 
 Free-form string tag for gameplay logic.
 
 ```miniscript
-t.set("TileTag", "wall")
+tile.set("Tag", "wall")
 ```
-
-Default:
-- `"floor"`
 
 ---
 
-## Tile Queries
+## Random Tile Generation
 
-### `Tile.isBlocked(tile)`
+MiniScript provides `rnd()` for random numbers in `[0,1)`.
 
-Check whether a tile blocks movement.
+To generate a random integer in a half-open range `[min, max)`:
 
 ```miniscript
-if Tile.isBlocked(t) then
-    print("Can't walk here")
+randInt = function(min, max)
+    return floor(min + rnd() * (max - min))
 end
 ```
-
-This is a convenience wrapper around the `BlocksMovement` slot.
 
 ---
 
-## Using Tile Handles as Morphs
+## Complete Example: Creating and Filling a Tile Map
 
-Tile handles support all standard Morph instance methods:
+This example replaces the earlier C# nested loop with pure MiniScript.
 
 ```miniscript
-t.set("danger", true)
+// --- configuration ---
+viewportSize = [320, 240]
+mapSize = [256, 256]
+tileSize = [8, 8]
+tileSet = "image.oem437_8"
 
-if t.has("danger") then
-    print("Careful!")
+// --- create the tile map ---
+map = TileMap.create(
+    viewportSize,
+    mapSize,
+    tileSet,
+    tileSize
+)
+
+// --- helper: random integer in [min, max) ---
+randInt = function(min, max)
+    return floor(min + rnd() * (max - min))
 end
 
-t.delete("danger")
-```
-
-They also support lifetime checks:
-
-```miniscript
-if t.isAlive() then
-    print("Tile still exists")
+// --- populate the map ---
+for y in 0 .. mapSize[1] - 1
+    for x in 0 .. mapSize[0] - 1
+        tile = map.getTile(x, y)
+        if tile != null then
+            tile.set("TileIndex", randInt(176, 179))
+            tile.set("BlocksMovement", false)
+            tile.set("BlocksVision", false)
+            tile.set("Tag", "floor")
+        end
+    end
 end
 ```
 
-And destruction:
-
-```miniscript
-t.destroy()
-```
+This script:
+- Allocates a large tile map
+- Iterates over all tiles
+- Assigns random glyphs
+- Sets gameplay flags
+- Does **not** create any per-tile Morphs
 
 ---
 
 ## Rendering Model (Host-Side)
 
-Rendering is handled entirely by `MapTileMorph` in C#:
+Rendering is handled entirely by `TileMapMorph` in C#:
 
-- Tiles load a glyph set (`image.oem437_8`)
-- Rendering uses:
-  - `TileIndex`
-  - `ForegroundColor`
-  - `BackgroundColor`
-- Scripts do **not** draw directly
+- A single Morph renders all visible tiles
+- Tiles are culled to the viewport
+- Rendering cost depends on **viewport size**, not map size
+- Scripts never draw directly
 
-This keeps rendering fast and deterministic.
+This design allows maps with tens or hundreds of thousands of tiles.
 
 ---
 
 ## Error Handling
 
 All Roguey intrinsics:
-
 - Catch host exceptions
 - Report errors via the MiniScript error stream
 - Never crash or hang the REPL
@@ -225,36 +266,34 @@ All Roguey intrinsics:
 Example:
 
 ```text
-Tile.create error: expected [x,y]
+TileMap.create error: expected tileSize [w,h]
 ```
 
 ---
 
 ## Design Principles
 
-- **Slots are authoritative** for gameplay meaning
-- **C# properties are adapters** for rendering and engine systems
+- **Tiles are data**, not UI objects
+- **TileMap is the renderer**
+- **MiniScript mutates data**, not Morph trees
 - **World owns lifetime**, scripts hold references
 - **Instance-style methods** via bound intrinsics (`ctx.self`)
-- No inheritance or prototype magic in MiniScript
+- No prototype chains or inheritance tricks in MiniScript
 
 ---
 
 ## Summary
 
-The Roguey API provides:
+The updated Roguey API provides:
 
-- Scriptable, slot-backed map tiles
-- Safe creation and destruction from MiniScript
-- Instance-style scripting (`t.set(...)`)
-- Clean separation of game logic and rendering
-- A scalable foundation for roguelike mechanics
+- Efficient, scalable tile maps
+- Data-backed tile access from MiniScript
+- Fast bulk rendering
+- Clear separation of logic and rendering
+- A solid foundation for:
+  - procedural generation
+  - pathfinding
+  - FOV
+  - AI and gameplay systems
 
-This API is designed to grow naturally toward:
-- Tile maps
-- Entities
-- Items
-- Turn systems
-- AI logic
-
-without changing the core scripting model.
+This model replaces the earlier per-tile Morph approach and is the recommended way to build roguelike maps in Roguey.

@@ -33,9 +33,6 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 	/// <inheritdoc/>
 	public Rectangle Bounds => new(new Point(0, 0), Size);
 
-	public int OffsetStackSize => _offsetStack.Count;
-	public int ClipStackSize => _clipStack.Count;
-
 	#endregion
 
 	#region Methods
@@ -49,9 +46,8 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 		_currentClip = new Rectangle(0, 0, Bounds.Width, Bounds.Height);
 	}
 
-	public int PushOffset(Point offset, string source)
+	public int PushOffset(Point offset)
 	{
-		// _logger.LogInformation($"{new string(' ', _offsetStack.Count)}Push offset source: {source}");
 		var size = _offsetStack.Count;
 		_offsetStack.Push(_currentOffset);
 		_currentOffset = new Point(
@@ -60,17 +56,15 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 		return size;
 	}
 
-	public void PopOffset(int targetCount, string source)
+	public void PopOffset()
 	{
 		if (_offsetStack.Count == 0)
 			throw new InvalidOperationException($"{nameof(PopOffset)} without matching {nameof(PushOffset)}");
-		// _logger.LogInformation($"{new string(' ', _offsetStack.Count - 1)}Pop offset source: {source}");
 		_currentOffset = _offsetStack.Pop();
 	}
 
-	public int PushClip(Rectangle rect, string source)
+	public int PushClip(Rectangle rect)
 	{
-		// _logger.LogInformation($"{new string(' ', _clipStack.Count)}Push clip source: {source}");
 		var size = _clipStack.Count;
 		// rect is in *local* space → transform it
 		var transformed = new Rectangle(
@@ -88,11 +82,10 @@ public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRen
 		return size;
 	}
 
-	public void PopClip(int targetCount, string source)
+	public void PopClip()
 	{
 		if (_clipStack.Count == 0)
 			throw new InvalidOperationException($"{nameof(PopClip)} without matching {nameof(PushClip)}");
-		// _logger.LogInformation($"{new string(' ', _clipStack.Count - 1)}Pop clip source: {source}");
 		_currentClip = _clipStack.Pop();
 	}
 

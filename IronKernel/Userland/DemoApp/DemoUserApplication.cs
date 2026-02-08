@@ -87,19 +87,35 @@ public sealed class DemoUserApplication(
 			Text = "Hello world!",
 		});
 
-		world.AddMorph(new MapTileMorph()
-		{
-			Position = new Point(100, 100),
-			ForegroundColor = RadialColor.Red,
-			BackgroundColor = RadialColor.Blue,
-			TileIndex = 176
-		});
+		// world.AddMorph(new TileMorph()
+		// {
+		// 	Position = new Point(100, 100),
+		// 	ForegroundColor = RadialColor.Red,
+		// 	BackgroundColor = RadialColor.Blue,
+		// 	TileIndex = 176
+		// });
 
-		world.AddMorph(new MiniScriptMorph()
+		var mapWidth = 256;
+		var mapHeight = 256;
+		var tileSetInfo = new TileSetInfo("image.oem437_8", new Size(8, 8));
+		var map = new TileMapMorph(new Size(320, 240), new Size(256, 256), tileSetInfo);
+		for (var y = 0; y < mapHeight; y++)
 		{
-			Position = new Point(200, 200),
-			Size = new Size(200, 200)
-		});
+			for (var x = 0; x < mapWidth; x++)
+			{
+				var tile = map.GetTile(x, y);
+				if (tile == null) continue;
+				tile.TileIndex = Random.Shared.Next(176, 179);
+			}
+		}
+		map.Position = new Point(128, 128);
+		world.AddMorph(map);
+
+		// world.AddMorph(new MiniScriptMorph()
+		// {
+		// 	Position = new Point(200, 200),
+		// 	Size = new Size(200, 200)
+		// });
 
 		// world.AddMorph(new DummyReplMorph(new Point(175, 175)));
 

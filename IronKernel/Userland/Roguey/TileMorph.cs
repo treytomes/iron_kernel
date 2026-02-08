@@ -10,7 +10,7 @@ namespace IronKernel.Userland.Roguey;
 /// A single map tile backed entirely by MiniScript slots.
 /// Rendering and collision read from slot-backed properties.
 /// </summary>
-public sealed class MapTileMorph : MiniScriptMorph
+public sealed class TileMorph : MiniScriptMorph
 {
 	#region Constants
 
@@ -26,7 +26,7 @@ public sealed class MapTileMorph : MiniScriptMorph
 
 	#region Constructors
 
-	public MapTileMorph()
+	public TileMorph()
 	{
 		IsSelectable = true;
 		Size = TILE_SIZE;

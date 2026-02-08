@@ -37,6 +37,7 @@
 		"scriptable",
 		"Submorphs",
 		"syscalls",
+		"tilemap",
 		"tileset",
 		"undoable",
 		"Unshifted",
