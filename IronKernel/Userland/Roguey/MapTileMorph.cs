@@ -158,5 +158,11 @@ public sealed class MapTileMorph : MiniScriptMorph
 		);
 	}
 
+	protected override void UpdateLayout()
+	{
+		Size = TILE_SIZE;
+		base.UpdateLayout();
+	}
+
 	#endregion
 }
