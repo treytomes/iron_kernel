@@ -7,6 +7,8 @@ namespace IronKernel.Userland.Morphic;
 
 public sealed class WorldScriptContext
 {
+	#region Fields
+
 	private readonly WorldMorph _world;
 
 	// id → morph
@@ -17,59 +19,59 @@ public sealed class WorldScriptContext
 
 	private int _nextId = 1;
 
+	#endregion
+
+	#region Constructions
+
 	public WorldScriptContext(WorldMorph world)
 	{
 		_world = world;
 	}
 
-	// -------------------------------------------------
-	// World access
-	// -------------------------------------------------
+	#endregion
+
+	#region World access
+
 	public WorldMorph World => _world;
 	public WorldCommandManager Commands => _world.Commands;
 	public ScriptOutputHub Output => _world.ScriptOutput;
 
-	// -------------------------------------------------
-	// Script lifecycle helpers
-	// -------------------------------------------------
 	public void StopWorldScript() => _world.Interpreter.Stop();
 	public void ResetWorldScript() => _world.Interpreter.Reset();
 	public bool IsRunning => _world.Interpreter.Running();
 
-	// -------------------------------------------------
-	// Handle registry
-	// -------------------------------------------------
+	#endregion
+
+	#region Handle registry
+
 	public ValMap Register(MiniScriptMorph morph)
 	{
 		var id = _nextId++;
 		_morphs[id] = morph;
 		_reverse[morph] = id;
+		return CreateHandleForId(id);
+	}
 
-		var handle = new ValMap();
-		handle["__kind"] = new ValString("MiniScriptMorph");
-		handle["__id"] = new ValNumber(id);
+	private ValMap CreateHandleForId(int id)
+	{
+		var handle = new ValMap
+		{
+			["__isa"] = new ValString("Morph"),
+			["__id"] = new ValNumber(id)
+		};
 
+		AttachMorphMethods(handle);
+		return handle;
+	}
+
+	private static void AttachMorphMethods(ValMap handle)
+	{
 		handle["get"] = Intrinsic.GetByName("slot_get")!.GetFunc().BindAndCopy(handle);
 		handle["set"] = Intrinsic.GetByName("slot_set")!.GetFunc().BindAndCopy(handle);
 		handle["has"] = Intrinsic.GetByName("slot_has")!.GetFunc().BindAndCopy(handle);
 		handle["delete"] = Intrinsic.GetByName("slot_delete")!.GetFunc().BindAndCopy(handle);
 		handle["destroy"] = Intrinsic.GetByName("morph_destroy")!.GetFunc().BindAndCopy(handle);
 		handle["isAlive"] = Intrinsic.GetByName("morph_isAlive")!.GetFunc().BindAndCopy(handle);
-
-		return handle;
-	}
-
-	private static Intrinsic.Result Forward(TAC.Context ctx, string intrinsicName, ValMap self)
-	{
-		var intrinsic = Intrinsic.GetByName(intrinsicName)!;
-		var args = new List<Value> { self };
-
-		foreach (var p in intrinsic.GetFunc().function.parameters.Skip(1))
-		{
-			args.Add(ctx.GetVar(p.name));
-		}
-
-		return intrinsic.code(ctx, Intrinsic.Result.Null);
 	}
 
 	public MiniScriptMorph? ResolveAlive(Value handle)
@@ -111,7 +113,9 @@ public sealed class WorldScriptContext
 			_morphs.Remove(id);
 		}
 	}
+	#endregion
 
+	#region Helpers
 	private static Intrinsic.Result Error(TAC.Context ctx, string message)
 	{
 		ctx.interpreter.errorOutput?.Invoke(message, true);
@@ -128,18 +132,20 @@ public sealed class WorldScriptContext
 		b = list.values[1].IntValue();
 		return true;
 	}
+	#endregion
 
-	// -------------------------------------------------
-	// Intrinsics
-	// -------------------------------------------------
+	#region Intrinsics
+
 	static WorldScriptContext()
 	{
 		CreateMorphIntrinsics();
+		CreateMorphNamespace();
 		CreateRadialColorIntrinsics();
 	}
 
 	private static void CreateMorphIntrinsics()
-	{       // ---------- morph_create ----------
+	{
+		// ---------- morph_create ----------
 		var create = Intrinsic.Create("morph_create");
 		create.AddParam("arg1", ValNull.instance);
 		create.AddParam("arg2", ValNull.instance);
@@ -189,8 +195,6 @@ public sealed class WorldScriptContext
 
 		// ---------- morph_destroy ----------
 		var destroy = Intrinsic.Create("morph_destroy");
-		// destroy.AddParam("handle");
-
 		destroy.code = (ctx, _) =>
 		{
 			try
@@ -198,13 +202,12 @@ public sealed class WorldScriptContext
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.Null;
 
-				var handle = ctx.self; // ctx.GetVar("handle");
-				var morph = world.ResolveAlive(handle);
+				var morph = world.ResolveAlive(ctx.self);
 				if (morph == null)
 					return Intrinsic.Result.Null;
 
 				morph.MarkForDeletion();
-				if (handle is ValMap map)
+				if (ctx.self is ValMap map)
 					InvalidateHandle(map);
 
 				return Intrinsic.Result.Null;
@@ -217,131 +220,55 @@ public sealed class WorldScriptContext
 
 		// ---------- morph_isAlive ----------
 		var isAlive = Intrinsic.Create("morph_isAlive");
-		// isAlive.AddParam("handle");
-
 		isAlive.code = (ctx, _) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.False;
-
-				// return world.ResolveAlive(ctx.GetVar("handle")) != null
-				return world.ResolveAlive(ctx.self) != null
-					? Intrinsic.Result.True
-					: Intrinsic.Result.False;
-			}
-			catch
-			{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.False;
-			}
+
+			return world.ResolveAlive(ctx.self) != null
+				? Intrinsic.Result.True
+				: Intrinsic.Result.False;
 		};
 
-		// ---------- slot_get ----------
-		var slotGet = Intrinsic.Create("slot_get");
-		// slotGet.AddParam("handle");
-		slotGet.AddParam("key");
-
-		slotGet.code = (ctx, _) =>
+		// ---------- slot_* ----------
+		CreateSlotIntrinsic("slot_get", (ctx, world) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
+			var morph = world.ResolveAlive(ctx.self);
+			if (morph == null)
+				return Error(ctx, "slot_get: invalid or dead morph handle");
 
-				// var morph = world.ResolveAlive(ctx.GetVar("handle"));
-				var morph = world.ResolveAlive(ctx.self);
-				if (morph == null)
-					return Error(ctx, "slot_get: invalid or dead morph handle");
+			return new Intrinsic.Result(
+				morph.GetSlot<Value>(ctx.GetVar("key").ToString())
+			);
+		}, "key");
 
-				return new Intrinsic.Result(
-					morph.GetSlot<Value>(ctx.GetVar("key").ToString())
-				);
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"slot_get error: {ex.Message}");
-			}
-		};
-
-		// ---------- slot_set ----------
-		var slotSet = Intrinsic.Create("slot_set");
-		// slotSet.AddParam("handle");
-		slotSet.AddParam("key");
-		slotSet.AddParam("value");
-
-		slotSet.code = (ctx, _) =>
+		CreateSlotIntrinsic("slot_set", (ctx, world) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
+			var morph = world.ResolveAlive(ctx.self);
+			if (morph == null)
+				return Error(ctx, "slot_set: invalid or dead morph handle");
 
-				// var morph = world.ResolveAlive(ctx.GetVar("handle"));
-				var morph = world.ResolveAlive(ctx.self);
-				if (morph == null)
-					return Error(ctx, "slot_set: invalid or dead morph handle");
+			morph.SetSlot(
+				ctx.GetVar("key").ToString(),
+				ctx.GetVar("value")
+			);
+			return Intrinsic.Result.Null;
+		}, "key", "value");
 
-				morph.SetSlot(
-					ctx.GetVar("key").ToString(),
-					ctx.GetVar("value")
-				);
-
-				return Intrinsic.Result.Null;
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"slot_set error: {ex.Message}");
-			}
-		};
-
-		// ---------- slot_has ----------
-		var slotHas = Intrinsic.Create("slot_has");
-		// slotHas.AddParam("handle");
-		slotHas.AddParam("key");
-
-		slotHas.code = (ctx, _) =>
+		CreateSlotIntrinsic("slot_has", (ctx, world) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.False;
+			var morph = world.ResolveAlive(ctx.self);
+			return morph != null && morph.HasSlot(ctx.GetVar("key").ToString())
+				? Intrinsic.Result.True
+				: Intrinsic.Result.False;
+		}, "key");
 
-				// var morph = world.ResolveAlive(ctx.GetVar("handle"));
-				var morph = world.ResolveAlive(ctx.self);
-				return morph != null && morph.HasSlot(ctx.GetVar("key").ToString())
-					? Intrinsic.Result.True
-					: Intrinsic.Result.False;
-			}
-			catch
-			{
-				return Intrinsic.Result.False;
-			}
-		};
-
-		// ---------- slot_delete ----------
-		var slotDelete = Intrinsic.Create("slot_delete");
-		// slotDelete.AddParam("handle");
-		slotDelete.AddParam("key");
-
-		slotDelete.code = (ctx, _) =>
+		CreateSlotIntrinsic("slot_delete", (ctx, world) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				// var morph = world.ResolveAlive(ctx.GetVar("handle"));
-				var morph = world.ResolveAlive(ctx.self);
-				morph?.DeleteSlot(ctx.GetVar("key").ToString());
-
-				return Intrinsic.Result.Null;
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"slot_delete error: {ex.Message}");
-			}
-		};
+			var morph = world.ResolveAlive(ctx.self);
+			morph?.DeleteSlot(ctx.GetVar("key").ToString());
+			return Intrinsic.Result.Null;
+		}, "key");
 
 		// ---------- world_findMorphsBySlot ----------
 		var find = Intrinsic.Create("world_findMorphsBySlot");
@@ -363,7 +290,6 @@ public sealed class WorldScriptContext
 				{
 					if (morph.IsMarkedForDeletion || morph.Owner == null)
 						continue;
-
 					if (!morph.HasSlot(key))
 						continue;
 
@@ -374,10 +300,7 @@ public sealed class WorldScriptContext
 							continue;
 					}
 
-					var handle = new ValMap();
-					handle["__kind"] = new ValString("MiniScriptMorph");
-					handle["__id"] = new ValNumber(id);
-					list.values.Add(handle);
+					list.values.Add(world.CreateHandleForId(id));
 				}
 
 				return new Intrinsic.Result(list);
@@ -387,50 +310,63 @@ public sealed class WorldScriptContext
 				return Error(ctx, $"world_findMorphsBySlot error: {ex.Message}");
 			}
 		};
+	}
 
-		// ---------- Morph namespace ----------
+	private static void CreateSlotIntrinsic(
+		string name,
+		Func<TAC.Context, WorldScriptContext, Intrinsic.Result> body,
+		params string[] parameters)
+	{
+		var i = Intrinsic.Create(name);
+		foreach (var p in parameters)
+			i.AddParam(p);
+
+		i.code = (ctx, _) =>
+		{
+			try
+			{
+				if (ctx.interpreter.hostData is not WorldScriptContext world)
+					return Intrinsic.Result.Null;
+
+				return body(ctx, world);
+			}
+			catch (Exception ex)
+			{
+				return Error(ctx, $"{name} error: {ex.Message}");
+			}
+		};
+	}
+
+	private static void CreateMorphNamespace()
+	{
 		var morphNamespace = Intrinsic.Create("Morph");
 		morphNamespace.code = (ctx, _) =>
 		{
-			var map = new ValMap();
-
-			// --- construction ---
-			map["create"] = Intrinsic.GetByName("morph_create")!.GetFunc();
-			// map["destroy"] = Intrinsic.GetByName("morph_destroy")!.GetFunc();
-			// map["isAlive"] = Intrinsic.GetByName("morph_isAlive")!.GetFunc();
-
-			// --- slot access ---
-			// map["get"] = Intrinsic.GetByName("slot_get")!.GetFunc();
-			// map["set"] = Intrinsic.GetByName("slot_set")!.GetFunc();
-			// map["has"] = Intrinsic.GetByName("slot_has")!.GetFunc();
-			// map["delete"] = Intrinsic.GetByName("slot_delete")!.GetFunc();
-
-			// --- queries ---
-			map["findBySlot"] = Intrinsic.GetByName("world_findMorphsBySlot")!.GetFunc();
-
+			var map = new ValMap
+			{
+				["create"] = Intrinsic.GetByName("morph_create")!.GetFunc(),
+				["findBySlot"] = Intrinsic.GetByName("world_findMorphsBySlot")!.GetFunc()
+			};
 			return new Intrinsic.Result(map);
 		};
 	}
 
 	private static void CreateRadialColorIntrinsics()
 	{
-		// ---------- RadialColor.create ----------
-		var radialColorCreate = Intrinsic.Create("RadialColor_create");
-		radialColorCreate.AddParam("r");
-		radialColorCreate.AddParam("g");
-		radialColorCreate.AddParam("b");
+		var create = Intrinsic.Create("RadialColor_create");
+		create.AddParam("r");
+		create.AddParam("g");
+		create.AddParam("b");
 
-		radialColorCreate.code = (ctx, _) =>
+		create.code = (ctx, _) =>
 		{
 			try
 			{
-				var r = (byte)ctx.GetVar("r").IntValue();
-				var g = (byte)ctx.GetVar("g").IntValue();
-				var b = (byte)ctx.GetVar("b").IntValue();
-
-				// Let RadialColor enforce its own constraints (0..5)
-				var color = new RadialColor(r, g, b);
-
+				var color = new RadialColor(
+					(byte)ctx.GetVar("r").IntValue(),
+					(byte)ctx.GetVar("g").IntValue(),
+					(byte)ctx.GetVar("b").IntValue()
+				);
 				return new Intrinsic.Result(color.ToMiniScriptValue());
 			}
 			catch (Exception ex)
@@ -443,13 +379,13 @@ public sealed class WorldScriptContext
 			}
 		};
 
-		// ---------- RadialColor namespace ----------
-		var radialColorNamespace = Intrinsic.Create("RadialColor");
-		radialColorNamespace.code = (ctx, _) =>
+		var ns = Intrinsic.Create("RadialColor");
+		ns.code = (ctx, _) =>
 		{
-			var map = new ValMap();
-			map["create"] = radialColorCreate.GetFunc();
+			var map = new ValMap { ["create"] = create.GetFunc() };
 			return new Intrinsic.Result(map);
 		};
 	}
+
+	#endregion
 }
