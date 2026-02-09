@@ -31,6 +31,13 @@ public sealed class TextEditorMorph : Morph
 
 	#endregion
 
+	#region Configuration
+
+	public bool ShowLineNumbers { get; set; } = true;
+	private int TextOriginY => 0; // related to Padding?
+
+	#endregion
+
 	#region Focus
 
 	public override bool WantsKeyboardFocus => true;
@@ -159,6 +166,40 @@ public sealed class TextEditorMorph : Morph
 		_firstVisibleLine = Math.Max(0, _firstVisibleLine);
 	}
 
+	public override void OnPointerDown(PointerDownEvent e)
+	{
+		base.OnPointerDown(e);
+
+		if (!ShowLineNumbers)
+			return;
+
+		int localY = e.Position.Y - TextOriginY;
+		if (localY < 0)
+			return;
+
+		localY -= _cellSize.Height / 2;
+
+		int row = localY / _cellSize.Height;
+		int lineIndex = _firstVisibleLine + row;
+
+		lineIndex = Math.Clamp(
+			lineIndex,
+			0,
+			_document.LineCount
+		) - 1;
+
+		int desiredColumn = _document.CaretColumn;
+		_document.SetCaretLine(lineIndex);
+		_document.CaretColumn = Math.Min(
+			desiredColumn,
+			_document.Lines[_document.CaretLine].Length
+		);
+
+		EnsureCaretVisible();
+		Invalidate();
+		e.MarkHandled();
+	}
+
 	#endregion
 
 	#region Rendering
@@ -168,33 +209,73 @@ public sealed class TextEditorMorph : Morph
 		if (!_layoutInitialized || _font == null || Style == null)
 			return;
 
+		var s = Style.Semantic;
+
 		rc.RenderFilledRect(
 			new Rectangle(Point.Empty, Size),
-			RadialColor.Black
+			s.Background
 		);
 
-		DrawText(rc);
+		DrawTextAndLineNumbers(rc);
 		DrawCaret(rc);
 	}
 
-	private void DrawText(IRenderingContext rc)
+	private int LineNumberDigits =>
+		Math.Max(1, _document.LineCount.ToString().Length);
+
+	private int LineNumberGutterWidth =>
+		ShowLineNumbers
+			? (LineNumberDigits + 1) * _cellSize.Width
+			: 0;
+
+	private void DrawTextAndLineNumbers(IRenderingContext rc)
 	{
-		int y = 0;
+		int yIndex = 0;
 
 		for (int line = _firstVisibleLine;
 			 line < _document.LineCount &&
-			 y < _visibleLineCount;
-			 line++, y++)
+			 yIndex < _visibleLineCount;
+			 line++, yIndex++)
 		{
-			var text = _document.Lines[line].ToString();
-			var pos = new Point(0, y * _cellSize.Height);
+			int y = yIndex * _cellSize.Height;
 
+			if (ShowLineNumbers)
+			{
+				var ln = (line + 1).ToString();
+				int lnX =
+					LineNumberGutterWidth -
+					ln.Length * _cellSize.Width;
+
+				if (IsActiveLine(line))
+				{
+					rc.RenderFilledRect(
+						new Rectangle(
+							0,
+							y,
+							LineNumberGutterWidth,
+							_cellSize.Height),
+						Style!.Semantic.Primary.Lerp(Style!.Semantic.Background, 0.15f)
+					);
+				}
+
+				_font!.WriteString(
+					rc,
+					ln,
+					new Point(lnX, y),
+					IsActiveLine(line)
+						? Style!.Semantic.Primary
+						: Style!.Semantic.SecondaryText,
+					Style.Semantic.Background
+				);
+			}
+
+			var text = _document.Lines[line].ToString();
 			_font!.WriteString(
 				rc,
 				text,
-				pos,
+				new Point(LineNumberGutterWidth, y),
 				Style!.Semantic.Text,
-				Style.Semantic.Surface
+				Style.Semantic.Background
 			);
 		}
 	}
@@ -211,7 +292,10 @@ public sealed class TextEditorMorph : Morph
 
 		int column = _document.CaretColumn;
 
-		int x = column * _cellSize.Width;
+		int x =
+			LineNumberGutterWidth +
+			column * _cellSize.Width;
+
 		int y =
 			(line - _firstVisibleLine) * _cellSize.Height;
 
@@ -229,6 +313,11 @@ public sealed class TextEditorMorph : Morph
 	{
 		return TryGetWorld(out var world) &&
 			   world.KeyboardFocus == this;
+	}
+
+	private bool IsActiveLine(int lineIndex)
+	{
+		return lineIndex == _document.CaretLine;
 	}
 
 	#endregion

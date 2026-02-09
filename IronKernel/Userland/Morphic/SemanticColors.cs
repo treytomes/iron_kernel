@@ -11,6 +11,7 @@ public sealed class SemanticColors
 
 	// Text
 	public required RadialColor Text { get; init; }
+	public required RadialColor SecondaryText { get; init; }
 	public required RadialColor MutedText { get; init; }
 
 	// Primary intent
@@ -52,6 +53,7 @@ public sealed class SemanticColors
 
 		// Text
 		Text = RadialColor.White,
+		SecondaryText = RadialColor.Yellow,
 		MutedText = RadialColor.Gray,
 
 		// Primary (focus / selected)

@@ -211,6 +211,12 @@ public sealed class TextDocument
 
 	#region Cursor Movement (Vertical)
 
+	public void SetCaretLine(int line)
+	{
+		CaretLine = Math.Clamp(line, 0, LineCount - 1);
+		CaretColumn = Math.Min(CaretColumn, _lines[CaretLine].Length);
+	}
+
 	public void MoveUp()
 	{
 		if (CaretLine == 0)
