@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic;
+using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.Roguey;
 
@@ -70,7 +71,7 @@ public sealed class TileMapMorph : MiniScriptMorph
 	protected override async void OnLoad(IAssetService assets)
 	{
 		_glyphs = await assets.LoadGlyphSetAsync(
-			_tileSetInfo.AssetId,
+			_tileSetInfo.Url,
 			_tileSetInfo.TileSize
 		);
 		Invalidate();

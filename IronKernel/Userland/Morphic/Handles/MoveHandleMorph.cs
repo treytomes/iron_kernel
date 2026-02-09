@@ -20,7 +20,7 @@ public sealed class MoveHandleMorph : HandleMorph
 	{
 		Size = new Size(8, 8);
 
-		_icon = new ImageMorph(new Point(0, 0), "image.move_icon")
+		_icon = new ImageMorph(new Point(0, 0), "asset://image.move_icon")
 		{
 			IsSelectable = false,
 		};

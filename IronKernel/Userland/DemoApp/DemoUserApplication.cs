@@ -7,6 +7,7 @@ using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Roguey;
+using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.DemoApp;
 
@@ -26,6 +27,8 @@ public sealed class DemoUserApplication(
 		CancellationToken stoppingToken)
 	{
 		_logger.LogInformation("DemoUserApplication starting");
+
+		IFileSystem fileSystem = new FileSystemService(context.Bus);
 
 		RogueyIntrinsics.Create();
 
@@ -65,6 +68,7 @@ public sealed class DemoUserApplication(
 				var launcher = new LauncherMorph(new Point(16, 16));
 				launcher.AddApp<DummyReplMorph>("Dummy REPL");
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
+				launcher.AddApp("Text Editor", () => new TextEditorWindowMorph(fileSystem));
 				world.AddMorph(launcher);
 			})
 		);
@@ -111,7 +115,7 @@ public sealed class DemoUserApplication(
 		map.Position = new Point(128, 128);
 		world.AddMorph(map);
 
-		world.AddMorph(new TextEditorWindowMorph());
+		// world.AddMorph(new TextEditorWindowMorph());
 
 		// world.AddMorph(new MiniScriptMorph()
 		// {
@@ -120,6 +124,43 @@ public sealed class DemoUserApplication(
 		// });
 
 		// world.AddMorph(new DummyReplMorph(new Point(175, 175)));
+
+		// 		await fileSystem.WriteTextAsync("file://sample.ms", @"
+		// // --- configuration ---
+		// viewportSize = [320, 240]
+		// mapSize = [256, 256]
+		// tileSize = [16, 24]
+		// tileSet = ""asset://image.screen_font""
+
+		// // --- create the tile map ---
+		// map = TileMap.create(
+		// 	viewportSize,
+		// 	mapSize,
+		// 	tileSet,
+		// 	tileSize
+		// )
+
+		// // --- helper: random integer in [min, max) ---
+		// randInt = function(min, max)
+
+		// 	return floor(min + rnd() * (max - min))
+		// end
+
+		// // --- populate the map ---
+		// for y in range(0, mapSize[1] - 1)
+
+		// 	for x in range(0, mapSize[0] - 1)
+
+		// 		tile = map.getTile(x, y)
+		// 		tile.set(""TileIndex"", randInt(176, 179))
+		// 		tile.set(""BlocksMovement"", false)
+		// 		tile.set(""BlocksVision"", false)
+		// 		tile.set(""Tag"", ""floor"")
+
+		// 	end for
+		// end for
+		// "
+		// );
 
 		context.Bus.Subscribe<AppMouseWheelEvent>(
 			"MouseWheelHandler",

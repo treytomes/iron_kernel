@@ -3,6 +3,7 @@ using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Morphic.Handles;
 using IronKernel.Userland.Morphic.Inspector;
+using IronKernel.Userland.Services;
 using System.Drawing;
 
 namespace IronKernel.Userland.Morphic;
@@ -97,7 +98,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		if (Style == null) throw new Exception("Style is null.");
 
 		_font = await assets.LoadFontAsync(
-			Style.DefaultFontStyle.AssetId,
+			Style.DefaultFontStyle.Url,
 			Style.DefaultFontStyle.TileSize,
 			Style.DefaultFontStyle.GlyphOffset
 		);

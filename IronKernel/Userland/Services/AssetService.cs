@@ -4,7 +4,7 @@ using IronKernel.Userland.Gfx;
 using System.Collections.Concurrent;
 using System.Drawing;
 
-namespace IronKernel.Userland;
+namespace IronKernel.Userland.Services;
 
 internal class AssetService(IApplicationBus bus) : IAssetService
 {
@@ -13,41 +13,41 @@ internal class AssetService(IApplicationBus bus) : IAssetService
 	private readonly ConcurrentDictionary<string, GlyphSet<Bitmap>> _glyphSetCache = new();
 	private readonly ConcurrentDictionary<string, RenderImage> _imageCache = new();
 
-	public async Task<Font> LoadFontAsync(string assetId, Size tileSize, int glyphOffset)
+	public async Task<Font> LoadFontAsync(string url, Size tileSize, int glyphOffset)
 	{
-		if (!_fontCache.ContainsKey(assetId))
+		if (!_fontCache.ContainsKey(url))
 		{
-			var glyphs = await LoadGlyphSetAsync(assetId, tileSize);
+			var glyphs = await LoadGlyphSetAsync(url, tileSize);
 			var font = new Font(glyphs, glyphOffset);
-			_fontCache[assetId] = font;
+			_fontCache[url] = font;
 		}
-		return _fontCache[assetId];
+		return _fontCache[url];
 	}
 
-	public async Task<GlyphSet<Bitmap>> LoadGlyphSetAsync(string assetId, Size tileSize)
+	public async Task<GlyphSet<Bitmap>> LoadGlyphSetAsync(string url, Size tileSize)
 	{
-		if (!_glyphSetCache.ContainsKey(assetId))
+		if (!_glyphSetCache.ContainsKey(url))
 		{
-			var image = await LoadImageAsync(assetId);
+			var image = await LoadImageAsync(url);
 			var bitmap = new Bitmap(image);
 			var glyphs = new GlyphSet<Bitmap>(bitmap, tileSize.Width, tileSize.Height);
-			_glyphSetCache[assetId] = glyphs;
+			_glyphSetCache[url] = glyphs;
 		}
-		return _glyphSetCache[assetId];
+		return _glyphSetCache[url];
 	}
 
-	public async Task<RenderImage> LoadImageAsync(string assetId)
+	public async Task<RenderImage> LoadImageAsync(string url)
 	{
-		if (!_imageCache.ContainsKey(assetId))
+		if (!_imageCache.ContainsKey(url))
 		{
 			var response = await _bus.QueryAsync<
 				AppAssetImageQuery,
 				AppAssetImageResponse>(
-					id => new AppAssetImageQuery(id, assetId));
+					id => new AppAssetImageQuery(id, url));
 
 			var image = new RenderImage(response.Image);
-			_imageCache[assetId] = image;
+			_imageCache[url] = image;
 		}
-		return _imageCache[assetId];
+		return _imageCache[url];
 	}
 }

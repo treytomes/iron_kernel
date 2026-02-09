@@ -1,4 +1,3 @@
-using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
@@ -7,6 +6,7 @@ using IronKernel.Modules.AssetLoader.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
+using IronKernel.Modules.FileSystem.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
 
@@ -183,8 +183,80 @@ internal sealed class ApplicationHostModule(
 			(e, ct) => new(e.CorrelationID)
 		);
 
-		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.AssetId));
-		_bridge.Forward<AssetImageResponse, AppAssetImageResponse>("AppAssetImageResponse", (e, ct) => new(e.CorrelationID, e.AssetId, e.Image));
+		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.Url));
+		_bridge.Forward<AssetImageResponse, AppAssetImageResponse>("AppAssetImageResponse", (e, ct) => new(e.CorrelationID, e.Url, e.Image));
+
+		// File read
+
+		_bridge.Request<AppFileReadQuery, FileReadQuery>(
+			"AppFileReadQueryHandler",
+			(e, ct) => new(e.CorrelationID, e.Url)
+		);
+
+		_bridge.Forward<FileReadResponse, AppFileReadResponse>(
+			"AppFileReadResponseHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Data,
+				e.MimeType
+			)
+		);
+
+		// File write
+
+		_bridge.Request<AppFileWriteCommand, FileWriteCommand>(
+			"AppFileWriteCommandHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Data,
+				e.MimeType
+			)
+		);
+
+		_bridge.Forward<FileWriteResult, AppFileWriteResult>(
+			"AppFileWriteResultHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Success,
+				e.Error
+			)
+		);
+
+		// File delete
+
+		_bridge.Request<AppFileDeleteCommand, FileDeleteCommand>(
+			"AppFileDeleteCommandHandler",
+			(e, ct) => new(e.CorrelationID, e.Url)
+		);
+
+		_bridge.Forward<FileDeleteResult, AppFileDeleteResult>(
+			"AppFileDeleteResultHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Success,
+				e.Error
+			)
+		);
+
+		// Directory listing
+
+		_bridge.Request<AppDirectoryListQuery, DirectoryListQuery>(
+			"AppDirectoryListQueryHandler",
+			(e, ct) => new(e.CorrelationID, e.Url)
+		);
+
+		_bridge.Forward<DirectoryListResponse, AppDirectoryListResponse>(
+			"AppDirectoryListResponseHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Entries
+			)
+		);
 
 		var context = new ApplicationContext(
 			_bus,

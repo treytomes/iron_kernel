@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
 namespace IronKernel.Userland.Morphic;
 
 /// <summary>
@@ -12,6 +8,15 @@ namespace IronKernel.Userland.Morphic;
 public sealed class TextDocument
 {
 	private readonly List<TextEditingCore> _lines = new();
+
+	#region Construction
+
+	public TextDocument(string? initialText = null)
+	{
+		SetText(initialText);
+	}
+
+	#endregion
 
 	#region Properties
 
@@ -31,18 +36,18 @@ public sealed class TextDocument
 
 	#endregion
 
-	#region Construction
+	#region Insertion
 
-	public TextDocument(string? initialText = null)
+	public void SetText(string? text = null)
 	{
-		if (string.IsNullOrEmpty(initialText))
+		if (string.IsNullOrEmpty(text))
 		{
 			_lines.Add(new TextEditingCore());
 			CaretLine = 0;
 			return;
 		}
 
-		var split = initialText.Split('\n');
+		var split = text.Split('\n');
 		foreach (var line in split)
 			_lines.Add(new TextEditingCore(line));
 
@@ -52,10 +57,6 @@ public sealed class TextDocument
 		CaretLine = _lines.Count - 1;
 		_lines[CaretLine].MoveToEnd();
 	}
-
-	#endregion
-
-	#region Insertion
 
 	public void InsertChar(char ch)
 	{

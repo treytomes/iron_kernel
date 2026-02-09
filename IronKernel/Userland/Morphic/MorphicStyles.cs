@@ -41,19 +41,19 @@ public static class MorphicStyles
 		},
 		DefaultFontStyle = new()
 		{
-			AssetId = "image.screen_font_medium",
+			Url = "asset://image.screen_font_medium",
 			GlyphOffset = 0,
 			TileSize = new Size(13, 19),
 		},
 		// DefaultFontStyle = new()
 		// {
-		// 	AssetId = "image.screen_font",
+		// 	Url = "asset://image.screen_font",
 		// 	GlyphOffset = 0,
 		// 	TileSize = new Size(16, 24),
 		// },
 		// DefaultFontStyle = new()
 		// {
-		// 	AssetId = "image.my-font-light",
+		// 	Url = "asset://image.my-font-light",
 		// 	GlyphOffset = -32,
 		// 	TileSize = new Size(5, 6),
 		// },

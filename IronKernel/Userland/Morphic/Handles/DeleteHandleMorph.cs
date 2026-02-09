@@ -19,7 +19,7 @@ public sealed class DeleteHandleMorph : HandleMorph
 	{
 		Size = new Size(8, 8);
 
-		_icon = new ImageMorph(new Point(0, 0), "image.delete_icon")
+		_icon = new ImageMorph(new Point(0, 0), "asset://image.delete_icon")
 		{
 			IsSelectable = false,
 		};

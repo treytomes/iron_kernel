@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -14,10 +15,10 @@ public sealed class ImageMorph : Morph
 
 	#region Constructors
 
-	public ImageMorph(Point position, string assetId)
+	public ImageMorph(Point position, string url)
 	{
 		Position = position;
-		AssetId = assetId;
+		Url = url;
 		IsSelectable = true;
 	}
 
@@ -25,7 +26,7 @@ public sealed class ImageMorph : Morph
 
 	#region Properties
 
-	public string AssetId { get; }
+	public string Url { get; }
 	public RadialColor? Foreground { get; set; }
 	public RenderImage.RenderFlag Flags { get; set; }
 
@@ -35,7 +36,7 @@ public sealed class ImageMorph : Morph
 
 	protected override async void OnLoad(IAssetService assets)
 	{
-		_image = await assets.LoadImageAsync(AssetId);
+		_image = await assets.LoadImageAsync(Url);
 		_image.Recolor(RadialColor.Black, null);
 		Size = _image.Size;
 	}

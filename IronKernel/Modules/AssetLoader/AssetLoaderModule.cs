@@ -33,11 +33,11 @@ internal sealed class AssetLoaderModule(
 
 		_bus.Subscribe<AssetImageQuery>(runtime, "ImageQueryHandler", (msg, ct) =>
 		{
-			var path = GetPathFromAssetId(msg.AssetId);
+			var path = GetPathFromUrl(msg.Url);
 			if (path != null)
 			{
 				var image = _resourceManager.Load<Image>(path);
-				_bus.Publish(new AssetImageResponse(msg.CorrelationID, msg.AssetId, image));
+				_bus.Publish(new AssetImageResponse(msg.CorrelationID, msg.Url, image));
 			}
 			return Task.CompletedTask;
 		});
@@ -45,15 +45,18 @@ internal sealed class AssetLoaderModule(
 		return Task.CompletedTask;
 	}
 
-	public string? GetPathFromAssetId(string assetId)
+	public string? GetPathFromUrl(string url)
 	{
+		if (!url.StartsWith("asset://")) return null;
+
+		var assetId = url["asset://".Length..];
 		var pieces = assetId.ToLower().Split('.');
 		if (pieces[0].Trim() == "image")
 		{
 			return _assetDirectory.Image[pieces[1].Trim()];
 		}
-		// throw new FileNotFoundException($"Asset id is undefined: {assetId}");
-		_logger.LogError($"Asset id is undefined: {assetId}");
+
+		_logger.LogError($"Asset url is undefined: {url}");
 		return null;
 	}
 

@@ -2,6 +2,7 @@ using System.Drawing;
 using Miniscript;
 using IronKernel.Userland.Morphic;
 using IronKernel.Common.ValueObjects;
+using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.DemoApp;
 

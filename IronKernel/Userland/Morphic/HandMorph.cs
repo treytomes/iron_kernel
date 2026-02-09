@@ -17,7 +17,7 @@ public sealed class HandMorph : Morph
 		: base()
 	{
 		IsSelectable = false;
-		_icon = new ImageMorph(new Point(0, 0), "image.mouse_cursor")
+		_icon = new ImageMorph(new Point(0, 0), "asset://image.mouse_cursor")
 		{
 			IsSelectable = false,
 		};

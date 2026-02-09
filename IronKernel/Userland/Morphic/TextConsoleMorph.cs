@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
+using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.Morphic;
 
@@ -69,7 +70,7 @@ public sealed class TextConsoleMorph : Morph
 			throw new Exception("Style is null.");
 
 		_font = await assets.LoadFontAsync(
-			Style.DefaultFontStyle.AssetId,
+			Style.DefaultFontStyle.Url,
 			Style.DefaultFontStyle.TileSize,
 			Style.DefaultFontStyle.GlyphOffset
 		);

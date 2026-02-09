@@ -16,6 +16,7 @@ using OpenTK.Mathematics;
 using System.CommandLine;
 using IronKernel.Modules.AssetLoader;
 using IronKernel.Common;
+using IronKernel.Modules.FileSystem;
 
 namespace IronKernel;
 
@@ -172,6 +173,7 @@ internal sealed class Program
 		services.AddSingleton<IKernelModule, OpenTKHostModule>();
 		services.AddSingleton<IKernelModule, FramebufferModule>();
 		services.AddSingleton<IKernelModule, AssetLoaderModule>();
+		services.AddSingleton<IKernelModule, FileSystemModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
 		services.AddSingleton<DemoUserApplication>();

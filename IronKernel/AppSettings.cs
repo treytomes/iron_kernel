@@ -3,6 +3,7 @@ namespace IronKernel;
 internal sealed class AppSettings
 {
 	public required string AssetRoot { get; init; }
+	public required string UserFileRoot { get; init; }
 	public required AssetDirectory Assets { get; init; }
 	public bool Debug { get; init; } = false;
 	public required WindowSettings Window { get; init; }

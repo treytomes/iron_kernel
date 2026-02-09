@@ -119,7 +119,7 @@ public static class RogueyIntrinsics
 		var create = Intrinsic.Create("tilemap_create");
 		create.AddParam("viewportSize");
 		create.AddParam("mapSize");
-		create.AddParam("assetId");
+		create.AddParam("url");
 		create.AddParam("tileSize");
 
 		create.code = (ctx, _) =>
@@ -138,9 +138,9 @@ public static class RogueyIntrinsics
 				if (!TryReadPair(ctx.GetVar("tileSize"), out var tw, out var th))
 					return Error(ctx, "TileMap.create expects tileSize [w,h]");
 
-				var assetId = ctx.GetVar("assetId").ToString();
+				var url = ctx.GetVar("url").ToString();
 
-				var tileSet = new TileSetInfo(assetId, new Size(tw, th));
+				var tileSet = new TileSetInfo(url, new Size(tw, th));
 				var map = new TileMapMorph(
 					new Size(vw, vh),
 					new Size(mw, mh),

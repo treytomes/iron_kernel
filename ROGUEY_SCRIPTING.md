@@ -31,7 +31,7 @@ A **TileMap** represents a 2D grid of tiles rendered using a glyph tileset.
 map = TileMap.create(
     [viewportWidth, viewportHeight],  -- pixels
     [mapWidth, mapHeight],             -- tiles
-    "image.oem437_8",                  -- tileset asset id
+    "asset://image.oem437_8",                  -- tileset asset id
     [tileWidth, tileHeight]            -- pixels per tile
 )
 ```
@@ -42,7 +42,7 @@ Example:
 map = TileMap.create(
     [320, 240],
     [256, 256],
-    "image.oem437_8",
+    "asset://image.oem437_8",
     [8, 8]
 )
 ```
@@ -204,8 +204,8 @@ This example replaces the earlier C# nested loop with pure MiniScript.
 // --- configuration ---
 viewportSize = [320, 240]
 mapSize = [256, 256]
-tileSize = [8, 8]
-tileSet = "image.oem437_8"
+tileSize = [16, 24]
+tileSet = "asset://image.screen_font"
 
 // --- create the tile map ---
 map = TileMap.create(
@@ -221,17 +221,15 @@ randInt = function(min, max)
 end
 
 // --- populate the map ---
-for y in 0 .. mapSize[1] - 1
-    for x in 0 .. mapSize[0] - 1
+for y in range(0, mapSize[1] - 1)
+    for x in range(0, mapSize[0] - 1)
         tile = map.getTile(x, y)
-        if tile != null then
-            tile.set("TileIndex", randInt(176, 179))
-            tile.set("BlocksMovement", false)
-            tile.set("BlocksVision", false)
-            tile.set("Tag", "floor")
-        end
-    end
-end
+		tile.set("TileIndex", randInt(176, 179))
+		tile.set("BlocksMovement", false)
+		tile.set("BlocksVision", false)
+		tile.set("Tag", "floor")
+    end for
+end for
 ```
 
 This script:

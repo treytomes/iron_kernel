@@ -42,7 +42,7 @@ public sealed class MorphicStyle
 
 	public sealed class FontStyle
 	{
-		public required string AssetId { get; init; }
+		public required string Url { get; init; }
 		public required Size TileSize { get; init; }
 		public required int GlyphOffset { get; init; }
 	}

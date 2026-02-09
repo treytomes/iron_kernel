@@ -21,7 +21,7 @@ public sealed class ResizeHandleMorph : HandleMorph
 		Kind = kind;
 		Size = new Size(8, 8);
 
-		_icon = new ImageMorph(new Point(0, 0), "image.resize_icon")
+		_icon = new ImageMorph(new Point(0, 0), "asset://image.resize_icon")
 		{
 			IsSelectable = false,
 			Flags = kind is ResizeHandle.TopLeft or ResizeHandle.BottomRight

@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic;
+using IronKernel.Userland.Services;
 using Miniscript;
 
 namespace IronKernel.Userland.Roguey;
@@ -128,7 +129,7 @@ public sealed class TileMorph : MiniScriptMorph
 	protected override async void OnLoad(IAssetService assets)
 	{
 		_glyphs = await assets.LoadGlyphSetAsync(
-			"image.screen_font",
+			"asset://image.screen_font",
 			TILE_SIZE
 		);
 
