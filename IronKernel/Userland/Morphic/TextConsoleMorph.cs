@@ -1,5 +1,4 @@
 using System.Drawing;
-using System.Text;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Events;
@@ -19,19 +18,18 @@ public sealed class TextConsoleMorph : Morph
 	private int _inputStartY;
 
 	private bool _isReadingLine;
-	private readonly StringBuilder _inputBuffer = new();
+	private TextEditingCore? _editor;
 
 	private TaskCompletionSource<string>? _pendingReadLine;
 
 	private Font? _font;
 	private bool _layoutInitialized;
-	private readonly TaskCompletionSource _ready = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+	private readonly TaskCompletionSource _ready =
+		new(TaskCreationOptions.RunContinuationsAsynchronously);
 
 	private readonly List<string> _commandHistory = new();
-	private int _historyIndex = 0;
-	// 0 = current (empty / live input)
-	// 1 = last command
-	// 2 = second-to-last, etc.
+	private int _historyIndex;
 
 	#endregion
 
@@ -90,6 +88,7 @@ public sealed class TextConsoleMorph : Morph
 			return;
 
 		var available = Owner.Size;
+
 		var cols = Math.Max(1, available.Width / CellSize.Width);
 		var rows = Math.Max(1, available.Height / CellSize.Height);
 
@@ -124,7 +123,7 @@ public sealed class TextConsoleMorph : Morph
 		Columns = newColumns;
 		Rows = newRows;
 
-		SetCursorFromInputIndex(GetInputIndex());
+		SyncCursorFromEditor();
 	}
 
 	#endregion
@@ -192,49 +191,56 @@ public sealed class TextConsoleMorph : Morph
 
 			case Key.Left:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
-					MoveCursorWordLeft();
+					_editor?.MoveWordLeft();
 				else
-					MoveCursor(-1);
+					_editor?.Move(-1);
 				break;
 
 			case Key.Right:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
-					MoveCursorWordRight();
+					_editor?.MoveWordRight();
 				else
-					MoveCursor(+1);
+					_editor?.Move(+1);
 				break;
 
 			case Key.Backspace:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
-					DeleteWordLeft();
+					_editor?.DeleteWordLeft();
 				else
-					Backspace();
+					_editor?.Backspace();
 				break;
 
 			case Key.Delete:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
-					DeleteWordRight();
+					_editor?.DeleteWordRight();
 				else
-					DeleteChar();
+					_editor?.Delete();
 				break;
 
 			case Key.Home:
-				MoveCursorToStart();
+				_editor?.MoveToStart();
 				break;
 
 			case Key.End:
-				MoveCursorToEnd();
+				_editor?.MoveToEnd();
 				break;
 
 			case Key.Enter:
 				CommitLine();
-				break;
+				return;
 
 			default:
 				var ch = e.ToText();
 				if (ch.HasValue && _isReadingLine)
-					InsertChar(ch.Value);
+					_editor?.Insert(ch.Value);
 				break;
+		}
+
+		if (_isReadingLine && _editor != null)
+		{
+			SyncCursorFromEditor();
+			RedrawInput();
+			ClearInputTail();
 		}
 	}
 
@@ -260,7 +266,7 @@ public sealed class TextConsoleMorph : Morph
 			throw new InvalidOperationException("ReadLine already in progress.");
 
 		_isReadingLine = true;
-		_inputBuffer.Clear();
+		_editor = new TextEditingCore();
 
 		_inputStartX = _cursorX;
 		_inputStartY = _cursorY;
@@ -273,104 +279,30 @@ public sealed class TextConsoleMorph : Morph
 
 	#endregion
 
-	#region Editing Logic
+	#region Editing Projection
 
-	private void InsertChar(char ch)
+	private void SyncCursorFromEditor()
 	{
-		var index = GetInputIndex();
-		_inputBuffer.Insert(index, ch);
-		SetCursorFromInputIndex(index + 1);
-		RedrawInput();
-		ClearInputTail();
-	}
-
-	private void Backspace()
-	{
-		if (!_isReadingLine)
+		if (_editor == null)
 			return;
 
-		var index = GetInputIndex();
-		if (index == 0)
-			return;
+		var absolute = _inputStartX + _editor.CursorIndex;
 
-		_inputBuffer.Remove(index - 1, 1);
-		SetCursorFromInputIndex(index - 1);
-		RedrawInput();
-		ClearInputTail();
-	}
+		_cursorY = _inputStartY + (absolute / Columns);
+		_cursorX = absolute % Columns;
 
-	private void DeleteChar()
-	{
-		if (!_isReadingLine)
-			return;
-
-		var index = GetInputIndex();
-
-		// Nothing to delete if cursor is at end
-		if (index >= _inputBuffer.Length)
-			return;
-
-		// Remove character at cursor
-		_inputBuffer.Remove(index, 1);
-
-		// Cursor stays in the same logical position
-		SetCursorFromInputIndex(index);
-
-		// Redraw buffer and clear stale cells
-		RedrawInput();
-		ClearInputTail();
-	}
-
-	private void MoveCursorToStart()
-	{
-		if (!_isReadingLine)
-			return;
-
-		SetCursorFromInputIndex(0);
-	}
-
-	private void MoveCursorToEnd()
-	{
-		if (!_isReadingLine)
-			return;
-
-		SetCursorFromInputIndex(_inputBuffer.Length);
-	}
-
-	private void CommitLine()
-	{
-		if (!_isReadingLine)
-		{
-			NewLine();
-			return;
-		}
-
-		var result = _inputBuffer.ToString();
-
-		// Save to history if non-empty (optional policy)
-		if (!string.IsNullOrWhiteSpace(result))
-		{
-			_commandHistory.Add(result);
-		}
-
-		// Reset history navigation
-		_historyIndex = 0;
-
-		_inputBuffer.Clear();
-		_isReadingLine = false;
-
-		NewLine();
-
-		_pendingReadLine?.SetResult(result);
-		_pendingReadLine = null;
+		_cursorY = Math.Min(_cursorY, Rows - 1);
 	}
 
 	private void RedrawInput()
 	{
+		if (_editor == null)
+			return;
+
 		var x = _inputStartX;
 		var y = _inputStartY;
 
-		foreach (var ch in _inputBuffer.ToString())
+		foreach (var ch in _editor.Buffer.ToString())
 		{
 			if (y >= Rows)
 				break;
@@ -393,7 +325,10 @@ public sealed class TextConsoleMorph : Morph
 
 	private void ClearInputTail()
 	{
-		var index = _inputBuffer.Length;
+		if (_editor == null)
+			return;
+
+		var index = _editor.Length;
 		var absolute = _inputStartX + index;
 
 		var y = _inputStartY + (absolute / Columns);
@@ -411,44 +346,19 @@ public sealed class TextConsoleMorph : Morph
 		}
 	}
 
-	private int GetInputIndex()
-	{
-		return (_cursorY - _inputStartY) * Columns
-			 + (_cursorX - _inputStartX);
-	}
+	#endregion
 
-	private void SetCursorFromInputIndex(int index)
-	{
-		var absolute = _inputStartX + index;
-		_cursorY = _inputStartY + (absolute / Columns);
-		_cursorX = absolute % Columns;
-
-		_cursorY = Math.Min(_cursorY, Rows - 1);
-	}
-
-	private void MoveCursor(int delta)
-	{
-		if (!_isReadingLine)
-			return;
-
-		var index = GetInputIndex();
-		var newIndex = Math.Clamp(index + delta, 0, _inputBuffer.Length);
-		SetCursorFromInputIndex(newIndex);
-	}
+	#region History
 
 	private void HistoryUp()
 	{
-		if (!_isReadingLine)
+		if (!_isReadingLine || _commandHistory.Count == 0)
 			return;
 
-		if (_commandHistory.Count == 0)
-			return;
-
-		// Clamp to max history depth
 		if (_historyIndex < _commandHistory.Count)
 			_historyIndex++;
 
-		ApplyHistoryEntry();
+		ApplyHistory();
 	}
 
 	private void HistoryDown()
@@ -459,143 +369,48 @@ public sealed class TextConsoleMorph : Morph
 		if (_historyIndex > 0)
 			_historyIndex--;
 
-		ApplyHistoryEntry();
+		ApplyHistory();
 	}
 
-	private void ApplyHistoryEntry()
+	private void ApplyHistory()
 	{
-		_inputBuffer.Clear();
+		_editor = new TextEditingCore(
+			_historyIndex == 0
+				? string.Empty
+				: _commandHistory[^_historyIndex]
+		);
 
-		if (_historyIndex == 0)
-		{
-			// Live input (empty line)
-		}
-		else
-		{
-			var index = _commandHistory.Count - _historyIndex;
-			if (index >= 0 && index < _commandHistory.Count)
-			{
-				_inputBuffer.Append(_commandHistory[index]);
-			}
-		}
-
-		SetCursorFromInputIndex(_inputBuffer.Length);
+		SyncCursorFromEditor();
 		RedrawInput();
 		ClearInputTail();
-	}
-
-	private static bool IsWordChar(char ch)
-	{
-		return char.IsLetterOrDigit(ch) || ch == '_';
-	}
-
-	private void DeleteWordLeft()
-	{
-		if (!_isReadingLine)
-			return;
-
-		int index = GetInputIndex();
-		if (index == 0)
-			return;
-
-		int start = index;
-
-		// Skip separators to the left
-		while (start > 0 && !IsWordChar(_inputBuffer[start - 1]))
-			start--;
-
-		// Skip word characters to the left
-		while (start > 0 && IsWordChar(_inputBuffer[start - 1]))
-			start--;
-
-		int length = index - start;
-		if (length <= 0)
-			return;
-
-		_inputBuffer.Remove(start, length);
-
-		SetCursorFromInputIndex(start);
-		RedrawInput();
-		ClearInputTail();
-	}
-
-	private void DeleteWordRight()
-	{
-		if (!_isReadingLine)
-			return;
-
-		int index = GetInputIndex();
-		int len = _inputBuffer.Length;
-
-		if (index >= len)
-			return;
-
-		int end = index;
-
-		// Skip separators to the right
-		while (end < len && !IsWordChar(_inputBuffer[end]))
-			end++;
-
-		// Skip word characters to the right
-		while (end < len && IsWordChar(_inputBuffer[end]))
-			end++;
-
-		int length = end - index;
-		if (length <= 0)
-			return;
-
-		_inputBuffer.Remove(index, length);
-
-		SetCursorFromInputIndex(index);
-		RedrawInput();
-		ClearInputTail();
-	}
-
-	private void MoveCursorWordLeft()
-	{
-		if (!_isReadingLine)
-			return;
-
-		int index = GetInputIndex();
-		if (index == 0)
-			return;
-
-		// Step 1: skip separators to the left
-		while (index > 0 && !IsWordChar(_inputBuffer[index - 1]))
-			index--;
-
-		// Step 2: skip word characters to the left
-		while (index > 0 && IsWordChar(_inputBuffer[index - 1]))
-			index--;
-
-		SetCursorFromInputIndex(index);
-	}
-
-	private void MoveCursorWordRight()
-	{
-		if (!_isReadingLine)
-			return;
-
-		int index = GetInputIndex();
-		int len = _inputBuffer.Length;
-
-		if (index >= len)
-			return;
-
-		// Step 1: skip separators to the right
-		while (index < len && !IsWordChar(_inputBuffer[index]))
-			index++;
-
-		// Step 2: skip word characters to the right
-		while (index < len && IsWordChar(_inputBuffer[index]))
-			index++;
-
-		SetCursorFromInputIndex(index);
 	}
 
 	#endregion
 
 	#region Output Helpers
+
+	private void CommitLine()
+	{
+		if (!_isReadingLine || _editor == null)
+		{
+			NewLine();
+			return;
+		}
+
+		var result = _editor.ToString();
+
+		if (!string.IsNullOrWhiteSpace(result))
+			_commandHistory.Add(result);
+
+		_historyIndex = 0;
+		_isReadingLine = false;
+		_editor = null;
+
+		NewLine();
+
+		_pendingReadLine?.SetResult(result);
+		_pendingReadLine = null;
+	}
 
 	private void PutChar(char ch)
 	{
@@ -645,6 +460,9 @@ public sealed class TextConsoleMorph : Morph
 
 		for (int x = 0; x < Columns; x++)
 			_buffer[Rows - 1, x] = ConsoleCell.Empty;
+
+		if (_isReadingLine)
+			_inputStartY = Math.Max(0, _inputStartY - 1);
 	}
 
 	#endregion

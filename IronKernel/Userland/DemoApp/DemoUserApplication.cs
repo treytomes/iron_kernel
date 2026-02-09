@@ -111,6 +111,8 @@ public sealed class DemoUserApplication(
 		map.Position = new Point(128, 128);
 		world.AddMorph(map);
 
+		world.AddMorph(new TextEditorWindowMorph());
+
 		// world.AddMorph(new MiniScriptMorph()
 		// {
 		// 	Position = new Point(200, 200),

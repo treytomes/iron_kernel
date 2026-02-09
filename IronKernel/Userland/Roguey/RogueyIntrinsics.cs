@@ -166,6 +166,7 @@ public static class RogueyIntrinsics
 
 	private static void AttachTileMapMethods(ValMap handle)
 	{
+		// TODO: "scrollBy" and "scrollTo" methods would be useful here.
 		handle["getTile"] =
 			Intrinsic.GetByName("tilemap_getTile")!
 					 .GetFunc()
