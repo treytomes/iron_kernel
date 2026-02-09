@@ -15,7 +15,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	private CancellationTokenSource? _cts;
 
 	public MiniScriptReplMorph()
-		: base(Point.Empty, new Size(480, 240), "MiniScript REPL")
+		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
 	{
 		_console = new TextConsoleMorph();
 		Content.AddMorph(_console);

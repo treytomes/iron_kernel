@@ -18,7 +18,7 @@ public sealed class InspectorMorph : WindowMorph
 	#region Constructor
 
 	public InspectorMorph(object target)
-		: base(Point.Empty, new Size(256, 192), target.GetType().Name)
+		: base(Point.Empty, new Size(480, 320), target.GetType().Name)
 	{
 		IsSelectable = true;
 

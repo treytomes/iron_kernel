@@ -64,6 +64,7 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 
 	private int MaxScrollX => Math.Max(0, _content.Size.Width - _viewport.Size.Width);
 	private int MaxScrollY => Math.Max(0, _content.Size.Height - _viewport.Size.Height);
+	private int ScrollBarPadding => 4;
 
 	#endregion
 
@@ -173,11 +174,16 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 
 	private void UpdateScrollbars()
 	{
+		var style = Style ?? throw new NullReferenceException("Missing style.");
+
 		bool canScrollX = MaxScrollX > 0;
 		bool canScrollY = MaxScrollY > 0;
 
 		_hScrollBar.Visible = canScrollX;
 		_vScrollBar.Visible = canScrollY;
+
+		_hScrollBar.Size = new Size(_hScrollBar.Size.Width, style.DefaultFontStyle.TileSize.Height + ScrollBarPadding);
+		_vScrollBar.Size = new Size(style.DefaultFontStyle.TileSize.Width + ScrollBarPadding, _vScrollBar.Size.Height);
 
 		if (canScrollX)
 			UpdateHorizontalThumb();

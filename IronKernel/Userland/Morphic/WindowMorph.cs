@@ -21,8 +21,6 @@ public class WindowMorph : Morph
 	private readonly LabelMorph _titleLabel;
 	private readonly ButtonMorph _closeButton;
 
-	private const int HeaderHeight = 6 * 2;
-
 	#endregion
 
 	#region Constructor
@@ -117,6 +115,9 @@ public class WindowMorph : Morph
 
 	private bool IsSelected => GetWorld().SelectedMorph == this;
 
+	private int Padding => 4;
+	private int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;
+
 	#endregion
 
 	#region Layout
@@ -126,6 +127,8 @@ public class WindowMorph : Morph
 		// Window provides only outer constraints.
 		_rootLayout.Position = Point.Empty;
 		_rootLayout.Size = Size;
+
+		_header.Size = new Size(_header.Size.Width, HeaderHeight);
 
 		base.UpdateLayout();
 	}

@@ -97,7 +97,7 @@ public sealed class DemoUserApplication(
 
 		var mapWidth = 256;
 		var mapHeight = 256;
-		var tileSetInfo = new TileSetInfo("image.oem437_8", new Size(8, 8));
+		var tileSetInfo = new TileSetInfo("image.screen_font", new Size(16, 24));
 		var map = new TileMapMorph(new Size(320, 240), new Size(256, 256), tileSetInfo);
 		for (var y = 0; y < mapHeight; y++)
 		{

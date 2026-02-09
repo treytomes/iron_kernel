@@ -167,6 +167,11 @@ public class Bitmap : IImage<Bitmap, bool>
 	public bool GetPixel(int x, int y)
 	{
 		var index = (y * Size.Width + x) * BPP;
+		if (index < 0 || index >= Data.Length)
+		{
+			// Console.WriteLine($"Data size: {Size}");
+			return false;
+		}
 		return Data[index];
 	}
 

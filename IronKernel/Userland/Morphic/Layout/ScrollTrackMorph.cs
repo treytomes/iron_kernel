@@ -12,9 +12,11 @@ public sealed class ScrollTrackMorph : Morph
 		ShouldClipToBounds = true;
 	}
 
+	public RadialColor FillColor => new RadialColor(3, 0, 0);
+
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), new RadialColor(3, 0, 0));
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), FillColor);
 		base.DrawSelf(rc);
 	}
 }

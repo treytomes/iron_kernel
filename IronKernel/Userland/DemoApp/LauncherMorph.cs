@@ -10,7 +10,7 @@ public sealed class LauncherMorph : WindowMorph
 	private readonly VerticalStackMorph _stack;
 
 	public LauncherMorph(Point position)
-		: base(position, new Size(160, 200), "Launcher")
+		: base(position, new Size(216, 100), "Launcher")
 	{
 		_stack = new VerticalStackMorph
 		{

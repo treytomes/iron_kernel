@@ -74,10 +74,16 @@ public static class MorphicStyles
 		},
 		DefaultFontStyle = new()
 		{
-			AssetId = "image.oem437_8",
+			AssetId = "image.screen_font_medium",
 			GlyphOffset = 0,
-			TileSize = new Size(8, 8),
+			TileSize = new Size(13, 19),
 		},
+		// DefaultFontStyle = new()
+		// {
+		// 	AssetId = "image.screen_font",
+		// 	GlyphOffset = 0,
+		// 	TileSize = new Size(16, 24),
+		// },
 		// DefaultFontStyle = new()
 		// {
 		// 	AssetId = "image.my-font-light",

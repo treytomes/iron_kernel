@@ -27,6 +27,17 @@ public sealed class VerticalScrollThumbMorph : Morph
 		IsSelectable = true;
 	}
 
+	private int Padding => 2;
+	public RadialColor FillColor => new RadialColor(0, 5, 0);
+
+	protected override void UpdateLayout()
+	{
+		var style = Style ?? throw new NullReferenceException("Style is missing.");
+		// Size = new Size(style.DefaultFontStyle.TileSize.Width + Padding * 2, style.DefaultFontStyle.TileSize.Height * 2 + Padding * 2);
+		Size = new Size(style.DefaultFontStyle.TileSize.Width + Padding * 2, Size.Height);
+		base.UpdateLayout();
+	}
+
 	public override void OnPointerDown(PointerDownEvent e)
 	{
 		base.OnPointerDown(e);
@@ -76,7 +87,7 @@ public sealed class VerticalScrollThumbMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), new RadialColor(0, 5, 0));
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), FillColor);
 		base.DrawSelf(rc);
 	}
 }

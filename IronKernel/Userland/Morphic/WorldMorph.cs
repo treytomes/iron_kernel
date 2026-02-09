@@ -121,7 +121,8 @@ public sealed class WorldMorph : Morph
 	{
 		if (Submorphs == null || Submorphs.Count == 0) return;
 
-		if (Submorphs.LastOrDefault() != Hand)
+		var count = Submorphs.Count;
+		if (count == 0 || Submorphs[count - 1] != Hand)
 		{
 			RemoveMorph(Hand);
 			AddMorph(Hand);

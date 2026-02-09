@@ -14,7 +14,7 @@ public sealed class TileMorph : MiniScriptMorph
 {
 	#region Constants
 
-	private static readonly Size TILE_SIZE = new Size(8, 8);
+	private static readonly Size TILE_SIZE = new Size(16, 24);
 
 	#endregion
 
@@ -128,7 +128,7 @@ public sealed class TileMorph : MiniScriptMorph
 	protected override async void OnLoad(IAssetService assets)
 	{
 		_glyphs = await assets.LoadGlyphSetAsync(
-			"image.oem437_8",
+			"image.screen_font",
 			TILE_SIZE
 		);
 
