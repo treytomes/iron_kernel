@@ -253,6 +253,7 @@ public static class RogueyIntrinsics
 					return Intrinsic.Result.Null;
 
 				var mapHandle = tile["_map"] as ValMap;
+				if (mapHandle == null) throw new NullReferenceException("_map");
 				var x = tile["_x"].IntValue();
 				var y = tile["_y"].IntValue();
 
@@ -303,6 +304,7 @@ public static class RogueyIntrinsics
 					return Intrinsic.Result.Null;
 
 				var mapHandle = tile["_map"] as ValMap;
+				if (mapHandle == null) throw new NullReferenceException("_map");
 				var x = tile["_x"].IntValue();
 				var y = tile["_y"].IntValue();
 
