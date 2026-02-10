@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using IronKernel.Userland.Services;
 using IronKernel.Userland.Gfx;
+using IronKernel.Userland.Morphic;
 
 namespace IronKernel.Userland.MiniMacro;
 
@@ -64,6 +65,14 @@ public sealed class MiniMacroApplication(
 		services.AddSingleton<IFileSystem, FileSystemService>();
 		services.AddSingleton<IRenderingContext, RenderingContext>();
 		services.AddSingleton<IAssetService, AssetService>();
+		services.AddSingleton<IWindowService, WindowService>();
+
+		services.AddSingleton<WorldMorph>(sp =>
+		{
+			var rc = sp.GetRequiredService<IRenderingContext>();
+			var assets = sp.GetRequiredService<IAssetService>();
+			return new WorldMorph(rc.Size, assets);
+		});
 
 		// ------------------------------------------------------------------
 		// Launcher apps

@@ -6,6 +6,7 @@ using IronKernel.Userland.Morphic;
 using IronKernel.Userland.Morphic.Commands;
 using IronKernel.Userland.Roguey;
 using IronKernel.Userland.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 
@@ -46,7 +47,7 @@ public sealed class MiniMacroRoot
 		RogueyIntrinsics.Create();
 		await _rc.InitializeAsync();
 
-		var world = new WorldMorph(_rc.Size, _assets);
+		var world = _services.GetRequiredService<WorldMorph>();
 
 		// ------------------------------------------------------------------
 		// UI setup
@@ -82,25 +83,24 @@ public sealed class MiniMacroRoot
 
 		world.AddMorph(toolbar);
 
-		var text = "Name";
-		world.AddMorph(
-				new TextEditMorph(new Point(0, 32), text, x => text = x));
+		// var text = "Name";
+		// world.AddMorph(new TextEditMorph(new Point(0, 32), text, x => text = x));
 
-		world.AddMorph(
-			new BoxMorph(new Point(50, 50), new Size(40, 30))
-			{
-				FillColor = RadialColor.Red,
-				BorderColor = RadialColor.Blue.Lerp(
-					RadialColor.White, 0.5f)
-			});
+		// world.AddMorph(
+		// 	new BoxMorph(new Point(50, 50), new Size(40, 30))
+		// 	{
+		// 		FillColor = RadialColor.Red,
+		// 		BorderColor = RadialColor.Blue.Lerp(
+		// 			RadialColor.White, 0.5f)
+		// 	});
 
-		world.AddMorph(
-			new LabelMorph
-			{
-				Text = "Hello world!",
-				ForegroundColor = RadialColor.Red,
-				BackgroundColor = RadialColor.Blue
-			});
+		// world.AddMorph(
+		// 	new LabelMorph
+		// 	{
+		// 		Text = "Hello world!",
+		// 		ForegroundColor = RadialColor.Red,
+		// 		BackgroundColor = RadialColor.Blue
+		// 	});
 
 		// ------------------------------------------------------------------
 		// Tile map demo
@@ -118,7 +118,7 @@ public sealed class MiniMacroRoot
 			{
 				var tile = map.GetTile(x, y);
 				if (tile != null)
-					tile.TileIndex = Random.Shared.Next(176, 179);
+					tile.TileIndex = Random.Shared.Next(65, 70);
 			}
 
 		map.Position = new Point(128, 128);

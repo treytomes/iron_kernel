@@ -1,0 +1,45 @@
+using IronKernel.Userland.Morphic;
+
+namespace IronKernel.Userland.Services;
+
+public sealed class WindowService : IWindowService
+{
+	private readonly WorldMorph _world;
+	private readonly IServiceProvider _services;
+
+	public WindowService(WorldMorph world, IServiceProvider services)
+	{
+		_world = world;
+		_services = services;
+	}
+
+	public Task AlertAsync(string message)
+	{
+		var tcs = new TaskCompletionSource(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var window = new AlertWindowMorph(
+			message,
+			onClose: () => tcs.SetResult()
+		);
+		_world.AddMorph(window);
+		window.CenterOnOwner();
+
+		return tcs.Task;
+	}
+
+	public Task<string?> PromptAsync(string message, string? defaultValue = null)
+	{
+		var tcs = new TaskCompletionSource<string?>(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var window = new PromptWindowMorph(
+			message,
+			defaultValue,
+			result => tcs.SetResult(result)
+		);
+		_world.AddMorph(window);
+		window.CenterOnOwner();
+		return tcs.Task;
+	}
+}

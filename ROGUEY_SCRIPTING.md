@@ -217,14 +217,14 @@ map = TileMap.create(
 
 // --- helper: random integer in [min, max) ---
 randInt = function(min, max)
-    return floor(min + rnd() * (max - min))
-end
+    return floor(min + rnd * (max - min))
+end function
 
 // --- populate the map ---
 for y in range(0, mapSize[1] - 1)
     for x in range(0, mapSize[0] - 1)
         tile = map.getTile(x, y)
-		tile.set("TileIndex", randInt(176, 179))
+		tile.set("TileIndex", randInt(65, 70))
 		tile.set("BlocksMovement", false)
 		tile.set("BlocksVision", false)
 		tile.set("Tag", "floor")
