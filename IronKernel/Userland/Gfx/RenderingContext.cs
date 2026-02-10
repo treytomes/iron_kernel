@@ -1,7 +1,6 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.ApplicationHost;
-using Microsoft.Extensions.Logging;
 using System.Drawing;
 
 namespace IronKernel.Userland.Gfx;
@@ -90,6 +89,8 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 
 	public async Task InitializeAsync()
 	{
+		if (_data != null) throw new InvalidOperationException("Rendering context has already been initialized.");
+
 		var response = await _bus.QueryAsync<AppFbInfoQuery, AppFbInfoResponse>(id => new AppFbInfoQuery(id));
 		Size = response.Size;
 		_data = new RadialColor[Size.Width * Size.Height];

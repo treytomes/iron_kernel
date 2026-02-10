@@ -9,40 +9,44 @@ using IronKernel.Userland.Services;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 
-namespace IronKernel.Userland.DemoApp;
+namespace IronKernel.Userland.MiniMacro;
 
-public sealed class DemoAppRoot
+public sealed class MiniMacroRoot
 {
-	private readonly ILogger<DemoAppRoot> _logger;
-	private readonly RenderingContext _rc;
+	private readonly IServiceProvider _services;
+	private readonly ILogger<MiniMacroRoot> _logger;
+	private readonly IRenderingContext _rc;
 	private readonly IApplicationContext _context;
 	private readonly IFileSystem _fileSystem;
+	private readonly IAssetService _assets;
 
 	private readonly object _updateLock = new();
 	private readonly object _renderLock = new();
 
-	public DemoAppRoot(
-		ILogger<DemoAppRoot> logger,
-		RenderingContext rc,
+	public MiniMacroRoot(
+		IServiceProvider services,
+		ILogger<MiniMacroRoot> logger,
+		IRenderingContext rc,
 		IApplicationContext context,
+		IAssetService assets,
 		IFileSystem fileSystem)
 	{
+		_services = services;
 		_logger = logger;
 		_rc = rc;
 		_context = context;
 		_fileSystem = fileSystem;
+		_assets = assets;
 	}
 
 	public async Task RunAsync(CancellationToken stoppingToken)
 	{
-		_logger.LogInformation("DemoAppRoot starting");
+		_logger.LogInformation($"{nameof(MiniMacroRoot)} starting");
 
 		RogueyIntrinsics.Create();
 		await _rc.InitializeAsync();
 
-		var world = new WorldMorph(
-			new Size(960, 480),
-			new AssetService(_context.Bus));
+		var world = new WorldMorph(_rc.Size, _assets);
 
 		// ------------------------------------------------------------------
 		// UI setup
@@ -68,12 +72,10 @@ public sealed class DemoAppRoot
 			"Apps",
 			new ActionCommand(() =>
 			{
-				var launcher = new LauncherMorph(new Point(16, 16));
+				var launcher = new LauncherMorph(_services, new Point(16, 16));
 				launcher.AddApp<DummyReplMorph>("Dummy REPL");
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
-				launcher.AddApp(
-					"Text Editor",
-					() => new TextEditorWindowMorph(_fileSystem));
+				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
 
 				world.AddMorph(launcher);
 			}));
@@ -82,7 +84,7 @@ public sealed class DemoAppRoot
 
 		var text = "Name";
 		world.AddMorph(
-			new TextEditMorph(new Point(0, 32), text, x => text = x));
+				new TextEditMorph(new Point(0, 32), text, x => text = x));
 
 		world.AddMorph(
 			new BoxMorph(new Point(50, 50), new Size(40, 30))
@@ -194,6 +196,6 @@ public sealed class DemoAppRoot
 
 		bus.Publish(new AppFbSetBorder(RadialColor.Green));
 
-		_logger.LogInformation("DemoAppRoot initialized");
+		_logger.LogInformation($"{nameof(MiniMacroRoot)} initialized.");
 	}
 }

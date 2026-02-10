@@ -2,7 +2,7 @@ using System.Drawing;
 using IronKernel.Userland.Morphic;
 using IronKernel.Userland.Morphic.Events;
 
-namespace IronKernel.Userland.DemoApp;
+namespace IronKernel.Userland.MiniMacro;
 
 public class DraggableMorph : Morph
 {

@@ -1,5 +1,3 @@
-using IronKernel.Modules.ApplicationHost;
-
 namespace IronKernel.Common;
 
 public interface IUserApplication

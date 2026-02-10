@@ -18,6 +18,8 @@ public interface IRenderingContext
 	/// </summary>  
 	Rectangle Bounds { get; }
 
+	Task InitializeAsync();
+
 	void ResetTransform();
 
 	/// <returns>

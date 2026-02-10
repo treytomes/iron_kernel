@@ -6,7 +6,7 @@ using IronKernel.Modules.ApplicationHost;
 using IronKernel.Modules.Framebuffer;
 using IronKernel.Modules.OpenTKHost;
 using IronKernel.State;
-using IronKernel.Userland.DemoApp;
+using IronKernel.Userland.MiniMacro;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -176,7 +176,7 @@ internal sealed class Program
 		services.AddSingleton<IKernelModule, FileSystemModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
-		services.AddSingleton<DemoUserApplication>();
-		services.AddSingleton<IUserApplicationFactory>(sp => new DiUserApplicationFactory<DemoUserApplication>(sp));
+		services.AddSingleton<MiniMacroApplication>();
+		services.AddSingleton<IUserApplicationFactory>(sp => new DiUserApplicationFactory<MiniMacroApplication>(sp));
 	}
 }

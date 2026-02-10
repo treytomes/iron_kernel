@@ -2,7 +2,7 @@ using System.Drawing;
 using IronKernel.Userland.Morphic;
 using IronKernel.Userland.Services;
 
-namespace IronKernel.Userland.DemoApp;
+namespace IronKernel.Userland.MiniMacro;
 
 public sealed class TextEditorWindowMorph : WindowMorph
 {

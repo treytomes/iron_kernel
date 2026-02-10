@@ -3,7 +3,7 @@ using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic;
 
-namespace IronKernel.Userland.DemoApp;
+namespace IronKernel.Userland.MiniMacro;
 
 public sealed class BoxMorph : Morph
 {
