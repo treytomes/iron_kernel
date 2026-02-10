@@ -69,6 +69,11 @@ public sealed class TextDocument
 		CurrentLine.Insert(ch);
 	}
 
+	public void InsertTab()
+	{
+		CurrentLine.Insert('\t');
+	}
+
 	#endregion
 
 	#region Deletion

@@ -182,6 +182,10 @@ public sealed class TextConsoleMorph : Morph
 
 		switch (e.Key)
 		{
+			case Key.Tab:
+				_editor?.InsertTab();
+				break;
+
 			case Key.Up:
 				HistoryUp();
 				break;
@@ -418,6 +422,14 @@ public sealed class TextConsoleMorph : Morph
 		if (ch == '\n')
 		{
 			NewLine();
+			return;
+		}
+
+		if (ch == '\t')
+		{
+			int spaces = _editor!.TabWidth - (_cursorX % _editor!.TabWidth);
+			for (int i = 0; i < spaces; i++)
+				PutChar(' ');
 			return;
 		}
 

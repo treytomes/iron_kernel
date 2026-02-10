@@ -35,7 +35,6 @@ public sealed class TextEditorMorph : Morph
 	#region Configuration
 
 	public bool ShowLineNumbers { get; set; } = true;
-	private int TextOriginY => 0; // related to Padding?
 
 	#endregion
 
@@ -92,6 +91,10 @@ public sealed class TextEditorMorph : Morph
 
 		switch (e.Key)
 		{
+			case Key.Tab:
+				_document.InsertTab();
+				break;
+
 			case Key.Left:
 				if (e.Modifiers.HasFlag(KeyModifier.Control))
 					_document.MoveWordLeft();
@@ -174,27 +177,33 @@ public sealed class TextEditorMorph : Morph
 		if (!ShowLineNumbers)
 			return;
 
-		int localY = e.Position.Y - TextOriginY;
-		if (localY < 0)
+		var localPosition = WorldToLocal(e.Position);
+		if (localPosition.Y < 0)
 			return;
 
-		localY -= _cellSize.Height / 2;
-
-		int row = localY / _cellSize.Height;
+		// ----- Row -----
+		int row = localPosition.Y / _cellSize.Height;
 		int lineIndex = _firstVisibleLine + row;
 
 		lineIndex = Math.Clamp(
 			lineIndex,
 			0,
-			_document.LineCount
-		) - 1;
-
-		int desiredColumn = _document.CaretColumn;
-		_document.SetCaretLine(lineIndex);
-		_document.CaretColumn = Math.Min(
-			desiredColumn,
-			_document.Lines[_document.CaretLine].Length
+			_document.LineCount - 1
 		);
+
+		// ----- Column -----
+		int localX = localPosition.X - (ShowLineNumbers ? LineNumberGutterWidth : 0);
+		if (localX < 0)
+			localX = 0;
+
+		int column = localX / _cellSize.Width;
+
+		int lineLength = _document.Lines[lineIndex].Length;
+		column = Math.Clamp(column, 0, lineLength);
+
+		// ----- Apply -----
+		_document.SetCaretLine(lineIndex);
+		_document.CaretColumn = column;
 
 		EnsureCaretVisible();
 		Invalidate();

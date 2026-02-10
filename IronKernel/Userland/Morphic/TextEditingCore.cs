@@ -14,6 +14,8 @@ public sealed class TextEditingCore
 
 	public bool IsEmpty => _buffer.Length == 0;
 
+	public int TabWidth { get; set; } = 4;
+
 	public TextEditingCore(string? initialText = null)
 	{
 		if (!string.IsNullOrEmpty(initialText))
@@ -83,6 +85,11 @@ public sealed class TextEditingCore
 	{
 		_buffer.Insert(CursorIndex, ch);
 		CursorIndex++;
+	}
+
+	public void InsertTab()
+	{
+		Insert('\t');
 	}
 
 	public void Backspace()
