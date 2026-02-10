@@ -9,20 +9,14 @@ namespace IronKernel.Userland.Morphic;
 public sealed class TextConsoleMorph : Morph
 {
 	#region Fields
-
 	private ConsoleCell[,] _buffer;
-
 	private int _cursorX;
 	private int _cursorY;
-
 	private int _inputStartX;
 	private int _inputStartY;
-
 	private bool _isReadingLine;
 	private TextEditingCore? _editor;
-
 	private TaskCompletionSource<string>? _pendingReadLine;
-
 	private Font? _font;
 	private bool _layoutInitialized;
 
@@ -31,11 +25,9 @@ public sealed class TextConsoleMorph : Morph
 
 	private readonly List<string> _commandHistory = new();
 	private int _historyIndex;
-
 	#endregion
 
 	#region Constructor
-
 	public TextConsoleMorph()
 	{
 		CellSize = new Size(1, 1);
@@ -44,26 +36,19 @@ public sealed class TextConsoleMorph : Morph
 		_buffer = new ConsoleCell[Rows, Columns];
 		Clear();
 	}
-
 	#endregion
 
 	#region Properties
-
 	public Task Ready => _ready.Task;
-
 	public int Columns { get; private set; }
 	public int Rows { get; private set; }
 	public Size CellSize { get; private set; }
-
 	public RadialColor CurrentForegroundColor { get; set; } = RadialColor.Orange;
 	public RadialColor CurrentBackgroundColor { get; set; } = RadialColor.Black;
-
 	public override bool WantsKeyboardFocus => true;
-
 	#endregion
 
 	#region Loading
-
 	protected override async void OnLoad(IAssetService assets)
 	{
 		if (Style == null)
@@ -78,18 +63,15 @@ public sealed class TextConsoleMorph : Morph
 		CellSize = _font.TileSize;
 		InvalidateLayout();
 	}
-
 	#endregion
 
 	#region Layout
-
 	protected override void UpdateLayout()
 	{
 		if (_font == null || Owner == null)
 			return;
 
 		var available = Owner.Size;
-
 		var cols = Math.Max(1, available.Width / CellSize.Width);
 		var rows = Math.Max(1, available.Height / CellSize.Height);
 
@@ -126,11 +108,9 @@ public sealed class TextConsoleMorph : Morph
 
 		SyncCursorFromEditor();
 	}
-
 	#endregion
 
 	#region Rendering
-
 	protected override void DrawSelf(IRenderingContext rc)
 	{
 		for (int y = 0; y < Rows; y++)
@@ -170,11 +150,9 @@ public sealed class TextConsoleMorph : Morph
 			CurrentForegroundColor
 		);
 	}
-
 	#endregion
 
 	#region Input
-
 	public override void OnKey(KeyEvent e)
 	{
 		if (e.Action != InputAction.Press)
@@ -183,7 +161,7 @@ public sealed class TextConsoleMorph : Morph
 		switch (e.Key)
 		{
 			case Key.Tab:
-				_editor?.InsertTab();
+				InsertTabSpaces();
 				break;
 
 			case Key.Up:
@@ -249,10 +227,21 @@ public sealed class TextConsoleMorph : Morph
 		}
 	}
 
+	private void InsertTabSpaces()
+	{
+		if (!_isReadingLine || _editor == null)
+			return;
+
+		int tabWidth = _editor.TabWidth;
+		int column = (_inputStartX + _editor.CursorIndex) % tabWidth;
+		int spaces = tabWidth - column;
+
+		for (int i = 0; i < spaces; i++)
+			_editor.Insert(' ');
+	}
 	#endregion
 
 	#region Console API
-
 	public void Write(string text)
 	{
 		foreach (var ch in text)
@@ -272,7 +261,6 @@ public sealed class TextConsoleMorph : Morph
 
 		_isReadingLine = true;
 		_editor = new TextEditingCore();
-
 		_inputStartX = _cursorX;
 		_inputStartY = _cursorY;
 
@@ -281,21 +269,17 @@ public sealed class TextConsoleMorph : Morph
 
 		return _pendingReadLine.Task;
 	}
-
 	#endregion
 
 	#region Editing Projection
-
 	private void SyncCursorFromEditor()
 	{
 		if (_editor == null)
 			return;
 
 		var absolute = _inputStartX + _editor.CursorIndex;
-
 		_cursorY = _inputStartY + (absolute / Columns);
 		_cursorX = absolute % Columns;
-
 		_cursorY = Math.Min(_cursorY, Rows - 1);
 	}
 
@@ -304,8 +288,8 @@ public sealed class TextConsoleMorph : Morph
 		if (_editor == null)
 			return;
 
-		var x = _inputStartX;
-		var y = _inputStartY;
+		int x = _inputStartX;
+		int y = _inputStartY;
 
 		foreach (var ch in _editor.Buffer.ToString())
 		{
@@ -335,7 +319,6 @@ public sealed class TextConsoleMorph : Morph
 
 		var index = _editor.Length;
 		var absolute = _inputStartX + index;
-
 		var y = _inputStartY + (absolute / Columns);
 		var x = absolute % Columns;
 
@@ -350,11 +333,9 @@ public sealed class TextConsoleMorph : Morph
 			y++;
 		}
 	}
-
 	#endregion
 
 	#region History
-
 	private void HistoryUp()
 	{
 		if (!_isReadingLine || _commandHistory.Count == 0)
@@ -389,11 +370,9 @@ public sealed class TextConsoleMorph : Morph
 		RedrawInput();
 		ClearInputTail();
 	}
-
 	#endregion
 
 	#region Output Helpers
-
 	private void CommitLine()
 	{
 		if (!_isReadingLine || _editor == null)
@@ -412,7 +391,6 @@ public sealed class TextConsoleMorph : Morph
 		_editor = null;
 
 		NewLine();
-
 		_pendingReadLine?.SetResult(result);
 		_pendingReadLine = null;
 	}
@@ -422,14 +400,6 @@ public sealed class TextConsoleMorph : Morph
 		if (ch == '\n')
 		{
 			NewLine();
-			return;
-		}
-
-		if (ch == '\t')
-		{
-			int spaces = _editor!.TabWidth - (_cursorX % _editor!.TabWidth);
-			for (int i = 0; i < spaces; i++)
-				PutChar(' ');
 			return;
 		}
 
@@ -477,11 +447,9 @@ public sealed class TextConsoleMorph : Morph
 		if (_isReadingLine)
 			_inputStartY = Math.Max(0, _inputStartY - 1);
 	}
-
 	#endregion
 
 	#region ConsoleCell
-
 	private struct ConsoleCell
 	{
 		public char Char;
@@ -495,6 +463,5 @@ public sealed class TextConsoleMorph : Morph
 			Background = RadialColor.Black
 		};
 	}
-
 	#endregion
 }
