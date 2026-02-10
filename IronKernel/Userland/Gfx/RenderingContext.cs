@@ -7,11 +7,10 @@ using System.Drawing;
 namespace IronKernel.Userland.Gfx;
 
 /// <inheritdoc/>
-public sealed class RenderingContext(ILogger logger, IApplicationBus bus) : IRenderingContext
+public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 {
 	#region Fields  
 
-	private ILogger _logger = logger;
 	private readonly IApplicationBus _bus = bus;
 	private bool _isDirty = true;
 	private RadialColor[]? _data = null;
