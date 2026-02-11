@@ -166,6 +166,7 @@ public sealed class TextEditorMorph : Morph
 		base.OnPointerDown(e);
 
 		var local = WorldToLocal(e.Position);
+		Console.WriteLine("local: " + local);
 		if (local.Y < 0)
 			return;
 

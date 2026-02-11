@@ -108,22 +108,6 @@ public sealed class MiniMacroRoot
 		var tileSetInfo =
 			new TileSetInfo("image.screen_font", new Size(16, 24));
 
-		var map = new TileMapMorph(
-			new Size(320, 240),
-			new Size(256, 256),
-			tileSetInfo);
-
-		for (var y = 0; y < 256; y++)
-			for (var x = 0; x < 256; x++)
-			{
-				var tile = map.GetTile(x, y);
-				if (tile != null)
-					tile.TileIndex = Random.Shared.Next(65, 70);
-			}
-
-		map.Position = new Point(128, 128);
-		world.AddMorph(map);
-
 		// ------------------------------------------------------------------
 		// Event wiring
 		// ------------------------------------------------------------------

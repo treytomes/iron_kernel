@@ -628,9 +628,9 @@ public abstract class Morph : ICommandTarget
 	public Point WorldToLocal(Point worldPoint)
 	{
 		var p = worldPoint;
-		var m = Owner; // ← start at the parent, NOT this morph
+		var m = this;
 
-		while (m != null && m is not WorldMorph)
+		while (m != null)
 		{
 			p = new Point(
 				p.X - m.Position.X,
