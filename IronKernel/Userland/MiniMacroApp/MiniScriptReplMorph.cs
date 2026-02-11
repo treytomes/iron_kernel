@@ -97,6 +97,13 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			// Feed line into MiniScript REPL
 			_interpreter.REPL(line);
 
+			// Pump async intrinsics
+			while (_interpreter.Running())
+			{
+				_interpreter.RunUntilDone(returnEarly: true);
+				await Task.Yield();
+			}
+
 			// After execution, ensure we're on a fresh line
 			if (!_interpreter.NeedMoreInput())
 				_console.WriteLine();

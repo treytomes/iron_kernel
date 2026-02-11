@@ -29,12 +29,24 @@ public sealed class TextEditorWindowMorph : WindowMorph
 				var filename = response.Result;
 				if (!string.IsNullOrWhiteSpace(filename))
 				{
-					_fileSystem.ReadTextAsync(filename).ContinueWith(response =>
-					{
-						var file = response.Result;
-						_doc.SetText(file);
-						_windowService.AlertAsync($"Loaded {filename}!");
-					});
+					_windowService.ConfirmAsync($"Are you sure you want to load {filename}?")
+						.ContinueWith(response =>
+						{
+							var result = response.Result;
+							if (result)
+							{
+								_fileSystem.ReadTextAsync(filename).ContinueWith(response =>
+								{
+									var file = response.Result;
+									_doc.SetText(file);
+									_windowService.AlertAsync($"Loaded {filename}!");
+								});
+							}
+							else
+							{
+								_windowService.AlertAsync("Operation cancelled.");
+							}
+						});
 				}
 			});
 		base.OnLoad(assetService);

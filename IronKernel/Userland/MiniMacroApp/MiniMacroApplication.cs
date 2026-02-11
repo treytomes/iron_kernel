@@ -71,7 +71,7 @@ public sealed class MiniMacroApplication(
 		{
 			var rc = sp.GetRequiredService<IRenderingContext>();
 			var assets = sp.GetRequiredService<IAssetService>();
-			return new WorldMorph(rc.Size, assets);
+			return new WorldMorph(rc.Size, assets, sp);
 		});
 
 		// ------------------------------------------------------------------

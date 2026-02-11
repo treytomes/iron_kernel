@@ -17,6 +17,7 @@ public sealed class WorldMorph : Morph
 	private readonly Interpreter _interpreter = new();
 	private readonly ScriptOutputHub _scriptOutput = new();
 	private readonly ConcurrentQueue<string> _scriptQueue = new();
+	private readonly ConcurrentQueue<Action> _actionQueue = new();
 	private bool _scriptBusy = false;
 	private readonly WorldScriptContext _scriptContext;
 
@@ -24,9 +25,9 @@ public sealed class WorldMorph : Morph
 
 	#region Constructors
 
-	public WorldMorph(Size screenSize, IAssetService assets)
+	public WorldMorph(Size screenSize, IAssetService assets, IServiceProvider services)
 	{
-		_scriptContext = new WorldScriptContext(this);
+		_scriptContext = new WorldScriptContext(this, services);
 		_interpreter.hostData = _scriptContext;
 		_scriptOutput.Attach(_interpreter);
 
@@ -62,6 +63,11 @@ public sealed class WorldMorph : Morph
 	public void EnqueueScript(string scriptSource)
 	{
 		_scriptQueue.Enqueue(scriptSource);
+	}
+
+	public void EnqueueAction(Action action)
+	{
+		_actionQueue.Enqueue(action);
 	}
 
 	public void CapturePointer(Morph? morph)
@@ -108,6 +114,9 @@ public sealed class WorldMorph : Morph
 				_scriptBusy = false;
 			}
 		}
+
+		while (_actionQueue.TryDequeue(out var action)) action();
+
 		// Execute all deferred mutation intents.
 		_commandManager.Flush();
 

@@ -1,5 +1,6 @@
 using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Morphic.Commands;
+using IronKernel.Userland.Services;
 using Miniscript;
 using System.Drawing;
 
@@ -10,6 +11,7 @@ public sealed class WorldScriptContext
 	#region Fields
 
 	private readonly WorldMorph _world;
+	private readonly IWindowService _windowService;
 
 	// id → morph
 	private readonly Dictionary<int, MiniScriptMorph> _morphs = new();
@@ -23,9 +25,12 @@ public sealed class WorldScriptContext
 
 	#region Constructions
 
-	public WorldScriptContext(WorldMorph world)
+	public WorldScriptContext(WorldMorph world, IServiceProvider services)
 	{
 		_world = world;
+
+		// TODO: I hate instantiating like this, but there's a circular reference between WorldMorph and WindowService now.
+		_windowService = new WindowService(world, services);
 	}
 
 	#endregion
@@ -138,10 +143,157 @@ public sealed class WorldScriptContext
 
 	static WorldScriptContext()
 	{
+		CreateDialogIntrinsics();
 		CreateMorphIntrinsics();
 		CreateMorphNamespace();
 		CreateRadialColorIntrinsics();
 	}
+
+	private static void CreateDialogIntrinsics()
+	{
+		CreateAlertIntrinsic();
+		CreatePromptIntrinsic();
+		CreateConfirmIntrinsic();
+	}
+
+	private static void CreateAlertIntrinsic()
+	{
+		var alert = Intrinsic.Create("alert");
+		alert.AddParam("message");
+
+		alert.code = (ctx, partialResult) =>
+		{
+			// First call
+			if (partialResult == null)
+			{
+				if (ctx.interpreter.hostData is not WorldScriptContext world)
+					return Intrinsic.Result.Null;
+
+				var message = ctx.GetVar("message").ToString();
+
+				// MiniScript-visible state
+				var state = new ValMap();
+				state["done"] = ValNumber.zero;
+
+				world._windowService.AlertAsync(message)
+					.ContinueWith(_ =>
+					{
+						// SAFE: mutating ValMap only
+						state["done"] = ValNumber.one;
+					});
+
+				return new Intrinsic.Result(state, done: false);
+			}
+
+			// Subsequent calls
+			var map = partialResult.result as ValMap;
+			if (map == null)
+				return Intrinsic.Result.Null;
+
+			if (map["done"].BoolValue())
+				return Intrinsic.Result.Null;
+
+			return partialResult; // still waiting
+		};
+	}
+
+	private static void CreatePromptIntrinsic()
+	{
+		var prompt = Intrinsic.Create("prompt");
+		prompt.AddParam("message");
+		prompt.AddParam("default", ValNull.instance);
+
+		prompt.code = (ctx, partialResult) =>
+		{
+			if (partialResult == null)
+			{
+				if (ctx.interpreter.hostData is not WorldScriptContext world)
+					return Intrinsic.Result.Null;
+
+				var message = ctx.GetVar("message").ToString();
+				var def = ctx.GetVar("default");
+				string? defText = def == ValNull.instance ? null : def.ToString();
+
+				var state = new ValMap
+				{
+					["done"] = ValNumber.zero,
+					["value"] = ValNull.instance
+				};
+
+				world._windowService.PromptAsync(message, defText)
+					.ContinueWith(t =>
+					{
+						state["value"] = t.Result == null
+							? ValNull.instance
+							: new ValString(t.Result);
+						state["done"] = ValNumber.one;
+					});
+
+				return new Intrinsic.Result(state, done: false);
+			}
+
+			var map = (ValMap)partialResult.result;
+			if (!map["done"].BoolValue())
+				return partialResult;
+
+			return new Intrinsic.Result(map["value"]);
+		};
+	}
+
+	private static void CreateConfirmIntrinsic()
+	{
+		var confirm = Intrinsic.Create("confirm");
+		confirm.AddParam("message");
+
+		confirm.code = (ctx, partialResult) =>
+		{
+			if (partialResult == null)
+			{
+				if (ctx.interpreter.hostData is not WorldScriptContext world)
+					return Intrinsic.Result.False;
+
+				var message = ctx.GetVar("message").ToString();
+
+				var state = new ValMap
+				{
+					["done"] = ValNumber.zero,
+					["result"] = ValNumber.zero
+				};
+
+				world._windowService.ConfirmAsync(message)
+					.ContinueWith(t =>
+					{
+						state["result"] = t.Result ? ValNumber.one : ValNumber.zero;
+						state["done"] = ValNumber.one;
+					});
+
+				return new Intrinsic.Result(state, done: false);
+			}
+
+			var map = (ValMap)partialResult.result;
+			if (!map["done"].BoolValue())
+				return partialResult;
+
+			return map["result"].BoolValue()
+				? Intrinsic.Result.True
+				: Intrinsic.Result.False;
+		};
+	}
+
+	// private static void CreateDialogNamespace()
+	// {
+	// 	var ns = Intrinsic.Create("Dialog");
+	// 	ns.code = (ctx, _) =>
+	// 	{
+	// 		var map = new ValMap
+	// 		{
+	// 			["alert"] = Intrinsic.GetByName("alert")!.GetFunc(),
+	// 			["prompt"] = Intrinsic.GetByName("prompt")!.GetFunc(),
+	// 			["confirm"] = Intrinsic.GetByName("confirm")!.GetFunc()
+	// 		};
+	// 		return new Intrinsic.Result(map);
+	// 	};
+	// }
 
 	private static void CreateMorphIntrinsics()
 	{
@@ -312,10 +464,7 @@ public sealed class WorldScriptContext
 		};
 	}
 
-	private static void CreateSlotIntrinsic(
-		string name,
-		Func<TAC.Context, WorldScriptContext, Intrinsic.Result> body,
-		params string[] parameters)
+	private static void CreateSlotIntrinsic(string name, Func<TAC.Context, WorldScriptContext, Intrinsic.Result> body, params string[] parameters)
 	{
 		var i = Intrinsic.Create(name);
 		foreach (var p in parameters)
