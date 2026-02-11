@@ -32,9 +32,154 @@ Example handle structure (conceptual):
 ```
 
 Handles are:
+
 - Safe (dead objects are detected)
 - Stateful (slots persist)
 - Instance-oriented (methods close over `self`)
+
+---
+
+## Dialog & UI Intrinsics
+
+These intrinsics provide **simple user interaction dialogs**, similar to JavaScript’s
+`alert`, `prompt`, and `confirm`.
+
+All dialogs:
+- Are modal
+- Pause script execution until the user responds
+- Never block the engine or UI thread
+- Return control cleanly to the script
+
+---
+
+### `alert(message)`
+
+Display a modal alert dialog with a message and an **OK** button.
+
+#### Parameters
+- `message` (string): text to display
+
+#### Returns
+- `null`
+
+#### Example
+
+```miniscript
+alert("Hello, world!")
+print("This runs after the user clicks OK")
+```
+
+---
+
+### `prompt(message, defaultValue)`
+
+Display a modal prompt dialog requesting text input.
+
+#### Parameters
+- `message` (string): prompt text
+- `defaultValue` (string, optional): initial value
+
+#### Returns
+- string: user input
+- `null`: if the user cancels
+
+#### Example
+
+```miniscript
+name = prompt("Enter your name:", "Player")
+if name != null then
+    print("Hello " + name)
+else
+    print("Prompt cancelled")
+end
+```
+
+---
+
+### `confirm(message)`
+
+Display a modal confirmation dialog with **OK** and **Cancel** buttons.
+
+#### Parameters
+- `message` (string): confirmation text
+
+#### Returns
+- `true` if OK was clicked
+- `false` if Cancel was clicked
+
+#### Example
+
+```miniscript
+if confirm("Delete all files?") then
+    print("Confirmed")
+else
+    print("Cancelled")
+end
+```
+
+---
+
+## Editor & Script Execution Intrinsics
+
+These intrinsics integrate MiniScript with the built‑in text editor and script execution system.
+
+They are **REPL-safe** and designed to work correctly from interactive sessions.
+
+---
+
+### `edit(filename)`
+
+Open the built‑in text editor window and load a file for editing.
+
+If the file exists, its contents are loaded.  
+If it does not exist, an error is reported.
+
+#### Parameters
+- `filename` (string): file URL (e.g. `file://script.ms`)
+
+#### Returns
+- `null`
+
+#### Example
+
+```miniscript
+edit("file://example.ms")
+```
+
+You can also call `edit` without immediately running the file, allowing inspection or modification.
+
+---
+
+### `run(filename)`
+
+Load and execute a MiniScript file.
+
+Behavior:
+- Loads the file via the file system service
+- Compiles and runs it in the current World interpreter
+- Reports compile or runtime errors to the REPL
+- Always returns control to the REPL
+
+#### Parameters
+- `filename` (string): file URL
+
+#### Returns
+- `null`
+
+#### Example
+
+```miniscript
+run("file://example.ms")
+```
+
+#### Example with error handling
+
+```miniscript
+run("file://broken.ms")
+print("This still runs even if there was a compile error")
+```
+
+Errors are printed to the REPL error stream but **never hang the interpreter**.
 
 ---
 
@@ -118,9 +263,9 @@ Destroy the morph.
 m.destroy()
 ```
 
-- The morph is removed from the world.
-- The handle becomes **dead**.
-- Further calls on the handle are safe but do nothing.
+- The morph is removed from the world
+- The handle becomes **dead**
+- Further calls are safe but do nothing
 
 ---
 
@@ -147,36 +292,11 @@ Find all morphs that have a given slot, optionally matching a value.
 enemies = Morph.findBySlot("faction", "enemy")
 ```
 
-Returns a **list of Morph handles**.  
-All returned handles:
-- Are fully functional
-- Have instance methods attached
-- Respect lifetime rules
-
----
-
-## Slot System
-
-Slots are arbitrary key/value pairs stored on morphs.
-
-- Keys are strings
-- Values can be any MiniScript value:
-  - numbers
-  - strings
-  - lists
-  - maps
-  - other handles
-
-Slots are:
-- Script-owned
-- Persistent
-- Safe across frames
+Returns a **list of Morph handles**.
 
 ---
 
 ## RadialColor API
-
-`RadialColor` is a script-visible value type used for color data.
 
 ### Creating a RadialColor
 
@@ -184,7 +304,7 @@ Slots are:
 c = RadialColor.create(r, g, b)
 ```
 
-- Each component is an integer in the range `0–5`
+- Each component is in the range `0–5`
 - Invalid values produce a MiniScript error (not a crash)
 
 Example:
@@ -193,65 +313,34 @@ Example:
 c = RadialColor.create(5, 3, 1)
 ```
 
-Invalid example:
-
-```miniscript
-c = RadialColor.create(10, 0, 0)
--- Error: RadialColor channel out of range (0–5)
-```
-
-### Using RadialColor
-
-RadialColor values are passed into intrinsics that accept colors
-(e.g. morph rendering, tiles, UI).
-
-Internally they are represented as MiniScript maps, but scripts should
-treat them as opaque values.
-
 ---
 
 ## Lifetime & Safety Rules
 
 ### Dead Handles
 
-A handle becomes **dead** if:
-- The morph is destroyed via script (`m.destroy()`)
-- The morph is deleted via the UI (halo)
-
-Dead handles:
-- Return `false` from `isAlive()`
-- Do not throw errors
-- Do not resurrect objects
-- Safely no-op on most operations
+- Dead handles never crash
+- `isAlive()` returns false
+- Operations safely no-op
 
 ---
 
-### Ownership Model
+## Error Handling Guarantees
 
-- **World owns objects**
-- **Scripts hold references**
-- Scripts never own lifetime
+All intrinsics:
 
-This prevents:
-- dangling references
-- crashes
-- inconsistent state
-
----
-
-## Error Handling
-
-All API functions:
 - Catch host exceptions
 - Report errors via the MiniScript error stream
-- Never hang or corrupt the interpreter
+- Never hang the interpreter
+- Never corrupt REPL state
 
-Example error output:
-
-```text
-Morph.create error: expected [x,y],[w,h]
-RadialColor.create error: channel out of range
-```
+This applies to:
+- `alert`
+- `prompt`
+- `confirm`
+- `edit`
+- `run`
+- All Morph and RadialColor APIs
 
 ---
 
@@ -259,10 +348,13 @@ RadialColor.create error: channel out of range
 
 This API provides:
 
-- Instance-style scripting (`m.set(...)`)
-- Explicit, predictable behavior
-- Safe object lifetimes
-- Clean separation between engine and script logic
+- Instance-style scripting
+- Modal UI integration
+- Script-controlled editing and execution
+- Deterministic REPL behavior
+- Strong safety guarantees
 
-It is intentionally simple, explicit, and deterministic—designed to scale
-to tiles, entities, players, and game logic without surprises.
+It is designed to support **interactive development**, **tooling**, and **game logic**
+without hidden state or interpreter instability.
+
+---

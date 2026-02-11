@@ -1,5 +1,8 @@
 using System.Drawing;
 using IronKernel.Userland.Morphic;
+using IronKernel.Userland.Morphic.Commands;
+using IronKernel.Userland.Morphic.Layout;
+using IronKernel.Userland.Morphic.ValueObjects;
 using IronKernel.Userland.Services;
 
 namespace IronKernel.Userland.MiniMacro;
@@ -11,44 +14,159 @@ public sealed class TextEditorWindowMorph : WindowMorph
 	private readonly IWindowService _windowService;
 	private readonly IFileSystem _fileSystem;
 
-	public TextEditorWindowMorph(IWindowService windowService, IFileSystem fileSystem)
+	private string? _filename;
+	private bool _dirty;
+
+	public TextEditorWindowMorph(
+		IWindowService windowService,
+		IFileSystem fileSystem)
 		: base(Point.Empty, new Size(640, 400), "Text Editor")
 	{
-		_editor = new TextEditorMorph(_doc);
-		Content.AddMorph(_editor);
-
 		_windowService = windowService;
 		_fileSystem = fileSystem;
+
+		_doc.Changed += () =>
+		{
+			if (!_dirty)
+			{
+				_dirty = true;
+				UpdateTitle();
+			}
+		};
+
+		var dock = new DockPanelMorph();
+
+		var toolbar = BuildToolbar();
+		dock.AddMorph(toolbar);
+		dock.SetDock(toolbar, Dock.Top);
+
+		_editor = new TextEditorMorph(_doc);
+		dock.AddMorph(_editor);
+		dock.SetDock(_editor, Dock.Fill);
+
+		Content.AddMorph(dock);
+
+		UpdateTitle();
 	}
 
-	protected override void OnLoad(IAssetService assetService)
+	protected override void UpdateLayout()
 	{
-		_windowService.PromptAsync("Filename:", "file://sample.ms")
-			.ContinueWith(response =>
-			{
-				var filename = response.Result;
-				if (!string.IsNullOrWhiteSpace(filename))
-				{
-					_windowService.ConfirmAsync($"Are you sure you want to load {filename}?")
-						.ContinueWith(response =>
-						{
-							var result = response.Result;
-							if (result)
-							{
-								_fileSystem.ReadTextAsync(filename).ContinueWith(response =>
-								{
-									var file = response.Result;
-									_doc.SetText(file);
-									_windowService.AlertAsync($"Loaded {filename}!");
-								});
-							}
-							else
-							{
-								_windowService.AlertAsync("Operation cancelled.");
-							}
-						});
-				}
-			});
-		base.OnLoad(assetService);
+		Content.Submorphs[0].Size = Content.Size;
+		base.UpdateLayout();
 	}
+
+	#region Toolbar
+
+	private ToolbarMorph BuildToolbar()
+	{
+		var toolbar = new ToolbarMorph();
+
+		toolbar.AddItem("New", new ActionCommand(NewFile));
+		toolbar.AddItem("Open", new ActionCommand(async () => await OpenFileAsync()));
+		toolbar.AddItem("Save", new ActionCommand(async () => await SaveFileAsync()));
+		toolbar.AddItem("Save As", new ActionCommand(async () => await SaveFileAsAsync()));
+
+		return toolbar;
+	}
+
+	#endregion
+
+	#region Commands
+
+	private void NewFile()
+	{
+		_doc.SetText(string.Empty);
+		_filename = null;
+		_dirty = false;
+		UpdateTitle();
+	}
+
+	private async Task OpenFileAsync()
+	{
+		var filename = await _windowService.PromptAsync(
+			"Open file:",
+			_filename ?? "file://");
+		if (string.IsNullOrWhiteSpace(filename)) return;
+		await OpenFileAsync(filename);
+	}
+
+	public async Task OpenFileAsync(string? filename)
+	{
+		if (string.IsNullOrWhiteSpace(filename))
+		{
+			await _windowService.AlertAsync("You must provide a filename.");
+			return;
+		}
+
+		try
+		{
+			var text = await _fileSystem.ReadTextAsync(filename);
+			_doc.SetText(text);
+			_filename = filename;
+			_dirty = false;
+			UpdateTitle();
+		}
+		catch
+		{
+			await _windowService.AlertAsync($"File not found:\n{filename}");
+		}
+	}
+
+	private async Task SaveFileAsync()
+	{
+		if (string.IsNullOrWhiteSpace(_filename))
+		{
+			await SaveFileAsAsync();
+			return;
+		}
+
+		await SaveToFilenameAsync(_filename);
+	}
+
+	private async Task SaveFileAsAsync()
+	{
+		var filename = await _windowService.PromptAsync(
+			"Save file as:",
+			_filename ?? "file://");
+
+		if (string.IsNullOrWhiteSpace(filename))
+			return;
+
+		await SaveToFilenameAsync(filename);
+	}
+
+	private async Task SaveToFilenameAsync(string filename)
+	{
+		try
+		{
+			await _fileSystem.WriteTextAsync(filename, _doc.ToString());
+			_filename = filename;
+			_dirty = false;
+			UpdateTitle();
+			await _windowService.AlertAsync($"Saved {filename}");
+		}
+		catch (Exception ex)
+		{
+			await _windowService.AlertAsync(
+				$"Failed to save file:\n{ex.Message}");
+		}
+	}
+
+	#endregion
+
+	#region Title management
+
+	private void UpdateTitle()
+	{
+		var name = string.IsNullOrWhiteSpace(_filename)
+			? "Untitled"
+			: _filename;
+
+		if (_dirty)
+			name += "*";
+
+		Title = $"Text Editor - {name}";
+	}
+
+	#endregion
 }

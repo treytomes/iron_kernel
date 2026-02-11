@@ -71,6 +71,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		// Wait until the console is layout-stable
 		await _console.Ready;
 
+		var world = GetWorld();
+
 		_console.WriteLine("MiniScript REPL");
 		_console.WriteLine("Type MiniScript expressions or statements.");
 		_console.WriteLine();
@@ -97,10 +99,21 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			// Feed line into MiniScript REPL
 			_interpreter.REPL(line);
 
+			if (world.ScriptContext.PendingRunSource != null)
+			{
+				var source = world.ScriptContext.PendingRunSource;
+				world.ScriptContext.PendingRunSource = null;
+
+				_interpreter.Stop();        // ensure clean state
+				_interpreter.Reset(source);
+				_interpreter.RunUntilDone(); // THIS is where compile & runtime errors appear
+			}
+
 			// Pump async intrinsics
 			while (_interpreter.Running())
 			{
-				_interpreter.RunUntilDone(returnEarly: true);
+				// Allow the VM to consume completed async intrinsics
+				_interpreter.RunUntilDone(returnEarly: false);
 				await Task.Yield();
 			}
 

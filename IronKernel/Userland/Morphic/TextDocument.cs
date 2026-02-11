@@ -9,12 +9,22 @@ public sealed class TextDocument
 {
 	private readonly List<TextEditingCore> _lines = new();
 
+	private int _desiredColumn = -1;
+
 	#region Construction
 
 	public TextDocument(string? initialText = null)
 	{
 		SetText(initialText);
 	}
+
+	#endregion
+
+	#region Events
+
+	public event Action? Changed;
+
+	private void OnChanged() => Changed?.Invoke();
 
 	#endregion
 
@@ -27,23 +37,33 @@ public sealed class TextDocument
 	public int CaretColumn
 	{
 		get => _lines[CaretLine].CursorIndex;
-		set => _lines[CaretLine].SetCursorIndex(Math.Clamp(value, 0, _lines[CaretLine].Length));
+		set
+		{
+			var line = _lines[CaretLine];
+			line.SetCursorIndex(Math.Clamp(value, 0, line.Length));
+		}
 	}
 
 	public TextEditingCore CurrentLine => _lines[CaretLine];
 
 	public IReadOnlyList<TextEditingCore> Lines => _lines;
 
+	public int TabWidth { get; set; } = 4;
+
 	#endregion
 
-	#region Insertion
+	#region Text Initialization
 
 	public void SetText(string? text = null)
 	{
+		_lines.Clear();
+
 		if (string.IsNullOrEmpty(text))
 		{
 			_lines.Add(new TextEditingCore());
 			CaretLine = 0;
+			CaretColumn = 0;
+			OnChanged();
 			return;
 		}
 
@@ -56,22 +76,36 @@ public sealed class TextDocument
 
 		CaretLine = _lines.Count - 1;
 		_lines[CaretLine].MoveToEnd();
+		OnChanged();
 	}
+
+	#endregion
+
+	#region Insertion
 
 	public void InsertChar(char ch)
 	{
 		if (ch == '\n')
 		{
 			SplitLine();
+			OnChanged();
 			return;
 		}
 
 		CurrentLine.Insert(ch);
+		_desiredColumn = -1;
+		OnChanged();
 	}
 
 	public void InsertTab()
 	{
-		CurrentLine.Insert('\t');
+		int col = CurrentLine.CursorIndex;
+		int spaces = TabWidth - (col % TabWidth);
+		for (int i = 0; i < spaces; i++)
+			CurrentLine.Insert(' ');
+
+		_desiredColumn = -1;
+		OnChanged();
 	}
 
 	#endregion
@@ -85,10 +119,11 @@ public sealed class TextDocument
 		if (line.CursorIndex > 0)
 		{
 			line.Backspace();
+			_desiredColumn = -1;
+			OnChanged();
 			return;
 		}
 
-		// At start of line: merge with previous
 		if (CaretLine == 0)
 			return;
 
@@ -97,9 +132,11 @@ public sealed class TextDocument
 
 		prev.Buffer.Append(line.Buffer);
 		_lines.RemoveAt(CaretLine);
-
 		CaretLine--;
 		prev.SetCursorIndex(prevLen);
+
+		_desiredColumn = -1;
+		OnChanged();
 	}
 
 	public void Delete()
@@ -109,16 +146,21 @@ public sealed class TextDocument
 		if (line.CursorIndex < line.Length)
 		{
 			line.Delete();
+			_desiredColumn = -1;
+			OnChanged();
 			return;
 		}
 
-		// At end of line: merge with next
 		if (CaretLine >= _lines.Count - 1)
 			return;
 
 		var next = _lines[CaretLine + 1];
 		line.Buffer.Append(next.Buffer);
 		_lines.RemoveAt(CaretLine + 1);
+
+		CaretColumn = Math.Min(CaretColumn, line.Length);
+		_desiredColumn = -1;
+		OnChanged();
 	}
 
 	#endregion
@@ -130,6 +172,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex > 0)
 		{
 			CurrentLine.DeleteWordLeft();
+			OnChanged();
 			return;
 		}
 
@@ -141,6 +184,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex < CurrentLine.Length)
 		{
 			CurrentLine.DeleteWordRight();
+			OnChanged();
 			return;
 		}
 
@@ -156,6 +200,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex > 0)
 		{
 			CurrentLine.Move(-1);
+			_desiredColumn = -1;
 			return;
 		}
 
@@ -164,6 +209,7 @@ public sealed class TextDocument
 
 		CaretLine--;
 		_lines[CaretLine].MoveToEnd();
+		_desiredColumn = -1;
 	}
 
 	public void MoveRight()
@@ -171,6 +217,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex < CurrentLine.Length)
 		{
 			CurrentLine.Move(1);
+			_desiredColumn = -1;
 			return;
 		}
 
@@ -179,6 +226,7 @@ public sealed class TextDocument
 
 		CaretLine++;
 		_lines[CaretLine].MoveToStart();
+		_desiredColumn = -1;
 	}
 
 	public void MoveWordLeft()
@@ -186,6 +234,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex > 0)
 		{
 			CurrentLine.MoveWordLeft();
+			_desiredColumn = -1;
 			return;
 		}
 
@@ -197,6 +246,7 @@ public sealed class TextDocument
 		if (CurrentLine.CursorIndex < CurrentLine.Length)
 		{
 			CurrentLine.MoveWordRight();
+			_desiredColumn = -1;
 			return;
 		}
 
@@ -206,11 +256,13 @@ public sealed class TextDocument
 	public void MoveToLineStart()
 	{
 		CurrentLine.MoveToStart();
+		_desiredColumn = -1;
 	}
 
 	public void MoveToLineEnd()
 	{
 		CurrentLine.MoveToEnd();
+		_desiredColumn = -1;
 	}
 
 	#endregion
@@ -221,6 +273,7 @@ public sealed class TextDocument
 	{
 		CaretLine = Math.Clamp(line, 0, LineCount - 1);
 		CaretColumn = Math.Min(CaretColumn, _lines[CaretLine].Length);
+		_desiredColumn = CaretColumn;
 	}
 
 	public void MoveUp()
@@ -228,13 +281,11 @@ public sealed class TextDocument
 		if (CaretLine == 0)
 			return;
 
-		int desiredColumn = CaretColumn;
-		CaretLine--;
+		if (_desiredColumn < 0)
+			_desiredColumn = CaretColumn;
 
-		CaretColumn = Math.Min(
-			desiredColumn,
-			_lines[CaretLine].Length
-		);
+		CaretLine--;
+		CaretColumn = Math.Min(_desiredColumn, _lines[CaretLine].Length);
 	}
 
 	public void MoveDown()
@@ -242,13 +293,11 @@ public sealed class TextDocument
 		if (CaretLine >= _lines.Count - 1)
 			return;
 
-		int desiredColumn = CaretColumn;
-		CaretLine++;
+		if (_desiredColumn < 0)
+			_desiredColumn = CaretColumn;
 
-		CaretColumn = Math.Min(
-			desiredColumn,
-			_lines[CaretLine].Length
-		);
+		CaretLine++;
+		CaretColumn = Math.Min(_desiredColumn, _lines[CaretLine].Length);
 	}
 
 	#endregion
@@ -260,16 +309,15 @@ public sealed class TextDocument
 		var line = CurrentLine;
 		int index = line.CursorIndex;
 
-		var rightText = line.Buffer
-			.ToString(index, line.Length - index);
-
+		var rightText = line.Buffer.ToString(index, line.Length - index);
 		line.Buffer.Remove(index, line.Length - index);
 
 		var newLine = new TextEditingCore(rightText);
-
 		_lines.Insert(CaretLine + 1, newLine);
+
 		CaretLine++;
 		newLine.MoveToStart();
+		_desiredColumn = -1;
 	}
 
 	#endregion
