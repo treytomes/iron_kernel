@@ -99,9 +99,15 @@ public sealed class HaloMorph : Morph
 			: Style.HaloOutline.Lerp(RadialColor.Black, -_outlineColorLerpWeight);
 
 		rc.RenderRect(
-			new Rectangle(new Point(0, 0), Size),
+			new Rectangle(Point.Empty, Size),
 			bg,
 			1);
+	}
+
+	protected override void UpdateLayout()
+	{
+		base.UpdateLayout();
+		UpdateFromTarget();
 	}
 
 	private void UpdateFromTarget()
