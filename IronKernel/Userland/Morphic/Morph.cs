@@ -183,12 +183,13 @@ public abstract class Morph : ICommandTarget
 	public void Draw(IRenderingContext rc)
 	{
 		var isRoot = this is WorldMorph;
+		var shouldClipToBounds = ShouldClipToBounds;
 		try
 		{
 			if (!isRoot)
 			{
 				rc.PushOffset(Position);
-				if (ShouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
+				if (shouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
 			}
 
 			DrawSelf(rc);
@@ -206,7 +207,7 @@ public abstract class Morph : ICommandTarget
 				if (!isRoot)
 				{
 					rc.PopOffset();
-					if (ShouldClipToBounds) rc.PopClip();
+					if (shouldClipToBounds) rc.PopClip();
 				}
 			}
 			catch (Exception ex)
@@ -310,7 +311,6 @@ public abstract class Morph : ICommandTarget
 		if (e.Button == MouseButton.Left)
 		{
 			IsPressed = true;
-			BringToTop();
 			Invalidate();
 		}
 	}
@@ -320,7 +320,6 @@ public abstract class Morph : ICommandTarget
 		if (IsPressed && e.Button == MouseButton.Left)
 		{
 			IsPressed = false;
-			BringToTop();
 			Invalidate();
 		}
 	}
