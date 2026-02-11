@@ -7,7 +7,7 @@ namespace IronKernel.Userland.Morphic;
 public sealed class AlertWindowMorph : WindowMorph
 {
 	public AlertWindowMorph(string message, Action onClose)
-		: base(Point.Empty, new Size(256, 64), "Alert")
+		: base(Point.Empty, new Size(352, 96), "Alert")
 	{
 		var vStack = new VerticalStackMorph();
 		vStack.AddMorph(new LabelMorph { Text = message });
@@ -20,5 +20,12 @@ public sealed class AlertWindowMorph : WindowMorph
 			}),
 		});
 		Content.AddMorph(vStack);
+	}
+
+	protected override void UpdateLayout()
+	{
+		base.UpdateLayout();
+		Content.Size = Content.Submorphs.First().Size;
+		Size = new Size(Content.Size.Width + Padding, Content.Size.Height + Padding + HeaderHeight);
 	}
 }

@@ -4,38 +4,31 @@ using IronKernel.Userland.Morphic.Layout;
 
 namespace IronKernel.Userland.Morphic;
 
-public sealed class PromptWindowMorph : WindowMorph
+public sealed class ConfirmWindowMorph : WindowMorph
 {
-	private string _value;
-
-	public PromptWindowMorph(
+	public ConfirmWindowMorph(
 		string message,
-		string? defaultValue,
-		Action<string?> onClose
-	) : base(Point.Empty, new Size(420, 108), "Prompt")
+		Action<bool> onClose)
+		: base(Point.Empty, new Size(352, 96), "Confirm")
 	{
-		Title = "Prompt";
-		_value = defaultValue ?? string.Empty;
-
-		var hStack = new HorizontalStackMorph();
-		hStack.AddMorph(new LabelMorph { Text = message });
-		hStack.AddMorph(new TextEditMorph(_value, v => _value = v));
+		var label = new LabelMorph { Text = message };
 
 		var toolbar = new ToolbarMorph();
 		toolbar.AddItem("OK", new ActionCommand(() =>
 		{
 			Owner?.RemoveMorph(this);
-			onClose(_value);
+			onClose(true);
 		}));
 		toolbar.AddItem("Cancel", new ActionCommand(() =>
 		{
 			Owner?.RemoveMorph(this);
-			onClose(null);
+			onClose(false);
 		}));
 
 		var vStack = new VerticalStackMorph();
-		vStack.AddMorph(hStack);
+		vStack.AddMorph(label);
 		vStack.AddMorph(toolbar);
+
 		Content.AddMorph(vStack);
 	}
 

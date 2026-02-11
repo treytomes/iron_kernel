@@ -24,7 +24,6 @@ public sealed class WindowService : IWindowService
 		);
 		_world.AddMorph(window);
 		window.CenterOnOwner();
-
 		return tcs.Task;
 	}
 
@@ -38,6 +37,21 @@ public sealed class WindowService : IWindowService
 			defaultValue,
 			result => tcs.SetResult(result)
 		);
+		_world.AddMorph(window);
+		window.CenterOnOwner();
+		return tcs.Task;
+	}
+
+	public Task<bool> ConfirmAsync(string message)
+	{
+		var tcs = new TaskCompletionSource<bool>(
+			TaskCreationOptions.RunContinuationsAsynchronously);
+
+		var window = new ConfirmWindowMorph(
+			message,
+			result => tcs.SetResult(result)
+		);
+
 		_world.AddMorph(window);
 		window.CenterOnOwner();
 		return tcs.Task;
