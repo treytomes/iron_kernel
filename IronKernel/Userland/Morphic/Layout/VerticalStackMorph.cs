@@ -9,6 +9,7 @@ public sealed class VerticalStackMorph : Morph
 
 	protected override void UpdateLayout()
 	{
+		int maxWidth = 0;
 		int y = Padding;
 
 		for (var n = 0; n < Submorphs.Count; n++)
@@ -17,7 +18,13 @@ public sealed class VerticalStackMorph : Morph
 			if (child == null) continue;
 			child.Position = new Point(Padding, y);
 			y += child.Size.Height + Spacing;
+			maxWidth = Math.Max(maxWidth, child.Size.Width);
 		}
+
+		Size = new Size(
+			maxWidth + Padding * 2,
+			y + Padding
+		);
 
 		base.UpdateLayout();
 	}
