@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic.Commands;
+using IronKernel.Userland.Morphic.Events;
 using IronKernel.Userland.Morphic.Layout;
 using IronKernel.Userland.Morphic.ValueObjects;
 
@@ -115,12 +116,18 @@ public class WindowMorph : Morph
 
 	private bool IsSelected => GetWorld().SelectedMorph == this;
 
-	private int Padding => 4;
-	private int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;
+	protected int Padding => 4;
+	protected int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;
 
 	#endregion
 
-	#region Layout
+	#region Methods
+
+	public override void OnPointerDown(PointerDownEvent e)
+	{
+		base.OnPointerDown(e);
+		BringToTop();
+	}
 
 	protected override void UpdateLayout()
 	{
@@ -132,10 +139,6 @@ public class WindowMorph : Morph
 
 		base.UpdateLayout();
 	}
-
-	#endregion
-
-	#region Drawing
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
