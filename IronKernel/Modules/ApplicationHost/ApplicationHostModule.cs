@@ -7,6 +7,7 @@ using IronKernel.Modules.Framebuffer.ValueObjects;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 using IronKernel.Modules.FileSystem.ValueObjects;
+using IronKernel.Modules.Clipboard.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
 
@@ -257,6 +258,16 @@ internal sealed class ApplicationHostModule(
 				e.Entries
 			)
 		);
+
+		// Clipboard
+
+		_bridge.Request<AppClipboardSetCommand, ClipboardSetCommand>(
+			"ClipboardSetHandler",
+			(e, ct) => new(e.CorrelationID, e.Text)
+		);
+
+		_bridge.Request<AppClipboardGetQuery, ClipboardGetQuery>("ClipboardGetQueryHandler", (e, ct) => new(e.CorrelationID));
+		_bridge.Forward<ClipboardGetResponse, AppClipboardGetResponse>("ClipboardGetResponseHandler", (e, ct) => new(e.CorrelationID, e.Text));
 
 		var context = new ApplicationContext(
 			_bus,

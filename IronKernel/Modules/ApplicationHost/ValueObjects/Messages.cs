@@ -100,3 +100,19 @@ public sealed record AppDirectoryListResponse(
 	string Url,
 	IReadOnlyList<DirectoryEntry> Entries
 ) : Response<IReadOnlyList<DirectoryEntry>>(CorrelationID, Entries);
+
+// Clipboard messages
+
+public sealed record AppClipboardGetQuery(
+	Guid CorrelationID
+) : Query(CorrelationID);
+
+public sealed record AppClipboardGetResponse(
+	Guid CorrelationID,
+	string Text
+) : Response<string>(CorrelationID, Text);
+
+public sealed record AppClipboardSetCommand(
+	Guid CorrelationID,
+	string Text
+) : Command(CorrelationID);

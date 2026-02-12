@@ -17,6 +17,7 @@ using System.CommandLine;
 using IronKernel.Modules.AssetLoader;
 using IronKernel.Common;
 using IronKernel.Modules.FileSystem;
+using IronKernel.Modules.Clipboard;
 
 namespace IronKernel;
 
@@ -174,6 +175,7 @@ internal sealed class Program
 		services.AddSingleton<IKernelModule, FramebufferModule>();
 		services.AddSingleton<IKernelModule, AssetLoaderModule>();
 		services.AddSingleton<IKernelModule, FileSystemModule>();
+		services.AddSingleton<IKernelModule, ClipboardModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
 		services.AddSingleton<MiniMacroApplication>();

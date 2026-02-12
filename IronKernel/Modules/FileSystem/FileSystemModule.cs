@@ -298,7 +298,7 @@ internal sealed class FileSystemModule(
 
 	public ValueTask DisposeAsync()
 	{
-		_logger.LogInformation("AssetLoader disposed.");
+		_logger.LogInformation("FileSystem disposed.");
 		return ValueTask.CompletedTask;
 	}
 
