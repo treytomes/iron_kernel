@@ -196,6 +196,7 @@ public abstract class Morph : ICommandTarget
 
 			foreach (var child in _submorphs.ToArray())
 			{
+				if (child == null) continue;
 				if (!child.Visible) continue;
 				child.Draw(rc);
 			}

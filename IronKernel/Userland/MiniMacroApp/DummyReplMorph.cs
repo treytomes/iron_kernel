@@ -9,10 +9,10 @@ public sealed class DummyReplMorph : WindowMorph
 	private readonly TextConsoleMorph _console;
 	private CancellationTokenSource? _cts;
 
-	public DummyReplMorph()
+	public DummyReplMorph(IClipboardService clipboard)
 		: base(Point.Empty, new Size(256, 192), "Dummy REPL")
 	{
-		_console = new TextConsoleMorph();
+		_console = new TextConsoleMorph(clipboard);
 		Content.AddMorph(_console);
 	}
 

@@ -15,10 +15,10 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	private readonly Interpreter _interpreter;
 	private CancellationTokenSource? _cts;
 
-	public MiniScriptReplMorph()
+	public MiniScriptReplMorph(IClipboardService clipboard)
 		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
 	{
-		_console = new TextConsoleMorph();
+		_console = new TextConsoleMorph(clipboard);
 		Content.AddMorph(_console);
 
 		_interpreter = new Interpreter
@@ -26,6 +26,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			// Route MiniScript output into the console.
 			standardOutput = (text, newline) =>
 				{
+					if (string.IsNullOrEmpty(text)) return;
 					if (newline)
 						_console.WriteLine(text);
 					else
@@ -34,6 +35,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 			implicitOutput = (text, newline) =>
 				{
+					if (string.IsNullOrEmpty(text)) return;
 					_console.CurrentForegroundColor = RadialColor.Yellow;
 					if (newline)
 						_console.WriteLine(text);
@@ -44,6 +46,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 			errorOutput = (text, newline) =>
 				{
+					if (string.IsNullOrEmpty(text)) return;
 					_console.CurrentForegroundColor = RadialColor.Red;
 					if (newline)
 						_console.WriteLine(text);
