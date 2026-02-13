@@ -1,5 +1,5 @@
 using IronKernel.Common;
-using IronKernel.Modules.ApplicationHost;
+using IronKernel.Common.ValueObjects;
 using IronKernel.Userland.Gfx;
 using System.Collections.Concurrent;
 using System.Drawing;

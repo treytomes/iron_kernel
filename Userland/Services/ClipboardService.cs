@@ -1,7 +1,7 @@
 namespace IronKernel.Userland.Services;
 
 using IronKernel.Common;
-using IronKernel.Modules.ApplicationHost;
+using IronKernel.Common.ValueObjects;
 
 public sealed class ClipboardService : IClipboardService
 {

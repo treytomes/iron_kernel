@@ -1,8 +1,6 @@
 using System.Drawing;
-using IronKernel.Common;
-using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Modules.ApplicationHost;
+namespace IronKernel.Common.ValueObjects;
 
 public sealed record AppUpdateTick(double TotalTime, double ElapsedTime);
 

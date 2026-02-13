@@ -1,6 +1,5 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Modules.ApplicationHost;
 using IronKernel.Userland.Gfx;
 using IronKernel.Userland.Morphic;
 using IronKernel.Userland.Morphic.Commands;

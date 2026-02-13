@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)'))</RepoRoot>
+    <PublishRoot>$(RepoRoot)publish\</PublishRoot>
+  </PropertyGroup>
+</Project>

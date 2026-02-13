@@ -8,6 +8,7 @@ using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 using IronKernel.Modules.FileSystem.ValueObjects;
 using IronKernel.Modules.Clipboard.ValueObjects;
+using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
 

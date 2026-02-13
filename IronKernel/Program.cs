@@ -1,12 +1,15 @@
-﻿using IronKernel.Kernel;
-using IronKernel.Kernel.State;
+﻿using IronKernel.Common;
+using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
+using IronKernel.Kernel.State;
 using IronKernel.Logging;
 using IronKernel.Modules.ApplicationHost;
+using IronKernel.Modules.AssetLoader;
+using IronKernel.Modules.Clipboard;
+using IronKernel.Modules.FileSystem;
 using IronKernel.Modules.Framebuffer;
 using IronKernel.Modules.OpenTKHost;
 using IronKernel.State;
-using IronKernel.Userland.MiniMacro;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -14,9 +17,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTK.Mathematics;
 using System.CommandLine;
-using IronKernel.Modules.AssetLoader;
-using IronKernel.Modules.FileSystem;
-using IronKernel.Modules.Clipboard;
 
 namespace IronKernel;
 
@@ -30,6 +30,18 @@ internal sealed class Program
 
 	private static RootCommand BuildCommandLine()
 	{
+		var userlandPathOption = new Option<string>(
+			name: "--userland",
+			description: "Path to the userland assembly",
+			getDefaultValue: () =>
+			{
+				return Path.Combine(
+					AppContext.BaseDirectory,
+					"userland",
+					"Userland.dll");
+			}
+		);
+
 		var configFileOption = new Option<string>(
 			name: "--config",
 			description: "Path to the configuration file",
@@ -40,13 +52,15 @@ internal sealed class Program
 			description: "Enable debug mode");
 
 		var root = new RootCommand("IronKernel Demo Host");
+		root.AddOption(userlandPathOption);
 		root.AddOption(configFileOption);
 		root.AddOption(debugOption);
 
-		root.SetHandler(async (configFile, debug) =>
+		root.SetHandler(async (userlandPath, configFile, debug) =>
 		{
 			var props = new CommandLineProps
 			{
+				UserlandPath = userlandPath,
 				ConfigFile = configFile,
 				Debug = debug
 			};
@@ -65,7 +79,7 @@ internal sealed class Program
 
 			Console.WriteLine($"Starting {nameof(IronKernel)}...");
 			await kernel.StartAsync(cts.Token);
-		}, configFileOption, debugOption);
+		}, userlandPathOption, configFileOption, debugOption);
 
 		return root;
 	}
@@ -78,12 +92,10 @@ internal sealed class Program
 			.ConfigureLogging((ctx, logging) =>
 				ConfigureLogging(ctx, logging))
 			.ConfigureServices((ctx, services) =>
-				ConfigureServices(ctx, services));
+				ConfigureServices(ctx, services, props.UserlandPath));
 	}
 
-	private static void ConfigureAppConfiguration(
-		IConfigurationBuilder config,
-		CommandLineProps props)
+	private static void ConfigureAppConfiguration(IConfigurationBuilder config, CommandLineProps props)
 	{
 		config.Sources.Clear();
 		config.SetBasePath(AppContext.BaseDirectory);
@@ -101,9 +113,7 @@ internal sealed class Program
 		config.AddInMemoryCollection(overrides);
 	}
 
-	private static void ConfigureLogging(
-		HostBuilderContext ctx,
-		ILoggingBuilder logging)
+	private static void ConfigureLogging(HostBuilderContext ctx, ILoggingBuilder logging)
 	{
 		logging.ClearProviders();
 
@@ -124,9 +134,7 @@ internal sealed class Program
 			new FileLoggerProvider(logFile, minLevel));
 	}
 
-	private static void ConfigureServices(
-		HostBuilderContext ctx,
-		IServiceCollection services)
+	private static void ConfigureServices(HostBuilderContext ctx, IServiceCollection services, string userlandPath)
 	{
 		// Configuration
 		services.Configure<AppSettings>(ctx.Configuration);
@@ -177,7 +185,22 @@ internal sealed class Program
 		services.AddSingleton<IKernelModule, ClipboardModule>();
 		services.AddSingleton<IKernelModule, ApplicationHostModule>();
 
-		services.AddSingleton<MiniMacroApplication>();
-		services.AddSingleton<IUserApplicationFactory>(sp => new DiUserApplicationFactory<MiniMacroApplication>(sp));
+		// var userlandPath = Path.Combine(AppContext.BaseDirectory, "Userland.dll");
+		var userlandDir = Path.GetDirectoryName(userlandPath)!;
+		var alc = new UserlandLoadContext(userlandPath);
+		var userlandAssembly = alc.LoadFromAssemblyPath(userlandPath);
+
+		var appTypes = userlandAssembly
+			.GetTypes()
+			.Where(t =>
+				typeof(IUserApplication).IsAssignableFrom(t) &&
+				!t.IsAbstract &&
+				t.IsClass)
+			.ToList();
+
+		var appType = appTypes.Single();
+
+		services.AddSingleton(typeof(IUserApplication), appType);
+		services.AddSingleton<IUserApplicationFactory>(sp => new ReflectionUserApplicationFactory(appType, sp));
 	}
 }

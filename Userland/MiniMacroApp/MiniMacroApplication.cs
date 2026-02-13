@@ -8,7 +8,7 @@ using IronKernel.Userland.Morphic;
 namespace IronKernel.Userland.MiniMacro;
 
 public sealed class MiniMacroApplication(
-	ILogger<MiniMacroApplication> kernelLogger
+// ILogger<MiniMacroApplication> kernelLogger
 ) : IUserApplication, IDisposable
 {
 	#region Constants
@@ -19,7 +19,7 @@ public sealed class MiniMacroApplication(
 
 	#region Fields
 
-	private readonly ILogger<MiniMacroApplication> _kernelLogger = kernelLogger;
+	// private readonly ILogger<MiniMacroApplication> _kernelLogger = kernelLogger;
 	private ServiceProvider? _services;
 	private IServiceScope? _scope;
 
@@ -29,7 +29,7 @@ public sealed class MiniMacroApplication(
 
 	public async Task RunAsync(IApplicationContext context, CancellationToken stoppingToken)
 	{
-		_kernelLogger.LogInformation($"Starting {nameof(MiniMacroApplication)}.");
+		// _kernelLogger.LogInformation($"Starting {nameof(MiniMacroApplication)}.");
 
 		_services = BuildUserServiceProvider(context);
 		_scope = _services.CreateScope();
