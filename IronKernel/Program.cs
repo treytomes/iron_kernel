@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OpenTK.Mathematics;
 using System.CommandLine;
+using System.Reflection;
 
 namespace IronKernel;
 
@@ -176,14 +177,20 @@ internal sealed class Program
 		services.AddSingleton<IResourceManager, ResourceManager>();
 		// services.AddTransient<IResourceLoader<Image>, ImageLoader>();
 
-		// services.AddSingleton<IKernelModule, HelloModule>();
-		// services.AddSingleton<IKernelModule, ChaosModule>();
-		services.AddSingleton<IKernelModule, OpenTKHostModule>();
-		services.AddSingleton<IKernelModule, FramebufferModule>();
-		services.AddSingleton<IKernelModule, AssetLoaderModule>();
-		services.AddSingleton<IKernelModule, FileSystemModule>();
-		services.AddSingleton<IKernelModule, ClipboardModule>();
-		services.AddSingleton<IKernelModule, ApplicationHostModule>();
+		var kernelAssembly = Assembly.GetExecutingAssembly();
+
+		var moduleTypes = kernelAssembly
+			.GetTypes()
+			.Where(t =>
+				typeof(IKernelModule).IsAssignableFrom(t) &&
+				t.IsClass &&
+				!t.IsAbstract)
+			.ToList();
+
+		foreach (var moduleType in moduleTypes)
+		{
+			services.AddSingleton(typeof(IKernelModule), moduleType);
+		}
 
 		// var userlandPath = Path.Combine(AppContext.BaseDirectory, "Userland.dll");
 		var userlandDir = Path.GetDirectoryName(userlandPath)!;
