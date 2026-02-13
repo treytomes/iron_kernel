@@ -112,6 +112,55 @@ public sealed class TextDocument
 
 	#region Deletion
 
+	public void DeleteRange(
+		(int line, int column) start,
+		(int line, int column) end)
+	{
+		// Normalize
+		if (start.line > end.line ||
+			(start.line == end.line && start.column > end.column))
+		{
+			(start, end) = (end, start);
+		}
+
+		start.line = Math.Clamp(start.line, 0, _lines.Count - 1);
+		end.line = Math.Clamp(end.line, 0, _lines.Count - 1);
+
+		var startLine = _lines[start.line];
+		var endLine = _lines[end.line];
+
+		start.column = Math.Clamp(start.column, 0, startLine.Length);
+		end.column = Math.Clamp(end.column, 0, endLine.Length);
+
+		// ----- Single-line delete -----
+		if (start.line == end.line)
+		{
+			startLine.SetCursorIndex(start.column);
+			for (int i = 0; i < end.column - start.column; i++)
+				startLine.Delete();
+			return;
+		}
+
+		// ----- Multi-line delete -----
+
+		// 1. Capture tail of end line
+		string endTail = endLine.Buffer
+			.ToString(end.column, endLine.Length - end.column);
+
+		// 2. Truncate start line at start.column
+		startLine.SetCursorIndex(start.column);
+		while (startLine.Length > start.column)
+			startLine.Delete();
+
+		// 3. Remove all lines between start and end (inclusive of end)
+		for (int i = end.line; i > start.line; i--)
+			_lines.RemoveAt(i);
+
+		// 4. Append tail text to start line
+		foreach (char ch in endTail)
+			startLine.Insert(ch);
+	}
+
 	public void Backspace()
 	{
 		var line = CurrentLine;

@@ -19,8 +19,9 @@ public sealed class TextEditorWindowMorph : WindowMorph
 
 	public TextEditorWindowMorph(
 		IWindowService windowService,
-		IFileSystem fileSystem)
-		: base(Point.Empty, new Size(640, 400), "Text Editor")
+		IFileSystem fileSystem,
+		IClipboardService clipboard
+	) : base(Point.Empty, new Size(640, 400), "Text Editor")
 	{
 		_windowService = windowService;
 		_fileSystem = fileSystem;
@@ -40,7 +41,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		dock.AddMorph(toolbar);
 		dock.SetDock(toolbar, Dock.Top);
 
-		_editor = new TextEditorMorph(_doc);
+		_editor = new TextEditorMorph(_doc, clipboard);
 		dock.AddMorph(_editor);
 		dock.SetDock(_editor, Dock.Fill);
 

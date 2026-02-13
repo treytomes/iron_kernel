@@ -15,7 +15,6 @@ using Microsoft.Extensions.Options;
 using OpenTK.Mathematics;
 using System.CommandLine;
 using IronKernel.Modules.AssetLoader;
-using IronKernel.Common;
 using IronKernel.Modules.FileSystem;
 using IronKernel.Modules.Clipboard;
 
