@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace IronKernel.Userland.Morphic.Events;
+namespace Userland.Morphic.Events;
 
 public sealed class PointerWheelEvent(Point delta) : MorphicEvent
 {

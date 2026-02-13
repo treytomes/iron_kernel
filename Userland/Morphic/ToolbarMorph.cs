@@ -1,9 +1,9 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Layout;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Layout;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class ToolbarMorph : Morph
 {

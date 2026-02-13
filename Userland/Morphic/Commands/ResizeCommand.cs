@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.Handles;
+using Userland.Morphic.Handles;
 
-namespace IronKernel.Userland.Morphic.Commands;
+namespace Userland.Morphic.Commands;
 
 /// <summary>
 /// Represents an intent to resize a morph from a specific handle.

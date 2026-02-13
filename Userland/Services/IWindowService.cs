@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 public interface IWindowService
 {

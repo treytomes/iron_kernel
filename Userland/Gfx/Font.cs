@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 public sealed class Font
 {

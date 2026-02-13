@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 /// <summary>
 /// Represents a single inspection state in the Inspector navigation stack.

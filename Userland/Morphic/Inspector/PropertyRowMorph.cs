@@ -2,9 +2,9 @@ using System;
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 /// <summary>
 /// A single row in an Inspector, displaying a property name

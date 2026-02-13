@@ -1,9 +1,9 @@
 using System.Drawing;
 using System.Reflection;
-using IronKernel.Userland.Morphic.Layout;
-using IronKernel.Userland.Morphic.Commands;
+using Userland.Morphic.Layout;
+using Userland.Morphic.Commands;
 
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 public sealed class InspectorMorph : WindowMorph
 {

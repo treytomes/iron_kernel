@@ -1,10 +1,10 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
+using Userland.Gfx;
 using System.Collections.Concurrent;
 using System.Drawing;
 
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 internal class AssetService(IApplicationBus bus) : IAssetService
 {

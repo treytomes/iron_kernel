@@ -1,8 +1,8 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Services;
+using Userland.Morphic;
+using Userland.Services;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class DummyReplMorph : WindowMorph
 {

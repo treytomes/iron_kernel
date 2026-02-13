@@ -1,11 +1,11 @@
 using System.Drawing;
 using System.Text;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Events;
-using IronKernel.Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic.Events;
+using Userland.Services;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class TextEditorMorph : Morph
 {

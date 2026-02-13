@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 public sealed class RenderImage
 	: Image, IImage<RenderImage>

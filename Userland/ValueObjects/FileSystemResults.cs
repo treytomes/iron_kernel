@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.ValueObjects;
+namespace Userland.ValueObjects;
 
 public sealed record FileReadResult(
 	byte[] Data,

@@ -1,8 +1,8 @@
-using IronKernel.Userland.Morphic;
+using Userland.Morphic;
 using Miniscript;
 using System.Drawing;
 
-namespace IronKernel.Userland.Roguey;
+namespace Userland.Roguey;
 
 /// <summary>
 /// Registers MiniScript intrinsics specific to the Roguey game.

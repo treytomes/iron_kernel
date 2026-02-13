@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic.Handles;
+namespace Userland.Morphic.Handles;
 
 public abstract class HandleMorph : Morph
 {

@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic.Commands;
+namespace Userland.Morphic.Commands;
 
 /// <summary>
 /// Maintains global undo/redo history.

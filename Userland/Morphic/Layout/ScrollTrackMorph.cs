@@ -1,8 +1,8 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
+using Userland.Gfx;
 
-namespace IronKernel.Userland.Morphic.Layout;
+namespace Userland.Morphic.Layout;
 
 public sealed class ScrollTrackMorph : Morph
 {

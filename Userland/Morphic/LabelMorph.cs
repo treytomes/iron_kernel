@@ -1,12 +1,12 @@
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Handles;
-using IronKernel.Userland.Morphic.Inspector;
-using IronKernel.Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Handles;
+using Userland.Morphic.Inspector;
+using Userland.Services;
 using System.Drawing;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 /// <summary>
 /// A text morph whose size is derived from its content.

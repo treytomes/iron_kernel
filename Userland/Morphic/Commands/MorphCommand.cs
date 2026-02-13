@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic.Commands;
+namespace Userland.Morphic.Commands;
 
 /// <summary>
 /// Base class for commands that target a specific Morph.

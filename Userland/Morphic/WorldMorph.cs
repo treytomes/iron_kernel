@@ -1,12 +1,12 @@
 using System.Collections.Concurrent;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Events;
-using IronKernel.Userland.Services;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
+using Userland.Services;
 using Miniscript;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class WorldMorph : Morph
 {

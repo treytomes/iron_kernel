@@ -1,7 +1,7 @@
 using System.Collections;
 using IronKernel.Common;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 /// <summary>
 /// A larger image that has been diced up into a list of smaller images.

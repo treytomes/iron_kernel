@@ -1,7 +1,7 @@
 
-using IronKernel.Userland.Morphic.Commands;
+using Userland.Morphic.Commands;
 
-namespace IronKernel.Userland.Morphic.ValueObjects;
+namespace Userland.Morphic.ValueObjects;
 
 public sealed record ToolbarItem(
 	string Label,

@@ -1,9 +1,9 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic.Handles;
+namespace Userland.Morphic.Handles;
 
 public sealed class MoveHandleMorph : HandleMorph
 {

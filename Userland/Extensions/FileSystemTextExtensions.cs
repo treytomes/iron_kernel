@@ -1,8 +1,8 @@
 using System.Text;
-using IronKernel.Userland.Services;
-using IronKernel.Userland.ValueObjects;
+using Userland.Services;
+using Userland.ValueObjects;
 
-namespace IronKernel.Userland;
+namespace Userland;
 
 public static class FileSystemTextExtensions
 {

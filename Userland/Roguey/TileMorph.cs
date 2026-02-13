@@ -1,11 +1,11 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic;
+using Userland.Services;
 using Miniscript;
 
-namespace IronKernel.Userland.Roguey;
+namespace Userland.Roguey;
 
 /// <summary>
 /// A single map tile backed entirely by MiniScript slots.

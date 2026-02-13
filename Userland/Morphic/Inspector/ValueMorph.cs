@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 /// <summary>
 /// Base morph for displaying a runtime value inside an Inspector.

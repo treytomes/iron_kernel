@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace IronKernel.Userland.Roguey;
+namespace Userland.Roguey;
 
 public sealed class TileSetInfo(string url, Size tileSize)
 {

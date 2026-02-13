@@ -1,10 +1,10 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 /// <summary>
 /// A clickable Morphic button with depth, hover animation,

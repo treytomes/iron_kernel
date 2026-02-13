@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
+using Userland.Gfx;
 
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 public interface IAssetService
 {

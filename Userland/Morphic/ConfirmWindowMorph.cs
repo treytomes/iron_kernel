@@ -1,8 +1,8 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Layout;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Layout;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class ConfirmWindowMorph : WindowMorph
 {

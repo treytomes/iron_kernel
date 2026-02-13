@@ -1,9 +1,9 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Gfx;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class ChannelStepperMorph : Morph
 {

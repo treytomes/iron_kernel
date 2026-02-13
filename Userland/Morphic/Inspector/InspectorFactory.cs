@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 public class InspectorFactory : IInspectorFactory
 {

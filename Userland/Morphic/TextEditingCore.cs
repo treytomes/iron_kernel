@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class TextEditingCore
 {

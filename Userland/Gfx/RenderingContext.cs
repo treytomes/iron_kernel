@@ -2,7 +2,7 @@ using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using System.Drawing;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 /// <inheritdoc/>
 public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext

@@ -1,15 +1,15 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Roguey;
-using IronKernel.Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic;
+using Userland.Morphic.Commands;
+using Userland.Roguey;
+using Userland.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class MiniMacroRoot
 {

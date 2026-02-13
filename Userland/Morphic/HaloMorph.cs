@@ -1,9 +1,9 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Handles;
+using Userland.Gfx;
+using Userland.Morphic.Handles;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class HaloMorph : Morph
 {

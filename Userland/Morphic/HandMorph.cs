@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class HandMorph : Morph
 {

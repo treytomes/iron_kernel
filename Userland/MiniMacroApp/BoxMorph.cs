@@ -1,9 +1,9 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic;
+using Userland.Gfx;
+using Userland.Morphic;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class BoxMorph : Morph
 {

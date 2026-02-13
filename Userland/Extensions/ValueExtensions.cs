@@ -1,7 +1,7 @@
 using IronKernel.Common.ValueObjects;
 using Miniscript;
 
-namespace IronKernel.Userland;
+namespace Userland;
 
 public static class ValueExtensions
 {

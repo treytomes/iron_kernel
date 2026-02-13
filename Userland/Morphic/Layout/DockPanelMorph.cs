@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.ValueObjects;
+using Userland.Morphic.ValueObjects;
 
-namespace IronKernel.Userland.Morphic.Layout;
+namespace Userland.Morphic.Layout;
 
 public class DockPanelMorph : Morph
 {

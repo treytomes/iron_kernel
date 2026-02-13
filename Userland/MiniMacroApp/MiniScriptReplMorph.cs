@@ -1,10 +1,10 @@
 using System.Drawing;
 using Miniscript;
-using IronKernel.Userland.Morphic;
+using Userland.Morphic;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Services;
+using Userland.Services;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class MiniScriptReplMorph : WindowMorph
 {

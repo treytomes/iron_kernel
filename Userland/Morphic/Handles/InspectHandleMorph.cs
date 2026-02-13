@@ -1,9 +1,9 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Events;
-using IronKernel.Userland.Morphic.Inspector;
+using Userland.Gfx;
+using Userland.Morphic.Events;
+using Userland.Morphic.Inspector;
 
-namespace IronKernel.Userland.Morphic.Handles;
+namespace Userland.Morphic.Handles;
 
 public sealed class InspectHandleMorph : HandleMorph
 {

@@ -1,10 +1,10 @@
-using IronKernel.Userland.Gfx;
+using Userland.Gfx;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Morphic.Inspector;
+using Userland.Morphic.Inspector;
 using System.Drawing;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class CheckBoxMorph : Morph, IValueContentMorph
 {

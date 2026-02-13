@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic.ValueObjects;
+namespace Userland.Morphic.ValueObjects;
 
 public enum Dock
 {

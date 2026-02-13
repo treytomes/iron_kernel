@@ -1,8 +1,8 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.ValueObjects;
+using Userland.ValueObjects;
 
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 public sealed class FileSystemService : IFileSystem
 {

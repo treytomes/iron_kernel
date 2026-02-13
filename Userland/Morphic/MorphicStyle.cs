@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class MorphicStyle
 {

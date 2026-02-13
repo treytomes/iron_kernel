@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 /// <summary>
 /// Logical multi-line text document.

@@ -1,6 +1,6 @@
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Morphic.Events;
+namespace Userland.Morphic.Events;
 
 public sealed class KeyEvent : MorphicEvent
 {

@@ -1,6 +1,6 @@
-using IronKernel.Userland.Morphic;
+using Userland.Morphic;
 
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 public sealed class WindowService : IWindowService
 {

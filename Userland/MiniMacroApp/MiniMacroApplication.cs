@@ -1,11 +1,11 @@
 using IronKernel.Common;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using IronKernel.Userland.Services;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic;
+using Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class MiniMacroApplication(
 // ILogger<MiniMacroApplication> kernelLogger

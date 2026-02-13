@@ -1,7 +1,7 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic.Commands;
+using Userland.Morphic.Commands;
 
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 public sealed class NavigableValueMorph : Morph
 {

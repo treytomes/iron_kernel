@@ -1,11 +1,11 @@
 using System.Drawing;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Events;
-using IronKernel.Userland.Morphic.Layout;
-using IronKernel.Userland.Morphic.ValueObjects;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
+using Userland.Morphic.Layout;
+using Userland.Morphic.ValueObjects;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 /// <summary>
 /// A compositional window morph with semantic styling.

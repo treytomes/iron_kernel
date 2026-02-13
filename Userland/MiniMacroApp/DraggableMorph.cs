@@ -1,8 +1,8 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Morphic.Events;
+using Userland.Morphic;
+using Userland.Morphic.Events;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public class DraggableMorph : Morph
 {

@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Morphic.Inspector;
+namespace Userland.Morphic.Inspector;
 
 public interface IValueContentMorph
 {

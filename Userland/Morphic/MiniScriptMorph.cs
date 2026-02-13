@@ -1,6 +1,6 @@
 using Miniscript;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public class MiniScriptMorph : Morph
 {

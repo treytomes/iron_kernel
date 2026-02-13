@@ -1,7 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 /// <summary>  
 /// Provides a high-level drawing API for rendering to a VirtualDisplay.  

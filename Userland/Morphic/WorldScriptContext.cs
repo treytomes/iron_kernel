@@ -1,12 +1,12 @@
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.MiniMacro;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Services;
+using Userland.MiniMacro;
+using Userland.Morphic.Commands;
+using Userland.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Miniscript;
 using System.Drawing;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public sealed class WorldScriptContext
 {

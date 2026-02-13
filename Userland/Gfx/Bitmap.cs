@@ -2,7 +2,7 @@ using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Gfx;
+namespace Userland.Gfx;
 
 /// <summary>
 /// A bitmap is filled with 2-bit image data.

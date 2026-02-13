@@ -1,6 +1,6 @@
 using IronKernel.Common.ValueObjects;
 
-namespace IronKernel.Userland.Roguey;
+namespace Userland.Roguey;
 
 public sealed class TileInfo
 {

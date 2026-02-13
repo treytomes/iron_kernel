@@ -1,10 +1,10 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Layout;
+using Userland.Morphic;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Layout;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class LauncherMorph : WindowMorph
 {

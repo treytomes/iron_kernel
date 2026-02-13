@@ -1,4 +1,4 @@
-namespace IronKernel.Userland.Services;
+namespace Userland.Services;
 
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;

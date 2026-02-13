@@ -1,12 +1,12 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
-using IronKernel.Userland.Gfx;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Events;
-using IronKernel.Userland.Morphic.Handles;
-using IronKernel.Userland.Services;
+using Userland.Gfx;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
+using Userland.Morphic.Handles;
+using Userland.Services;
 
-namespace IronKernel.Userland.Morphic;
+namespace Userland.Morphic;
 
 public abstract class Morph : ICommandTarget
 {

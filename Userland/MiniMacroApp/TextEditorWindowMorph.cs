@@ -1,11 +1,11 @@
 using System.Drawing;
-using IronKernel.Userland.Morphic;
-using IronKernel.Userland.Morphic.Commands;
-using IronKernel.Userland.Morphic.Layout;
-using IronKernel.Userland.Morphic.ValueObjects;
-using IronKernel.Userland.Services;
+using Userland.Morphic;
+using Userland.Morphic.Commands;
+using Userland.Morphic.Layout;
+using Userland.Morphic.ValueObjects;
+using Userland.Services;
 
-namespace IronKernel.Userland.MiniMacro;
+namespace Userland.MiniMacro;
 
 public sealed class TextEditorWindowMorph : WindowMorph
 {
