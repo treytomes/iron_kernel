@@ -1,5 +1,4 @@
 using System.Runtime.InteropServices;
-using OpenTK.Mathematics;
 
 namespace IronKernel.Common.ValueObjects;
 
@@ -91,17 +90,6 @@ public sealed record RadialColor : IEquatable<RadialColor>
 	/// <summary>  
 	/// Converts a standard Color to a RadialColor.  
 	/// </summary>  
-	public static RadialColor FromColor(Color4 color)
-	{
-		var r = (byte)Math.Min(5, Math.Round(color.R * 5));
-		var g = (byte)Math.Min(5, Math.Round(color.G * 5));
-		var b = (byte)Math.Min(5, Math.Round(color.B * 5));
-		return new RadialColor(r, g, b);
-	}
-
-	/// <summary>  
-	/// Converts a standard Color to a RadialColor.  
-	/// </summary>  
 	public static RadialColor FromColor(Color color)
 	{
 		var r = (byte)Math.Min(5, Math.Round(color.Red / 255f * 5));
@@ -116,13 +104,6 @@ public sealed record RadialColor : IEquatable<RadialColor>
 	}
 
 	/// <summary>  
-	/// Converts this RadialColor to a standard Color.  
-	/// </summary>  
-	public Color4 ToColor()
-	{
-		return new Color4(R / 5.0f, G / 5.0f, B / 5.0f, 1.0f);
-	}
-	/// <summary>  
 	/// Linearly interpolates between two RadialColors.  
 	/// </summary>  
 	/// <param name="other">The target color.</param>  
@@ -131,9 +112,9 @@ public sealed record RadialColor : IEquatable<RadialColor>
 	public RadialColor Lerp(RadialColor other, float t)
 	{
 		t = Math.Clamp(t, 0.0f, 1.0f);
-		float r = MathHelper.Lerp(R, other.R, t);
-		float g = MathHelper.Lerp(G, other.G, t);
-		float b = MathHelper.Lerp(B, other.B, t);
+		var r = MathHelper.Lerp(R, other.R, t);
+		var g = MathHelper.Lerp(G, other.G, t);
+		var b = MathHelper.Lerp(B, other.B, t);
 		return new RadialColor(
 			(byte)Math.Round(r),
 			(byte)Math.Round(g),

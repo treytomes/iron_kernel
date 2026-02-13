@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../IronKernel.Common/IronKernel.Common.csproj" />
   </ItemGroup>
 
 	<ItemGroup>
