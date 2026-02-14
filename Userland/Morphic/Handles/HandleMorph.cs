@@ -1,7 +1,7 @@
 using System.Drawing;
 using Userland.Morphic.Events;
 
-namespace Userland.Morphic.Handles;
+namespace Userland.Morphic.Halo;
 
 public abstract class HandleMorph : Morph
 {

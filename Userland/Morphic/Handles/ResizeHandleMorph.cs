@@ -3,7 +3,7 @@ using Userland.Gfx;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 
-namespace Userland.Morphic.Handles;
+namespace Userland.Morphic.Halo;
 
 public sealed class ResizeHandleMorph : HandleMorph
 {
@@ -19,9 +19,8 @@ public sealed class ResizeHandleMorph : HandleMorph
 		: base(target)
 	{
 		Kind = kind;
-		Size = new Size(8, 8);
 
-		_icon = new ImageMorph(new Point(0, 0), "asset://image.resize_icon")
+		_icon = new ImageMorph(Point.Empty, "asset://image.resize_icon")
 		{
 			IsSelectable = false,
 			Flags = kind is ResizeHandle.TopLeft or ResizeHandle.BottomRight
@@ -52,13 +51,17 @@ public sealed class ResizeHandleMorph : HandleMorph
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
-		rc.RenderFilledRect(new Rectangle(new Point(0, 0), Size), bg);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), bg);
 
-		_icon.Position = new Point(0, 0);
-		_icon.Size = Size;
 		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
+	}
+
+	protected override void UpdateLayout()
+	{
+		base.UpdateLayout();
+		Size = _icon.Size;
 	}
 
 	public override void OnPointerMove(PointerMoveEvent e)

@@ -2,7 +2,7 @@ using System.Drawing;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 
-namespace Userland.Morphic.Handles;
+namespace Userland.Morphic.Halo;
 
 public sealed class DeleteHandleMorph : HandleMorph
 {
@@ -17,9 +17,7 @@ public sealed class DeleteHandleMorph : HandleMorph
 	public DeleteHandleMorph(Morph target)
 		: base(target)
 	{
-		Size = new Size(8, 8);
-
-		_icon = new ImageMorph(new Point(0, 0), "asset://image.delete_icon")
+		_icon = new ImageMorph(Point.Empty, "asset://image.delete_icon")
 		{
 			IsSelectable = false,
 		};
@@ -42,18 +40,21 @@ public sealed class DeleteHandleMorph : HandleMorph
 
 		if (StyleForHandle == null) return;
 
-		// TODO: I don't like needing to interrogate child morphs for the IsHovered property.  I need a better way.
 		var bg = IsEffectivelyHovered
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
-		_icon.Position = new Point(0, 0);
-		_icon.Size = Size;
 		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
 
-		rc.RenderFilledRect(new Rectangle(new Point(0, 0), Size), bg);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), bg);
+	}
+
+	protected override void UpdateLayout()
+	{
+		base.UpdateLayout();
+		Size = _icon.Size;
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)

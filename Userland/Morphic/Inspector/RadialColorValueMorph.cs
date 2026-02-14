@@ -6,13 +6,6 @@ namespace Userland.Morphic.Inspector;
 
 public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 {
-	#region Constants
-
-	private const int SwatchSize = 6;
-	private const int Padding = 1;
-
-	#endregion
-
 	#region Fields
 
 	private RadialColor? _color;
@@ -40,8 +33,10 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 			position: Point.Empty,
 			size: new Size(8, 8),
 			text: "+"
-		);
-		_toggleButton.OnClick = OnToggleNull;
+		)
+		{
+			OnClick = OnToggleNull
+		};
 
 		AddMorph(_toggleButton);
 		AddMorph(_r);
@@ -50,6 +45,13 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 
 		UpdateEnabledState();
 	}
+
+	#endregion
+
+	#region Properties
+
+	public int SwatchSize => Style?.DefaultFontStyle.TileSize.Height ?? 8;
+	public int Padding => 1;
 
 	#endregion
 
@@ -127,27 +129,17 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 			s.Border);
 
 		// Swatch fill
-		if (_color != null)
-		{
-			for (var x = 1; x < SwatchSize - 1; x++)
-				for (var y = 1; y < SwatchSize - 1; y++)
-				{
-					rc.SetPixel(
-						new Point(Padding + x, Padding + y),
-						_color);
-				}
-		}
-		else
-		{
-			// Muted fill for null state
-			for (var x = 1; x < SwatchSize - 1; x++)
-				for (var y = 1; y < SwatchSize - 1; y++)
-				{
-					rc.SetPixel(
-						new Point(Padding + x, Padding + y),
-						s.MutedText);
-				}
-		}
+		var color = _color ?? s.MutedText;
+		var innerSize = SwatchSize - Padding * 2;
+		for (var x = 0; x < innerSize; x++)
+			for (var y = 0; y < innerSize; y++)
+			{
+				rc.SetPixel(
+					new Point(
+						Padding * 2 + x,
+						Padding * 2 + y),
+					color);
+			}
 	}
 
 	#endregion

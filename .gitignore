@@ -1,5 +1,8 @@
 bin
 chats
 obj
-*.png~
 publish
+
+# Krita artifacts
+*.png~
+*.kra

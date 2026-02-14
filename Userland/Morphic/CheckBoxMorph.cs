@@ -1,141 +1,141 @@
-using Userland.Gfx;
-using IronKernel.Common.ValueObjects;
-using Userland.Morphic.Inspector;
 using System.Drawing;
+using IronKernel.Common.ValueObjects;
+using Userland.Gfx;
 using Userland.Morphic.Events;
+using Userland.Morphic.Inspector;
+using Userland.Services;
 
 namespace Userland.Morphic;
 
 public sealed class CheckBoxMorph : Morph, IValueContentMorph
 {
 	#region Fields
-
 	private bool? _checked;
-	private readonly Action<bool>? _setter;
+	private readonly Action<bool?>? _setter;
 
-	private const int BoxSize = 6;
-	private const int Padding = 1;
+	private Font? _font;
 
+	private readonly StateLerp _hover = new();
+	private readonly StateLerp _press = new();
 	#endregion
 
-	#region Constructors
+	#region Configuration
+	public bool AllowIndeterminate { get; set; } = false;
 
-	public CheckBoxMorph(Action<bool>? setter = null)
+	public int EmptyCheckBoxTile { get; set; } = 132;
+	public int CheckedCheckBoxTile { get; set; } = 133;
+	public int IndeterminateCheckBoxTile { get; set; } = 134;
+	#endregion
+
+	#region Construction
+	public CheckBoxMorph(Action<bool?>? setter = null)
 	{
 		_setter = setter;
 		IsSelectable = true;
-		Size = new(BoxSize + Padding * 2, BoxSize + Padding * 2);
 	}
-
 	#endregion
 
-	#region Methods
+	#region Loading
+	protected override async void OnLoad(IAssetService assets)
+	{
+		if (Style == null)
+			throw new InvalidOperationException("Style is null.");
 
-	#region IValueContentMorph
+		var fs = Style.DefaultFontStyle;
 
+		_font = await assets.LoadFontAsync(
+			fs.Url,
+			fs.TileSize,
+			fs.GlyphOffset
+		);
+
+		// Entire control derives from font metrics
+		Size = _font.TileSize;
+		InvalidateLayout();
+	}
+	#endregion
+
+	#region Value binding
 	public void Refresh(object? value)
 	{
 		_checked = value as bool?;
 		Invalidate();
 	}
-
 	#endregion
 
 	#region Input
-
 	public override void OnPointerDown(PointerDownEvent e)
 	{
-		if (!IsEnabled)
+		if (!IsEnabled || e.Button != MouseButton.Left)
 			return;
 
-		if (e.Button == MouseButton.Left)
-		{
-			_checked = _checked != true;
-			_setter?.Invoke(_checked.Value);
-			Invalidate();
-		}
+		_checked = NextState(_checked);
+		_setter?.Invoke(_checked);
+		Invalidate();
 
 		base.OnPointerDown(e);
 	}
 
+	private bool? NextState(bool? current)
+	{
+		if (!AllowIndeterminate)
+			return current != true;
+
+		return current switch
+		{
+			false => true,
+			true => null,
+			null => false
+		};
+	}
+	#endregion
+
+	#region Update
+	public override void Update(double deltaMs)
+	{
+		_hover.Update(IsEffectivelyHovered && IsEnabled, deltaMs, 0.015f);
+		_press.Update(IsPressed && IsEnabled, deltaMs, 0.02f);
+
+		if (_hover.Value > 0f || _press.Value > 0f)
+			Invalidate();
+	}
 	#endregion
 
 	#region Rendering
-
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		if (Style == null) return;
+		if (_font == null || Style == null)
+			return;
 
 		var s = Style.Semantic;
 
-		// Background
-		rc.RenderFilledRect(
-			new Rectangle(0, 0, Size.Width, Size.Height),
-			s.Surface);
+		int tile =
+			_checked == true
+				? CheckedCheckBoxTile
+				: _checked == null
+					? IndeterminateCheckBoxTile
+					: EmptyCheckBoxTile;
 
-		// Border
-		var border =
-			!IsEnabled ? s.Border :
-			IsPressed ? s.PrimaryActive :
-			IsEffectivelyHovered ? s.PrimaryHover :
-			s.Border;
+		// Base state resolution (shared pattern) [1]
+		RadialColor fg =
+			!IsEnabled ? s.SecondaryText : s.Text;
 
-		DrawBox(rc, border);
+		RadialColor bg = s.Surface;
 
-		// Check / indeterminate
-		if (_checked == true)
-		{
-			DrawCheck(rc, ResolveCheckColor(s));
-		}
-		else if (_checked == null)
-		{
-			DrawIndeterminate(rc, s.SuccessMuted);
-		}
+		// Animated overlays
+		if (_hover.Value > 0f)
+			fg = fg.Lerp(s.PrimaryHover, _hover.Value);
+
+		if (_press.Value > 0f)
+			fg = fg.Lerp(s.PrimaryActive, _press.Value);
+
+		_font.WriteChar(
+			rc,
+			(char)tile,
+			Point.Empty,
+			fg,
+			bg
+		);
 	}
-
-	private void DrawIndeterminate(IRenderingContext ctx, RadialColor color)
-	{
-		var y = Padding + BoxSize / 2;
-		for (var x = Padding + 3; x < Padding + BoxSize - 3; x++)
-		{
-			ctx.SetPixel(new(x, y), color);
-		}
-	}
-
-	private void DrawBox(IRenderingContext ctx, RadialColor color)
-	{
-		for (var x = Padding; x < Padding + BoxSize; x++)
-			for (var y = Padding; y < Padding + BoxSize; y++)
-			{
-				// Border only
-				if (x == Padding || y == Padding ||
-					x == Padding + BoxSize - 1 ||
-					y == Padding + BoxSize - 1)
-				{
-					ctx.SetPixel(new(x, y), color);
-				}
-			}
-	}
-
-	private void DrawCheck(IRenderingContext ctx, RadialColor color)
-	{
-		for (var x = Padding + 1; x < Padding + BoxSize - 1; x++)
-			for (var y = Padding + 1; y < Padding + BoxSize - 1; y++)
-			{
-				ctx.SetPixel(new(x, y), color);
-			}
-	}
-
-	private RadialColor ResolveCheckColor(SemanticColors s)
-	{
-		return
-			!IsEnabled ? s.SuccessMuted :
-			IsPressed ? s.SuccessActive :
-			IsEffectivelyHovered ? s.SuccessHover :
-			s.Success;
-	}
-
-	#endregion
-
 	#endregion
 }

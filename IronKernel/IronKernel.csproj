@@ -39,7 +39,7 @@
 		<None Update="assets/delete_icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Update="assets/good_neighbors.png">
+		<None Update="assets/inspect_icon.png">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="assets/mouse_cursor.png">

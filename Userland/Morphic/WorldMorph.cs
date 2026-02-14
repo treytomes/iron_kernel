@@ -5,6 +5,7 @@ using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 using Userland.Services;
 using Miniscript;
+using Userland.Morphic.Halo;
 
 namespace Userland.Morphic;
 

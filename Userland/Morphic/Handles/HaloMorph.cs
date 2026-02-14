@@ -1,9 +1,9 @@
-using System.Drawing;
+using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
+using System.Drawing;
 using Userland.Gfx;
-using Userland.Morphic.Handles;
 
-namespace Userland.Morphic;
+namespace Userland.Morphic.Halo;
 
 public sealed class HaloMorph : Morph
 {
@@ -28,28 +28,9 @@ public sealed class HaloMorph : Morph
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomLeft));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomRight));
 
-		AddMorph(new MoveHandleMorph(target)
-		{
-			Position = new Point(-4, -4)
-		});
-
-		AddMorph(new DeleteHandleMorph(target)
-		{
-
-			Position = new Point(
-				target.Position.X + target.Size.Width / 2 - 4,
-				target.Position.Y + target.Size.Height - 4
-			)
-		});
-
-		AddMorph(new InspectHandleMorph(target)
-		{
-
-			Position = new Point(
-				target.Position.X + target.Size.Width / 2 - 4,
-				target.Position.Y - 4
-			)
-		});
+		AddMorph(new MoveHandleMorph(target));
+		AddMorph(new DeleteHandleMorph(target));
+		AddMorph(new InspectHandleMorph(target));
 	}
 
 	#endregion
@@ -68,21 +49,11 @@ public sealed class HaloMorph : Morph
 
 		_totalTime += deltaTime;
 
-		var wave = TriangleWave(_totalTime, AnimationSpeedFactor);
+		var wave = MathHelper.TriangleWave(_totalTime, AnimationSpeedFactor);
 		var symmetric = (wave * 2f) - 1f;
 
 		// Optional amplitude clamp
 		_outlineColorLerpWeight = symmetric * 0.9f;
-	}
-
-
-	// t = time in seconds, freq = cycles per second
-	static float TriangleWave(double t, double freq)
-	{
-		var phase = (t * freq) % 1.0;   // [0,1)
-		return phase < 0.5
-			? (float)(phase * 2.0)
-			: (float)(2.0 - phase * 2.0);
 	}
 
 	protected override void DrawSelf(IRenderingContext rc)
@@ -122,10 +93,10 @@ public sealed class HaloMorph : Morph
 
 	private void LayoutHandles()
 	{
-		var hs = 4;
-
 		foreach (var m in Submorphs.OfType<ResizeHandleMorph>())
 		{
+			var hs = m.Size.Width / 2;
+
 			m.Position = m.Kind switch
 			{
 				// ResizeHandle.TopLeft =>
@@ -146,15 +117,24 @@ public sealed class HaloMorph : Morph
 
 		var move = Submorphs.OfType<MoveHandleMorph>().FirstOrDefault();
 		if (move != null)
+		{
+			var hs = move.Size.Width / 2;
 			move.Position = new Point(-hs, -hs);
+		}
 
 		var delete = Submorphs.OfType<DeleteHandleMorph>().FirstOrDefault();
 		if (delete != null)
+		{
+			var hs = delete.Size.Width / 2;
 			delete.Position = new Point(Size.Width / 2 - hs, Size.Height - hs);
+		}
 
 		var resize = Submorphs.OfType<InspectHandleMorph>().FirstOrDefault();
 		if (resize != null)
+		{
+			var hs = resize.Size.Width / 2;
 			resize.Position = new Point(Size.Width / 2 - hs, -hs);
+		}
 	}
 
 	#endregion

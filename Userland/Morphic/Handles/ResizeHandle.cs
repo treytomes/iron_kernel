@@ -1,4 +1,4 @@
-namespace Userland.Morphic.Handles;
+namespace Userland.Morphic.Halo;
 
 public enum ResizeHandle
 {

@@ -3,7 +3,7 @@ using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Morphic.Inspector;
 
-namespace Userland.Morphic.Handles;
+namespace Userland.Morphic.Halo;
 
 public sealed class InspectHandleMorph : HandleMorph
 {
@@ -18,9 +18,7 @@ public sealed class InspectHandleMorph : HandleMorph
 	public InspectHandleMorph(Morph target)
 		: base(target)
 	{
-		Size = new Size(8, 8);
-
-		_icon = new ImageMorph(new Point(0, 0), "asset://image.delete_icon")
+		_icon = new ImageMorph(Point.Empty, "asset://image.inspect_icon")
 		{
 			IsSelectable = false,
 		};
@@ -47,13 +45,17 @@ public sealed class InspectHandleMorph : HandleMorph
 			? StyleForHandle.BackgroundHover
 			: StyleForHandle.Background;
 
-		_icon.Position = new Point(0, 0);
-		_icon.Size = Size;
 		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover
 			: StyleForHandle.Foreground;
 
-		rc.RenderFilledRect(new Rectangle(new Point(0, 0), Size), bg);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), bg);
+	}
+
+	protected override void UpdateLayout()
+	{
+		base.UpdateLayout();
+		Size = _icon.Size;
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)

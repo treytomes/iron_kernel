@@ -1,7 +1,7 @@
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Commands;
-using Userland.Morphic.Handles;
+using Userland.Morphic.Halo;
 using Userland.Morphic.Inspector;
 using Userland.Services;
 using System.Drawing;
