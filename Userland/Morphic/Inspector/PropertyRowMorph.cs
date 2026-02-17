@@ -1,8 +1,6 @@
-using System;
 using System.Drawing;
 using System.Linq.Expressions;
 using System.Reflection;
-using Userland.Morphic.Events;
 
 namespace Userland.Morphic.Inspector;
 

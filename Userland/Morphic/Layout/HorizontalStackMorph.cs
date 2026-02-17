@@ -2,7 +2,7 @@ using System.Drawing;
 
 namespace Userland.Morphic.Layout;
 
-public sealed class HorizontalStackMorph : Morph
+public class HorizontalStackMorph : Morph
 {
 	public int Padding { get; set; } = 4;
 	public int Spacing { get; set; } = 2;
