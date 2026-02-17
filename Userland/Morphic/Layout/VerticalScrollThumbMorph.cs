@@ -28,7 +28,22 @@ public sealed class VerticalScrollThumbMorph : Morph
 	}
 
 	private int Padding => 2;
-	public RadialColor FillColor => new RadialColor(0, 5, 0);
+
+	private RadialColor ResolveThumbColor()
+	{
+		var s = Style!.Semantic;
+
+		if (!IsEnabled)
+			return s.MutedText;
+
+		if (_dragging)
+			return s.PrimaryActive;
+
+		if (IsEffectivelyHovered)
+			return s.PrimaryHover;
+
+		return s.Border;
+	}
 
 	protected override void UpdateLayout()
 	{
@@ -87,7 +102,7 @@ public sealed class VerticalScrollThumbMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), FillColor);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), ResolveThumbColor());
 		base.DrawSelf(rc);
 	}
 }

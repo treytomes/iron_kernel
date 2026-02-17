@@ -228,23 +228,26 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 			return;
 		}
 
-		var trackHeight = _hTrack.Size.Height;
+		var trackHeight = _vTrack.Size.Height;
 		if (trackHeight <= MinThumbSize)
 			return;
 
 		_vThumb.Visible = true;
 
 		var ratio = (float)_viewport.Size.Height / _content.Size.Height;
+
 		var thumbHeight = Math.Clamp(
 			(int)(trackHeight * ratio),
 			MinThumbSize,
 			trackHeight
 		);
 
-		_vThumb.Size = new Size(thumbHeight, _vThumb.Size.Height);
+		_vThumb.Size = new Size(_vThumb.Size.Width, thumbHeight);
 
 		var maxThumbY = trackHeight - thumbHeight;
+
 		var y = (int)((float)_scrollOffset.Y / MaxScrollY * maxThumbY);
+
 		_vThumb.Position = new Point(_vThumb.Position.X, y);
 	}
 
