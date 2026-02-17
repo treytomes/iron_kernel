@@ -177,7 +177,6 @@ public sealed class MiniMacroRoot
 				{
 					try
 					{
-						_rc.Fill(new RadialColor(0, 2, 5));
 						world.Draw(_rc);
 						_rc.Present();
 					}

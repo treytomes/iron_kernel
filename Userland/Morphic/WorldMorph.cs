@@ -6,6 +6,7 @@ using Userland.Morphic.Events;
 using Userland.Services;
 using Miniscript;
 using Userland.Morphic.Halo;
+using Userland.Gfx;
 
 namespace Userland.Morphic;
 
@@ -48,6 +49,7 @@ public sealed class WorldMorph : Morph
 	public ScriptOutputHub ScriptOutput => _scriptOutput;
 	public WorldScriptContext ScriptContext => _scriptContext;
 
+	public RadialColor BackgroundColor { get; set; } = new RadialColor(0, 2, 5);
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;
@@ -368,6 +370,12 @@ public sealed class WorldMorph : Morph
 	{
 		while (morph != null && !morph.IsSelectable) morph = morph.Owner;
 		return morph;
+	}
+
+	protected override void DrawSelf(IRenderingContext rc)
+	{
+		base.DrawSelf(rc);
+		rc.Fill(BackgroundColor);
 	}
 
 	#endregion
