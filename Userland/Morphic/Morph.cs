@@ -428,10 +428,12 @@ public abstract class Morph : ICommandTarget
 		return false;
 	}
 
-	protected WorldMorph GetWorld()
+	protected WorldMorph? GetWorld()
 	{
 		if (this is WorldMorph) return (this as WorldMorph)!;
-		return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();
+		if (Owner == null) return null;
+		return Owner.GetWorld();
+		// return (Owner ?? throw new InvalidOperationException("World is missing.")).GetWorld();
 	}
 
 	internal void NotifyAddedToWorld(WorldMorph world)
