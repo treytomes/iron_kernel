@@ -21,10 +21,17 @@ public sealed class VerticalStackMorph : Morph
 			maxWidth = Math.Max(maxWidth, child.Size.Width);
 		}
 
-		Size = new Size(
-			maxWidth + Padding * 2,
-			y + Padding
-		);
+		if (Visible)
+		{
+			Size = new Size(
+				maxWidth + Padding * 2,
+				y + Padding
+			);
+		}
+		else
+		{
+			Size = Size.Empty;
+		}
 
 		base.UpdateLayout();
 	}

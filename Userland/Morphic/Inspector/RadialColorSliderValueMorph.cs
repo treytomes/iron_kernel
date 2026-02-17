@@ -16,6 +16,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	private readonly ButtonMorph _toggleButton;
 	private readonly RadialColorSwatchMorph _swatch;
 	private readonly HorizontalStackMorph _root;
+	private readonly VerticalStackMorph _sliderStack;
 	#endregion
 
 	#region Construction
@@ -30,7 +31,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 			Spacing = 4
 		};
 
-		var sliderStack = new VerticalStackMorph
+		_sliderStack = new VerticalStackMorph
 		{
 			Padding = 0,
 			Spacing = 2
@@ -40,9 +41,9 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 		_g = CreateChannelSlider(v => OnChannelChanged(Channel.G, v));
 		_b = CreateChannelSlider(v => OnChannelChanged(Channel.B, v));
 
-		sliderStack.AddMorph(_r);
-		sliderStack.AddMorph(_g);
-		sliderStack.AddMorph(_b);
+		_sliderStack.AddMorph(_r);
+		_sliderStack.AddMorph(_g);
+		_sliderStack.AddMorph(_b);
 
 		_toggleButton = new ButtonMorph(
 			Point.Empty,
@@ -56,7 +57,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 
 		_root.AddMorph(_swatch);
 		_root.AddMorph(_toggleButton);
-		_root.AddMorph(sliderStack);
+		_root.AddMorph(_sliderStack);
 
 		AddMorph(_root);
 
@@ -160,18 +161,30 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 			_setter?.Invoke(null);
 		}
 
-		Refresh(_color);
+		// ✅ Always update UI state explicitly
+		UpdateEnabledState();
+
+		// ✅ Force sliders to sync when becoming visible
+		if (_color != null)
+		{
+			_r.Value = _color.R;
+			_g.Value = _color.G;
+			_b.Value = _color.B;
+		}
+
+		InvalidateLayout();
 	}
 
 	private void UpdateEnabledState()
 	{
 		bool hasValue = _color != null;
 
-		_r.IsEnabled = hasValue;
-		_g.IsEnabled = hasValue;
-		_b.IsEnabled = hasValue;
-
 		_toggleButton.Text = hasValue ? "-" : "+";
+
+		_sliderStack.Visible = hasValue;
+
+		InvalidateLayout();
 	}
+
 	#endregion
 }

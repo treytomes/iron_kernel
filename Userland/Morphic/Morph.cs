@@ -52,7 +52,19 @@ public abstract class Morph : ICommandTarget
 		}
 	}
 
-	public bool Visible { get; set; } = true;
+	private bool _visible = true;
+	public bool Visible
+	{
+		get => _visible;
+		set
+		{
+			if (_visible != value)
+			{
+				_visible = value;
+				InvalidateLayout();
+			}
+		}
+	}
 
 	public virtual bool IsEnabled
 	{

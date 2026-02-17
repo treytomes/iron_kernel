@@ -20,10 +20,17 @@ public class HorizontalStackMorph : Morph
 			maxHeight = Math.Max(maxHeight, child.Size.Height);
 		}
 
-		Size = new Size(
-			x + Padding,
-			maxHeight + Padding * 2
-		);
+		if (Visible)
+		{
+			Size = new Size(
+				x + Padding,
+				maxHeight + Padding * 2
+			);
+		}
+		else
+		{
+			Size = Size.Empty;
+		}
 
 		base.UpdateLayout();
 	}
