@@ -147,7 +147,6 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 
 		_vThumb = new VerticalScrollThumbMorph(
 			getMaxScroll: () => MaxScrollY,
-			getViewportHeight: () => _viewport.Size.Height,
 			setScroll: y =>
 			{
 				_scrollOffset = new Point(_scrollOffset.X, y);
