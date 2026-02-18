@@ -129,6 +129,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 				await Task.Yield();
 			}
 
+			world?.ApplyScriptEdits();
+
 			// After execution, ensure we're on a fresh line
 			if (!_interpreter.NeedMoreInput())
 				_console.WriteLine();

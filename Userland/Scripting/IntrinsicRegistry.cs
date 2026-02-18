@@ -8,7 +8,6 @@ public static class IntrinsicRegistry
 		MorphIntrinsics.Register();
 		ColorIntrinsics.Register();
 		FileSystemIntrinsics.Register();
+		TileMapIntrinsics.Register();
 	}
-
-
 }

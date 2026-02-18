@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace Userland.Roguey;
+namespace Userland.Morphic;
 
 public sealed class TileSetInfo(string url, Size tileSize)
 {

@@ -1,12 +1,11 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
-using Userland.Morphic;
 using Userland.Services;
 
-namespace Userland.Roguey;
+namespace Userland.Morphic;
 
-public sealed class TileMapMorph : MiniScriptMorph
+public sealed class TileMapMorph : Morph
 {
 	#region Fields
 
@@ -128,6 +127,15 @@ public sealed class TileMapMorph : MiniScriptMorph
 		}
 
 		rc.PopOffset();
+	}
+
+	protected override void ApplyScriptState()
+	{
+		base.ApplyScriptState();
+
+		for (int y = 0; y < MapSize.Height; y++)
+			for (int x = 0; x < MapSize.Width; x++)
+				GetTile(x, y)?.ApplyScriptState();
 	}
 
 	#endregion

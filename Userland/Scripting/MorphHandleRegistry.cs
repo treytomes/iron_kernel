@@ -6,10 +6,10 @@ namespace Userland.Scripting;
 public sealed class MorphHandleRegistry
 {
 	// id → morph
-	private readonly Dictionary<int, MiniScriptMorph> _morphs = new();
+	private readonly Dictionary<int, Morph> _morphs = new();
 
 	// morph → id (for cleanup)
-	private readonly Dictionary<MiniScriptMorph, int> _reverse = new();
+	private readonly Dictionary<Morph, int> _reverse = new();
 
 	private readonly Dictionary<int, ValMap> _handles = new();
 
@@ -18,7 +18,7 @@ public sealed class MorphHandleRegistry
 	/// <summary>
 	/// Register a morph and return a MiniScript handle.
 	/// </summary>
-	public ValMap Register(MiniScriptMorph morph)
+	public ValMap Register(Morph morph)
 	{
 		var id = _nextId++;
 		_morphs[id] = morph;
@@ -30,7 +30,7 @@ public sealed class MorphHandleRegistry
 	/// Resolve a handle to a live morph.
 	/// Returns null if invalid or dead.
 	/// </summary>
-	public MiniScriptMorph? ResolveAlive(Value handle)
+	public Morph? ResolveAlive(Value handle)
 	{
 		if (handle is not ValMap map)
 			return null;
@@ -80,7 +80,7 @@ public sealed class MorphHandleRegistry
 	/// <summary>
 	/// Called by the world when a morph is destroyed.
 	/// </summary>
-	public void OnMorphDestroyed(MiniScriptMorph morph)
+	public void OnMorphDestroyed(Morph morph)
 	{
 		if (_reverse.TryGetValue(morph, out var id))
 		{
@@ -92,7 +92,7 @@ public sealed class MorphHandleRegistry
 	/// <summary>
 	/// Enumerate all live morphs with handles.
 	/// </summary>
-	public IEnumerable<(int id, MiniScriptMorph morph)> EnumerateAlive()
+	public IEnumerable<(int id, Morph morph)> EnumerateAlive()
 	{
 		foreach (var pair in _morphs)
 		{
@@ -141,10 +141,6 @@ public sealed class MorphHandleRegistry
 
 	private static void AttachMorphMethods(ValMap handle)
 	{
-		handle["get"] = Intrinsic.GetByName("slot_get")!.GetFunc().BindAndCopy(handle);
-		handle["set"] = Intrinsic.GetByName("slot_set")!.GetFunc().BindAndCopy(handle);
-		handle["has"] = Intrinsic.GetByName("slot_has")!.GetFunc().BindAndCopy(handle);
-		handle["delete"] = Intrinsic.GetByName("slot_delete")!.GetFunc().BindAndCopy(handle);
 		handle["destroy"] = Intrinsic.GetByName("morph_destroy")!.GetFunc().BindAndCopy(handle);
 		handle["isAlive"] = Intrinsic.GetByName("morph_isAlive")!.GetFunc().BindAndCopy(handle);
 	}

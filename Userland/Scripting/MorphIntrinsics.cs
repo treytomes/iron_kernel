@@ -9,92 +9,92 @@ public static class MorphIntrinsics
 	public static void Register()
 	{
 		CreateMorphIntrinsics();
-		CreateMorphNamespace();
+		// CreateMorphNamespace();
+
+		CreateLabelIntrinsics();
+		CreateLabelNamespace();
 	}
 
-	private static void CreateMorphNamespace()
-	{
-		var morphNamespace = Intrinsic.Create("Morph");
-		morphNamespace.code = (ctx, _) =>
-		{
-			var map = new ValMap
-			{
-				["create"] = Intrinsic.GetByName("morph_create")!.GetFunc(),
-				["findBySlot"] = Intrinsic.GetByName("world_findMorphsBySlot")!.GetFunc()
-			};
-			return new Intrinsic.Result(map);
-		};
-	}
+	#region Morph intrinsics
+
+	// private static void CreateMorphNamespace()
+	// {
+	// 	var morphNs = Intrinsic.Create("Morph");
+	// 	morphNs.code = (ctx, _) =>
+	// 	{
+	// 		var map = new ValMap
+	// 		{
+	// 			["create"] = Intrinsic.GetByName("morph_create")!.GetFunc()
+	// 		};
+	// 		return new Intrinsic.Result(map);
+	// 	};
+	// }
 
 	private static void CreateMorphIntrinsics()
 	{
-		// ---------- morph_create ----------
-		var create = Intrinsic.Create("morph_create");
-		create.AddParam("arg1", ValNull.instance);
-		create.AddParam("arg2", ValNull.instance);
+		// // morph_create([x,y], [w,h]) OR morph_create([w,h])
+		// var create = Intrinsic.Create("morph_create");
+		// create.AddParam("arg1", ValNull.instance);
+		// create.AddParam("arg2", ValNull.instance);
+		// create.code = (ctx, _) =>
+		// {
+		// 	try
+		// 	{
+		// 		if (ctx.interpreter.hostData is not WorldScriptContext world)
+		// 			return Intrinsic.Result.Null;
 
-		create.code = (ctx, _) =>
-		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
+		// 		Point position = Point.Empty;
+		// 		Size size = new Size(16, 16);
 
-				var arg1 = ctx.GetVar("arg1");
-				var arg2 = ctx.GetVar("arg2");
+		// 		var a1 = ctx.GetVar("arg1");
+		// 		var a2 = ctx.GetVar("arg2");
 
-				Point position = Point.Empty;
-				Size size = new Size(16, 16);
+		// 		if (a2 == ValNull.instance)
+		// 		{
+		// 			if (!TryReadPair(a1, out var w, out var h))
+		// 				return Error(ctx, "Morph.create expects [w,h] or [x,y],[w,h]");
+		// 			size = new Size(w, h);
+		// 		}
+		// 		else
+		// 		{
+		// 			if (!TryReadPair(a1, out var x, out var y) ||
+		// 				!TryReadPair(a2, out var w, out var h))
+		// 				return Error(ctx, "Morph.create expects [x,y],[w,h]");
+		// 			position = new Point(x, y);
+		// 			size = new Size(w, h);
+		// 		}
 
-				if (arg2 == ValNull.instance)
-				{
-					if (!TryReadPair(arg1, out var w, out var h))
-						return Error(ctx, "Morph.create expects [w,h] or [x,y],[w,h]");
-					size = new Size(w, h);
-				}
-				else
-				{
-					if (!TryReadPair(arg1, out var x, out var y) ||
-						!TryReadPair(arg2, out var w, out var h))
-						return Error(ctx, "Morph.create expects [x,y],[w,h]");
-					position = new Point(x, y);
-					size = new Size(w, h);
-				}
+		// 		var morph = new Morph
+		// 		{
+		// 			Position = position,
+		// 			Size = size
+		// 		};
 
-				var morph = new MiniScriptMorph
-				{
-					Position = position,
-					Size = size
-				};
+		// 		world.World.AddMorph(morph);
 
-				world.World.AddMorph(morph);
-				return new Intrinsic.Result(world.Handles.Register(morph));
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"Morph.create error: {ex.Message}");
-			}
-		};
+		// 		var handle = world.Handles.Register(morph);
+		// 		handle["props"] = morph.ScriptObject;
 
-		// ---------- morph_destroy ----------
+		// 		return new Intrinsic.Result(handle);
+		// 	}
+		// 	catch (Exception ex)
+		// 	{
+		// 		return Error(ctx, $"Morph.create error: {ex.Message}");
+		// 	}
+		// };
+
+		// morph_destroy()
 		var destroy = Intrinsic.Create("morph_destroy");
 		destroy.code = (ctx, _) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				world.Handles.Destroy(ctx.self);
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"Morph.destroy error: {ex.Message}");
-			}
+
+			world.Handles.Destroy(ctx.self);
+			return Intrinsic.Result.Null;
 		};
 
-		// ---------- morph_isAlive ----------
+		// morph_isAlive()
 		var isAlive = Intrinsic.Create("morph_isAlive");
 		isAlive.code = (ctx, _) =>
 		{
@@ -105,110 +105,71 @@ public static class MorphIntrinsics
 				? Intrinsic.Result.True
 				: Intrinsic.Result.False;
 		};
+	}
 
-		// ---------- slot_* ----------
-		CreateSlotIntrinsic("slot_get", (ctx, world) =>
+	#endregion
+
+	#region Label intrinsics
+
+	private static void CreateLabelNamespace()
+	{
+		var labelNs = Intrinsic.Create("Label");
+		labelNs.code = (ctx, _) =>
 		{
-			var morph = world.Handles.ResolveAlive(ctx.self);
-			if (morph == null)
-				return Error(ctx, "slot_get: invalid or dead morph handle");
+			var map = new ValMap
+			{
+				["create"] = Intrinsic.GetByName("label_create")!.GetFunc()
+			};
+			return new Intrinsic.Result(map);
+		};
+	}
 
-			return new Intrinsic.Result(
-				morph.GetSlot<Value>(ctx.GetVar("key").ToString())
-			);
-		}, "key");
+	private static void CreateLabelIntrinsics()
+	{
+		// label_create([x,y], text)
+		var create = Intrinsic.Create("label_create");
+		create.AddParam("pos", ValNull.instance);
+		create.AddParam("text", ValNull.instance);
 
-		CreateSlotIntrinsic("slot_set", (ctx, world) =>
-		{
-			var morph = world.Handles.ResolveAlive(ctx.self);
-			if (morph == null)
-				return Error(ctx, "slot_set: invalid or dead morph handle");
-
-			morph.SetSlot(
-				ctx.GetVar("key").ToString(),
-				ctx.GetVar("value")
-			);
-			return Intrinsic.Result.Null;
-		}, "key", "value");
-
-		CreateSlotIntrinsic("slot_has", (ctx, world) =>
-		{
-			var morph = world.Handles.ResolveAlive(ctx.self);
-			return morph != null && morph.HasSlot(ctx.GetVar("key").ToString())
-				? Intrinsic.Result.True
-				: Intrinsic.Result.False;
-		}, "key");
-
-		CreateSlotIntrinsic("slot_delete", (ctx, world) =>
-		{
-			var morph = world.Handles.ResolveAlive(ctx.self);
-			morph?.DeleteSlot(ctx.GetVar("key").ToString());
-			return Intrinsic.Result.Null;
-		}, "key");
-
-		// ---------- world_findMorphsBySlot ----------
-		var find = Intrinsic.Create("world_findMorphsBySlot");
-		find.AddParam("key");
-		find.AddParam("value", ValNull.instance);
-
-		find.code = (ctx, _) =>
+		create.code = (ctx, _) =>
 		{
 			try
 			{
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.Null;
 
-				var key = ctx.GetVar("key").ToString();
-				var value = ctx.GetVar("value");
-				var list = new ValList();
-
-				foreach (var handle in world.Handles.EnumerateAliveHandles())
+				Point position = Point.Empty;
+				if (ctx.GetVar("pos") != ValNull.instance)
 				{
-					var morph = world.Handles.ResolveAlive(handle)!;
-
-					if (!morph.HasSlot(key))
-						continue;
-
-					if (value != ValNull.instance)
-					{
-						var slotVal = morph.GetSlot<Value>(key);
-						if (slotVal == null || slotVal.Equality(value) == 0)
-							continue;
-					}
-
-					list.values.Add(handle);
+					if (!TryReadPair(ctx.GetVar("pos"), out var x, out var y))
+						return Error(ctx, "Label.create expects pos [x,y]");
+					position = new Point(x, y);
 				}
 
-				return new Intrinsic.Result(list);
+				var label = new LabelMorph(position);
+
+				if (ctx.GetVar("text") is ValString s)
+					label.Text = s.value;
+
+				world.World.AddMorph(label);
+
+				var handle = world.Handles.Register(label);
+				handle["destroy"] = Intrinsic.GetByName("morph_destroy")!.GetFunc().BindAndCopy(handle);
+				handle["isAlive"] = Intrinsic.GetByName("morph_isAlive")!.GetFunc().BindAndCopy(handle);
+				handle["props"] = label.ScriptObject;
+
+				return new Intrinsic.Result(handle);
 			}
 			catch (Exception ex)
 			{
-				return Error(ctx, $"world_findMorphsBySlot error: {ex.Message}");
+				return Error(ctx, $"Label.create error: {ex.Message}");
 			}
 		};
 	}
 
-	private static void CreateSlotIntrinsic(string name, Func<TAC.Context, WorldScriptContext, Intrinsic.Result> body, params string[] parameters)
-	{
-		var i = Intrinsic.Create(name);
-		foreach (var p in parameters)
-			i.AddParam(p);
+	#endregion
 
-		i.code = (ctx, _) =>
-		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				return body(ctx, world);
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"{name} error: {ex.Message}");
-			}
-		};
-	}
+	#region Helpers
 
 	private static bool TryReadPair(Value v, out int a, out int b)
 	{
@@ -226,4 +187,6 @@ public static class MorphIntrinsics
 		ctx.interpreter.errorOutput?.Invoke(message, true);
 		return Intrinsic.Result.Null;
 	}
+
+	#endregion
 }

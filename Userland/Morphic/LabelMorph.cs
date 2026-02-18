@@ -5,6 +5,7 @@ using Userland.Morphic.Halo;
 using Userland.Morphic.Inspector;
 using Userland.Services;
 using System.Drawing;
+using Miniscript;
 
 namespace Userland.Morphic;
 
@@ -47,7 +48,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 
 	#region Properties
 
-	public Size TileSize => _font?.TileSize ?? new Size(1, 1);
+	public Size TileSize => Style?.DefaultFontStyle.TileSize ?? new Size(1, 1);
 
 	public RadialColor? ForegroundColor
 	{
@@ -56,6 +57,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		{
 			_foregroundColorOverride = value;
 			Invalidate();
+			SyncScriptState();
 		}
 	}
 
@@ -66,6 +68,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		{
 			_backgroundColorOverride = value;
 			Invalidate();
+			SyncScriptState();
 		}
 	}
 
@@ -86,6 +89,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 			_text = value;
 			UpdateLayout();
 			Invalidate();
+			SyncScriptState();
 		}
 	}
 
@@ -299,6 +303,41 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 	private string FormatValue(object? value)
 	{
 		return value?.ToString() ?? "<null>";
+	}
+
+	#endregion
+
+	#region Scripting
+
+	protected override ValMap CreateScriptObject()
+	{
+		var map = base.CreateScriptObject();
+		map["text"] = new ValString(Text);
+		map["foregroundColor"] = ForegroundColor?.ToMiniScriptValue() ?? (Value)ValNull.instance;
+		map["backgroundColor"] = BackgroundColor?.ToMiniScriptValue() ?? (Value)ValNull.instance;
+		return map;
+	}
+
+	protected override void SyncScriptState()
+	{
+		base.SyncScriptState();
+		ScriptObject["text"] = new ValString(Text);
+		ScriptObject["foregroundColor"] = ForegroundColor?.ToMiniScriptValue() ?? (Value)ValNull.instance;
+		ScriptObject["backgroundColor"] = BackgroundColor?.ToMiniScriptValue() ?? (Value)ValNull.instance;
+	}
+
+	protected override void ApplyScriptState()
+	{
+		base.ApplyScriptState();
+
+		var text = ScriptObject["text"] as ValString;
+		if (text != null) Text = text.ToString();
+
+		var foregroundColor = ScriptObject["foregroundColor"] as ValMap;
+		if (foregroundColor != null && foregroundColor.IsColor()) ForegroundColor = foregroundColor.ToColor();
+
+		var backgroundColor = ScriptObject["backgroundColor"] as ValMap;
+		if (backgroundColor != null && backgroundColor.IsColor()) BackgroundColor = backgroundColor.ToColor();
 	}
 
 	#endregion

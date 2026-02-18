@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Miniscript;
 using Userland.Gfx;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
@@ -19,10 +20,21 @@ public abstract class Morph : ICommandTarget
 	private bool _isEnabled = true;
 	private bool _isPressed = false;
 	private bool _isHovered = false;
+	private ValMap? _scriptObject;
 
 	#endregion
 
 	#region Properties
+
+	public ValMap ScriptObject
+	{
+		get
+		{
+			if (_scriptObject == null)
+				_scriptObject = CreateScriptObject();
+			return _scriptObject;
+		}
+	}
 
 	public Rectangle Bounds => new Rectangle(Position, Size);
 
@@ -35,6 +47,7 @@ public abstract class Morph : ICommandTarget
 			{
 				_position = value;
 				InvalidateLayout();
+				SyncScriptState();
 			}
 		}
 	}
@@ -48,6 +61,7 @@ public abstract class Morph : ICommandTarget
 			{
 				_size = value;
 				InvalidateLayout();
+				SyncScriptState();
 			}
 		}
 	}
@@ -387,7 +401,6 @@ public abstract class Morph : ICommandTarget
 	/// </summary>
 	public virtual void Invalidate()
 	{
-		// no-op for now
 	}
 
 	/// <summary>
@@ -408,7 +421,6 @@ public abstract class Morph : ICommandTarget
 		foreach (var child in _submorphs.ToArray())
 		{
 			if (child == null) continue;
-			// if (child == null) throw new NullReferenceException("Child morph is null?");
 			child.UpdateLayout();
 		}
 	}
@@ -654,6 +666,43 @@ public abstract class Morph : ICommandTarget
 		}
 
 		return p;
+	}
+
+	protected virtual ValMap CreateScriptObject()
+	{
+		var map = new ValMap();
+		map["position"] = Position.ToMiniScriptValue();
+		map["size"] = Size.ToMiniScriptValue();
+		return map;
+	}
+
+	protected virtual void SyncScriptState()
+	{
+		if (ScriptObject == null) return;
+
+		ScriptObject["position"] = Position.ToMiniScriptValue();
+		ScriptObject["size"] = Size.ToMiniScriptValue();
+	}
+
+	protected virtual void ApplyScriptState()
+	{
+		if (ScriptObject == null) return;
+
+		var position = ScriptObject["position"] as ValMap;
+		if (position != null && position.IsPoint()) Position = position.ToPoint();
+
+		var size = ScriptObject["size"] as ValMap;
+		if (size != null && size.IsSize()) Size = size.ToSize();
+	}
+
+	public void ApplyScriptEdits()
+	{
+		ApplyScriptState();
+		for (var n = 0; n < Submorphs.Count; n++)
+		{
+			var morph = Submorphs[n];
+			morph?.ApplyScriptState();
+		}
 	}
 
 	#endregion

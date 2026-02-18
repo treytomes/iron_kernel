@@ -120,6 +120,8 @@ public sealed class WorldMorph : Morph
 
 		while (_actionQueue.TryDequeue(out var action)) action();
 
+		ApplyScriptEdits();
+
 		// Execute all deferred mutation intents.
 		_commandManager.Flush();
 

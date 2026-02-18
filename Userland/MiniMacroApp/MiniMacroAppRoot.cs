@@ -3,7 +3,6 @@ using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic;
 using Userland.Morphic.Commands;
-using Userland.Roguey;
 using Userland.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -43,7 +42,7 @@ public sealed class MiniMacroRoot
 	{
 		_logger.LogInformation($"{nameof(MiniMacroRoot)} starting");
 
-		RogueyIntrinsics.Create();
+		// RogueyIntrinsics.Create();
 		await _rc.InitializeAsync();
 
 		var world = _services.GetRequiredService<WorldMorph>();

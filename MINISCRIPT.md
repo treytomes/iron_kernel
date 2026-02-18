@@ -1,10 +1,14 @@
 # MINISCRIPT API
 
-This document describes the **MiniScript API surface** provided by IronKernel’s `WorldScriptContext`.  
-It focuses on the **script-facing API**: what MiniScript authors can call, what objects they receive,
-and how those objects behave.
+This document describes the **MiniScript API surface** provided by IronKernel’s `WorldScriptContext`.
 
-This is **not** a MiniScript language reference. It documents the *host API* layered on top of MiniScript.
+It focuses on the **script‑facing API**:
+- what MiniScript authors can call
+- what objects they receive
+- how those objects behave
+
+This is **not** a MiniScript language reference.  
+It documents the *host API* layered on top of MiniScript.
 
 ---
 
@@ -12,248 +16,138 @@ This is **not** a MiniScript language reference. It documents the *host API* lay
 
 ### Script World
 
-MiniScript runs inside a **World context** owned by IronKernel.  
-Scripts do not directly manipulate engine objects; instead they interact through **handles**.
+MiniScript runs inside a **World context** owned by IronKernel.
 
-A *handle* is a MiniScript `map` that represents a live engine object and exposes instance-style
-methods.
+Scripts **do not manipulate engine objects directly**.  
+Instead, they interact through **handles** that represent live engine objects.
 
-Example handle structure (conceptual):
+A handle is a MiniScript `map` that:
+- represents a real engine object
+- exposes instance‑style methods
+- remains safe if the underlying object is destroyed
+
+Conceptually, a handle looks like:
 
 ```miniscript
 {
   "__isa": "Morph",
   "__id": 3,
-  get: <function>,
-  set: <function>,
   destroy: <function>,
-  ...
+  isAlive: <function>,
+  props: <map>
 }
 ```
 
 Handles are:
+- **Safe** — dead objects are detected
+- **Stateful** — values persist across calls
+- **Instance‑oriented** — methods are bound to `self`
 
-- Safe (dead objects are detected)
-- Stateful (slots persist)
-- Instance-oriented (methods close over `self`)
+---
+
+## Script Projection Model
+
+Engine objects expose a **projected property map** to MiniScript via `props`.
+
+- Scripts mutate `props`
+- Changes are **buffered**
+- Changes are applied when the world commits script edits
+
+This keeps:
+- rendering deterministic
+- engine invariants intact
+- script execution safe
 
 ---
 
 ## Dialog & UI Intrinsics
 
-These intrinsics provide **simple user interaction dialogs**, similar to JavaScript’s
-`alert`, `prompt`, and `confirm`.
+These intrinsics provide **modal UI dialogs**.
 
 All dialogs:
-- Are modal
-- Pause script execution until the user responds
-- Never block the engine or UI thread
-- Return control cleanly to the script
-
----
+- pause script execution until the user responds
+- never block the engine or UI thread
+- return control cleanly to the script
 
 ### `alert(message)`
 
-Display a modal alert dialog with a message and an **OK** button.
-
-#### Parameters
-- `message` (string): text to display
-
-#### Returns
-- `null`
-
-#### Example
+Display a modal alert dialog.
 
 ```miniscript
 alert("Hello, world!")
-print("This runs after the user clicks OK")
+print("This runs after OK")
 ```
+
+Returns `null`.
 
 ---
 
 ### `prompt(message, defaultValue)`
 
-Display a modal prompt dialog requesting text input.
-
-#### Parameters
-- `message` (string): prompt text
-- `defaultValue` (string, optional): initial value
-
-#### Returns
-- string: user input
-- `null`: if the user cancels
-
-#### Example
+Request text input from the user.
 
 ```miniscript
 name = prompt("Enter your name:", "Player")
 if name != null then
     print("Hello " + name)
-else
-    print("Prompt cancelled")
-end
+end if
 ```
+
+Returns:
+- string if confirmed
+- `null` if cancelled
 
 ---
 
 ### `confirm(message)`
 
-Display a modal confirmation dialog with **OK** and **Cancel** buttons.
-
-#### Parameters
-- `message` (string): confirmation text
-
-#### Returns
-- `true` if OK was clicked
-- `false` if Cancel was clicked
-
-#### Example
+Display a confirmation dialog.
 
 ```miniscript
 if confirm("Delete all files?") then
     print("Confirmed")
-else
-    print("Cancelled")
-end
+end if
 ```
 
----
-
-## Editor & Script Execution Intrinsics
-
-These intrinsics integrate MiniScript with the built‑in text editor and script execution system.
-
-They are **REPL-safe** and designed to work correctly from interactive sessions.
+Returns `true` or `false`.
 
 ---
+
+## Editor & Script Execution
 
 ### `edit(filename)`
 
-Open the built‑in text editor window and load a file for editing.
-
-If the file exists, its contents are loaded.  
-If it does not exist, an error is reported.
-
-#### Parameters
-- `filename` (string): file URL (e.g. `file://script.ms`)
-
-#### Returns
-- `null`
-
-#### Example
+Open the built‑in editor and load a file.
 
 ```miniscript
 edit("file://example.ms")
 ```
 
-You can also call `edit` without immediately running the file, allowing inspection or modification.
+Returns `null`.
 
 ---
 
 ### `run(filename)`
 
-Load and execute a MiniScript file.
-
-Behavior:
-- Loads the file via the file system service
-- Compiles and runs it in the current World interpreter
-- Reports compile or runtime errors to the REPL
-- Always returns control to the REPL
-
-#### Parameters
-- `filename` (string): file URL
-
-#### Returns
-- `null`
-
-#### Example
+Load, compile, and execute a MiniScript file.
 
 ```miniscript
 run("file://example.ms")
+print("This always runs")
 ```
 
-#### Example with error handling
-
-```miniscript
-run("file://broken.ms")
-print("This still runs even if there was a compile error")
-```
-
-Errors are printed to the REPL error stream but **never hang the interpreter**.
+Errors are reported to the REPL but **never hang the interpreter**.
 
 ---
 
 ## Morph API
 
-`Morph` is the primary script-visible object type.  
-It represents a visual object (a `MiniScriptMorph`) in the world.
+`Morph` is the primary script‑visible object type.  
+It represents a visual object in the world.
 
-### Creating Morphs
+### Morph Lifetime
 
-```miniscript
-m = Morph.create([width, height])
-m = Morph.create([x, y], [width, height])
-```
-
-Examples:
-
-```miniscript
-m = Morph.create([32, 16])
-m = Morph.create([10, 20], [64, 24])
-```
-
----
-
-### Morph Instance Methods
-
-All methods below are **instance methods** on a Morph handle.
-
-#### `m.get(key)`
-
-Retrieve a slot value.
-
-```miniscript
-hp = m.get("hp")
-```
-
-Returns `null` if the slot does not exist.
-
----
-
-#### `m.set(key, value)`
-
-Set or replace a slot value.
-
-```miniscript
-m.set("hp", 10)
-m.set("name", "player")
-```
-
----
-
-#### `m.has(key)`
-
-Check whether a slot exists.
-
-```miniscript
-if m.has("hp") then
-    print("Has HP")
-end
-```
-
----
-
-#### `m.delete(key)`
-
-Delete a slot if it exists.
-
-```miniscript
-m.delete("hp")
-```
-
-Safe no-op if the slot is missing.
-
----
+Every Morph handle provides:
 
 #### `m.destroy()`
 
@@ -263,98 +157,222 @@ Destroy the morph.
 m.destroy()
 ```
 
-- The morph is removed from the world
-- The handle becomes **dead**
-- Further calls are safe but do nothing
+- Removes the morph from the world
+- Invalidates the handle
+- Safe to call multiple times
 
 ---
 
 #### `m.isAlive()`
 
-Check whether the morph is still alive.
+Check whether the morph still exists.
 
 ```miniscript
 if m.isAlive() then
-    print("Still exists")
-end
+    print("Still alive")
+end if
 ```
 
 ---
 
-## Morph Queries
+### Morph Properties (`props`)
 
-### `Morph.findBySlot(key)`
-### `Morph.findBySlot(key, value)`
+All Morphs expose a `props` map.
 
-Find all morphs that have a given slot, optionally matching a value.
+Common properties:
+- `position` → `[x, y]`
+- `size` → `[width, height]`
 
 ```miniscript
-enemies = Morph.findBySlot("faction", "enemy")
+m.props.position = [100, 50]
+m.props.size = [64, 24]
 ```
 
-Returns a **list of Morph handles**.
+Changes take effect when script edits are committed.
 
 ---
 
-## RadialColor API
+## Label API
 
-### Creating a RadialColor
+`Label` is a Morph that displays text.
+
+### Creating a Label
 
 ```miniscript
-c = RadialColor.create(r, g, b)
+label = Label.create([20, 20], "Hello world")
 ```
 
-- Each component is in the range `0–5`
-- Invalid values produce a MiniScript error (not a crash)
+Returns a **Label handle**.
+
+---
+
+### Label Properties
+
+All properties are edited through `label.props`.
+
+| Property | Type |
+|--------|------|
+| `text` | string |
+| `position` | `[x, y]` |
+| `foregroundColor` | `Color` |
+| `backgroundColor` | `Color` |
 
 Example:
 
 ```miniscript
-c = RadialColor.create(5, 3, 1)
+label.props.text = "Updated text"
+label.props.position = [100, 40]
+label.props.foregroundColor = Color.create(5, 5, 0)
+label.props.backgroundColor = Color.create(0, 0, 0)
+```
+
+---
+
+## TileMap API (Roguey)
+
+### Overview
+
+A **TileMap** is a single Morph that renders a grid of tiles.
+
+- Tiles are **data objects**, not Morphs
+- Rendering is performed in bulk by the TileMap
+- Scripts modify tile data, not rendering logic
+
+This design scales to very large maps efficiently.
+
+---
+
+### Creating a TileMap
+
+```miniscript
+map = TileMap.create(
+    [320, 240],          // viewport size (pixels)
+    [64, 64],            // map size (tiles)
+    "asset://tileset",   // tileset asset
+    [8, 8]               // tile size (pixels)
+)
+```
+
+Returns a **TileMap handle**.
+
+---
+
+### TileMap Properties
+
+TileMap exposes common Morph properties via `props`.
+
+Additional properties:
+- `scrollOffset` → `[x, y]`
+
+```miniscript
+map.props.scrollOffset = [16, 32]
+```
+
+---
+
+### Accessing Tiles
+
+#### `map.getTile(x, y)`
+
+Retrieve the tile at `(x, y)`.
+
+```miniscript
+tile = map.getTile(10, 5)
+```
+
+Returns:
+- a **TileInfo map** if in bounds
+- `null` otherwise
+
+---
+
+## TileInfo API
+
+A **Tile** is a projected data object representing one cell.
+
+Tiles are **not Morphs** and cannot be destroyed independently.
+
+### Tile Properties
+
+All properties are edited directly on the returned tile map:
+
+| Property | Description |
+|--------|-------------|
+| `tileIndex` | glyph index |
+| `foregroundColor` | glyph foreground color |
+| `backgroundColor` | glyph background color |
+| `blocksMovement` | blocks movement |
+| `blocksVision` | blocks vision |
+| `tag` | free‑form string |
+
+Example:
+
+```miniscript
+tile = map.getTile(3, 7)
+tile.tileIndex = 176
+tile.foregroundColor = Color.create(5, 5, 5)
+tile.blocksMovement = true
+tile.tag = "wall"
+```
+
+Changes are applied at the script commit boundary.
+
+---
+
+## Complete Example: Labels + TileMap
+
+```miniscript
+// create a label
+label = Label.create([10,10], "Loading...")
+label.props.foregroundColor = Color.create(5,5,0)
+
+// create a tile map
+map = TileMap.create(
+    [320,240],
+    [64,64],
+    "asset://image.oem437_8",
+    [8,8]
+)
+
+// fill the map
+for y in range(0, 63)
+    for x in range(0, 63)
+        t = map.getTile(x, y)
+        t.tileIndex = 46
+        t.blocksMovement = false
+        t.tag = "floor"
+    end for
+end for
+
+label.props.text = "Ready"
 ```
 
 ---
 
 ## Lifetime & Safety Rules
 
-### Dead Handles
-
 - Dead handles never crash
-- `isAlive()` returns false
-- Operations safely no-op
-
----
-
-## Error Handling Guarantees
-
-All intrinsics:
-
-- Catch host exceptions
-- Report errors via the MiniScript error stream
-- Never hang the interpreter
-- Never corrupt REPL state
-
-This applies to:
-- `alert`
-- `prompt`
-- `confirm`
-- `edit`
-- `run`
-- All Morph and RadialColor APIs
+- `isAlive()` detects invalid objects
+- All intrinsics catch host exceptions
+- Errors are reported to the MiniScript error stream
+- The interpreter and REPL never hang
 
 ---
 
 ## Summary
 
 This API provides:
+- Instance‑style scripting via handles
+- Safe object lifetimes
+- Script‑projected state with explicit commits
+- Efficient tile‑based rendering
+- Clean separation between logic and rendering
 
-- Instance-style scripting
-- Modal UI integration
-- Script-controlled editing and execution
-- Deterministic REPL behavior
-- Strong safety guarantees
+It is designed to support:
+- interactive tools
+- UI scripting
+- roguelike games
+- procedural generation
+- gameplay logic
 
-It is designed to support **interactive development**, **tooling**, and **game logic**
-without hidden state or interpreter instability.
-
----
+…without exposing internal engine state or compromising stability.
