@@ -114,7 +114,7 @@ public class WindowMorph : Morph
 		set => _titleLabel.Text = value;
 	}
 
-	private bool IsSelected => GetWorld().SelectedMorph == this;
+	private bool IsSelected => GetWorld()?.SelectedMorph == this;
 
 	protected int Padding => 4;
 	protected int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;

@@ -71,11 +71,11 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 
 	private RadialColor EffectiveForegroundColor =>
 		_foregroundColorOverride
-		?? GetWorld().Style.LabelForegroundColor;
+		?? GetWorld()!.Style.LabelForegroundColor;
 
 	private RadialColor? EffectiveBackgroundColor =>
 		_backgroundColorOverride
-		?? GetWorld().Style.LabelBackgroundColor;
+		?? GetWorld()?.Style.LabelBackgroundColor;
 
 	public string Text
 	{

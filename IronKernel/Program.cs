@@ -5,10 +5,7 @@ using IronKernel.Kernel.State;
 using IronKernel.Logging;
 using IronKernel.Modules.ApplicationHost;
 using IronKernel.Modules.AssetLoader;
-using IronKernel.Modules.Clipboard;
-using IronKernel.Modules.FileSystem;
 using IronKernel.Modules.Framebuffer;
-using IronKernel.Modules.OpenTKHost;
 using IronKernel.State;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,8 +22,7 @@ internal sealed class Program
 {
 	public static async Task<int> Main(string[] args)
 	{
-		return await BuildCommandLine()
-			.InvokeAsync(args);
+		return await BuildCommandLine().InvokeAsync(args);
 	}
 
 	private static RootCommand BuildCommandLine()
@@ -52,7 +48,7 @@ internal sealed class Program
 			name: "--debug",
 			description: "Enable debug mode");
 
-		var root = new RootCommand("IronKernel Demo Host");
+		var root = new RootCommand("IronKernel Host");
 		root.AddOption(userlandPathOption);
 		root.AddOption(configFileOption);
 		root.AddOption(debugOption);
@@ -88,12 +84,9 @@ internal sealed class Program
 	private static IHostBuilder CreateHostBuilder(CommandLineProps props)
 	{
 		return Host.CreateDefaultBuilder()
-			.ConfigureAppConfiguration((ctx, config) =>
-				ConfigureAppConfiguration(config, props))
-			.ConfigureLogging((ctx, logging) =>
-				ConfigureLogging(ctx, logging))
-			.ConfigureServices((ctx, services) =>
-				ConfigureServices(ctx, services, props.UserlandPath));
+			.ConfigureAppConfiguration((ctx, config) => ConfigureAppConfiguration(config, props))
+			.ConfigureLogging(ConfigureLogging)
+			.ConfigureServices((ctx, services) => ConfigureServices(ctx, services, props.UserlandPath));
 	}
 
 	private static void ConfigureAppConfiguration(IConfigurationBuilder config, CommandLineProps props)
@@ -144,7 +137,6 @@ internal sealed class Program
 		// Kernel infrastructure
 		services.AddSingleton<IKernelState, KernelStateStore>();
 		services.AddSingleton<KernelService>();
-		// services.AddSingleton<IHostedService>(sp => sp.GetRequiredService<KernelService>());
 
 		services.AddSingleton<IKernelMessageBus, MessageBus>();
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
@@ -175,7 +167,6 @@ internal sealed class Program
 		});
 
 		services.AddSingleton<IResourceManager, ResourceManager>();
-		// services.AddTransient<IResourceLoader<Image>, ImageLoader>();
 
 		var kernelAssembly = Assembly.GetExecutingAssembly();
 
@@ -192,7 +183,6 @@ internal sealed class Program
 			services.AddSingleton(typeof(IKernelModule), moduleType);
 		}
 
-		// var userlandPath = Path.Combine(AppContext.BaseDirectory, "Userland.dll");
 		var userlandDir = Path.GetDirectoryName(userlandPath)!;
 		var alc = new UserlandLoadContext(userlandPath);
 		var userlandAssembly = alc.LoadFromAssemblyPath(userlandPath);

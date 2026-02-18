@@ -58,7 +58,8 @@ public sealed class ToolbarMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		var semantic = GetWorld().Style.Semantic;
+		var semantic = GetWorld()?.Style.Semantic;
+		if (semantic == null) return;
 
 		// Toolbar background
 		rc.RenderFilledRect(

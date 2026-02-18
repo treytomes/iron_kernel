@@ -3,6 +3,7 @@ using Miniscript;
 using Userland.Morphic;
 using IronKernel.Common.ValueObjects;
 using Userland.Services;
+using Microsoft.Extensions.Logging;
 
 namespace Userland.MiniMacro;
 
@@ -14,10 +15,12 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	private readonly TextConsoleMorph _console;
 	private readonly Interpreter _interpreter;
 	private CancellationTokenSource? _cts;
+	private readonly ILogger<MiniScriptReplMorph> _logger;
 
-	public MiniScriptReplMorph(IClipboardService clipboard)
+	public MiniScriptReplMorph(ILogger<MiniScriptReplMorph> logger, IClipboardService clipboard)
 		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
 	{
+		_logger = logger;
 		_console = new TextConsoleMorph(clipboard);
 		Content.AddMorph(_console);
 
@@ -60,7 +63,10 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	protected override void OnLoad(IAssetService assets)
 	{
 		_cts = new CancellationTokenSource();
-		_interpreter.hostData = GetWorld().ScriptContext;
+
+		var world = GetWorld();
+		if (world == null) _logger.LogWarning("World is undefined.");
+		_interpreter.hostData = world?.ScriptContext;
 		_ = RunAsync(_cts.Token);
 	}
 
@@ -75,6 +81,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		await _console.Ready;
 
 		var world = GetWorld();
+		if (world == null) _logger.LogWarning("World is undefined.");
 
 		_console.WriteLine("MiniScript REPL");
 		_console.WriteLine("Type MiniScript expressions or statements.");
@@ -82,6 +89,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 		while (!ct.IsCancellationRequested)
 		{
+			if (world == null) world = GetWorld();
+
 			// Prompt depends on parser state
 			var prompt = _interpreter.NeedMoreInput()
 				? PROMPT_CONTINUATION
@@ -102,7 +111,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			// Feed line into MiniScript REPL
 			_interpreter.REPL(line);
 
-			if (world.ScriptContext.PendingRunSource != null)
+			if (world?.ScriptContext.PendingRunSource != null)
 			{
 				var source = world.ScriptContext.PendingRunSource;
 				world.ScriptContext.PendingRunSource = null;
