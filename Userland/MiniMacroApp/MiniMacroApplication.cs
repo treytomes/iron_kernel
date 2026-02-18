@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using Userland.Services;
 using Userland.Gfx;
 using Userland.Morphic;
+using Userland.Scripting;
 
 namespace Userland.MiniMacro;
 
@@ -33,6 +34,7 @@ public sealed class MiniMacroApplication(
 
 		_services = BuildUserServiceProvider(context);
 		_scope = _services.CreateScope();
+		IntrinsicRegistry.Register();
 
 		var root = _scope.ServiceProvider.GetRequiredService<MiniMacroRoot>();
 

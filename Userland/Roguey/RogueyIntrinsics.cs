@@ -68,7 +68,7 @@ public static class RogueyIntrinsics
 				world.World.AddMorph(tile);
 
 				// IMPORTANT: use the same registration path as Morphs
-				return new Intrinsic.Result(world.Register(tile));
+				return new Intrinsic.Result(world.Handles.Register(tile));
 			}
 			catch (Exception ex)
 			{
@@ -85,7 +85,7 @@ public static class RogueyIntrinsics
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.False;
 
-				if (world.ResolveAlive(ctx.self) is not TileMorph tile)
+				if (world.Handles.ResolveAlive(ctx.self) is not TileMorph tile)
 					return Intrinsic.Result.False;
 
 				return tile.BlocksMovement
@@ -150,7 +150,7 @@ public static class RogueyIntrinsics
 				world.World.AddMorph(map);
 
 				// ✅ Register like any other Morph
-				var handle = world.Register(map);
+				var handle = world.Handles.Register(map);
 
 				// ✅ Attach TileMap-specific instance methods
 				AttachTileMapMethods(handle);
@@ -201,7 +201,7 @@ public static class RogueyIntrinsics
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.Null;
 
-				if (world.ResolveAlive(ctx.self) is not TileMapMorph map)
+				if (world.Handles.ResolveAlive(ctx.self) is not TileMapMorph map)
 					return Intrinsic.Result.Null;
 
 				var x = ctx.GetVar("x").IntValue();
@@ -261,7 +261,7 @@ public static class RogueyIntrinsics
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.Null;
 
-				if (world.ResolveAlive(mapHandle) is not TileMapMorph map)
+				if (world.Handles.ResolveAlive(mapHandle) is not TileMapMorph map)
 					return Intrinsic.Result.Null;
 
 				var info = map.GetTile(x, y);
@@ -312,7 +312,7 @@ public static class RogueyIntrinsics
 				if (ctx.interpreter.hostData is not WorldScriptContext world)
 					return Intrinsic.Result.Null;
 
-				if (world.ResolveAlive(mapHandle) is not TileMapMorph map)
+				if (world.Handles.ResolveAlive(mapHandle) is not TileMapMorph map)
 					return Intrinsic.Result.Null;
 
 				var info = map.GetTile(x, y);

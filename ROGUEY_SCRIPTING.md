@@ -34,6 +34,9 @@ map = TileMap.create(
     "asset://image.oem437_8",                  -- tileset asset id
     [tileWidth, tileHeight]            -- pixels per tile
 )
+
+-- e.g.
+map = TileMap.create([320,240],[64,64],"asset://image.oem437_8",[8,8])
 ```
 
 Example:
@@ -128,10 +131,10 @@ tile.set("TileIndex", 176)
 
 #### `ForegroundColor`
 
-Glyph foreground color (`RadialColor`).
+Glyph foreground color (`Color`).
 
 ```miniscript
-tile.set("ForegroundColor", RadialColor.create(5, 5, 5))
+tile.set("ForegroundColor", Color.create(5, 5, 5))
 ```
 
 Default:
@@ -141,10 +144,10 @@ Default:
 
 #### `BackgroundColor`
 
-Glyph background color (`RadialColor`).
+Glyph background color (`Color`).
 
 ```miniscript
-tile.set("BackgroundColor", RadialColor.create(0, 0, 2))
+tile.set("BackgroundColor", Color.create(0, 0, 2))
 ```
 
 Default:

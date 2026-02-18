@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Userland.MiniMacro;
 using Userland.Morphic;
 
 namespace Userland.Services;
@@ -55,5 +57,19 @@ public sealed class WindowService : IWindowService
 		_world.AddMorph(window);
 		window.CenterOnOwner();
 		return tcs.Task;
+	}
+
+	public async Task EditFileAsync(string? filename)
+	{
+		// Create the editor window (DI / factory style depends on your setup)
+		var editor = _services.GetRequiredService<TextEditorWindowMorph>();
+
+		_world.AddMorph(editor);
+
+		// Kick off async file open.
+		if (!string.IsNullOrWhiteSpace(filename))
+		{
+			await editor.OpenFileAsync(filename);
+		}
 	}
 }
