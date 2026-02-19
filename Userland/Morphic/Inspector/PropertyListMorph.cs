@@ -9,12 +9,6 @@ namespace Userland.Morphic.Inspector;
 /// </summary>
 public sealed class PropertyListMorph : Morph
 {
-	#region Constants
-
-	private const int Padding = 1;
-
-	#endregion
-
 	#region Fields
 
 	private int _rowSpacing = 1;
@@ -65,6 +59,8 @@ public sealed class PropertyListMorph : Morph
 			}
 		}
 	}
+
+	public int Padding { get; set; } = 1;
 
 	#endregion
 

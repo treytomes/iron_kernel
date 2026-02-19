@@ -17,6 +17,42 @@ public class InspectorFactory : IInspectorFactory
 		Func<object?> valueProvider,
 		Action<object?>? setter = null)
 	{
+		// Console.WriteLine($"Inspecting type: {declaredType}");
+
+		// --- MiniScript scalar values ---
+		if (declaredType == typeof(Miniscript.ValNumber))
+		{
+			return new TextEditMorph(
+				Point.Empty,
+				(valueProvider() as Miniscript.ValNumber)?.ToString() ?? "0",
+				s =>
+				{
+					if (double.TryParse(s, out var d))
+						setter?.Invoke(new Miniscript.ValNumber(d));
+				},
+				s => double.TryParse(s, out _)
+			);
+		}
+
+		if (declaredType == typeof(Miniscript.ValString))
+		{
+			return new TextEditMorph(
+				Point.Empty,
+				(valueProvider() as Miniscript.ValString)?.ToString() ?? string.Empty,
+				s => setter?.Invoke(new Miniscript.ValString(s))
+			);
+		}
+
+		if (declaredType == typeof(Miniscript.ValNull))
+		{
+			return new LabelMorph
+			{
+				Text = "null",
+				IsSelectable = false,
+				BackgroundColor = null
+			};
+		}
+
 		// --- Boolean ---
 		if (declaredType == typeof(bool) || declaredType == typeof(bool?))
 		{

@@ -184,7 +184,7 @@ public sealed class MiniMacroRoot
 				return Task.CompletedTask;
 			});
 
-		bus.Publish(new AppFbSetBorder(RadialColor.Green));
+		bus.Publish(new AppFbSetBorder(new RadialColor(2, 1, 0)));
 
 		_logger.LogInformation($"{nameof(MiniMacroRoot)} initialized.");
 	}

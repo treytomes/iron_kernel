@@ -118,6 +118,59 @@ public sealed class InspectorMorph : WindowMorph
 
 	private PropertyListMorph BuildPropertyList(object target)
 	{
+		// --- MiniScript values ---
+		if (target is Miniscript.Value value)
+		{
+			return value switch
+			{
+				Miniscript.ValMap map => BuildMiniScriptPropertyList(map),
+				_ => throw new InvalidOperationException(
+					$"Scalar MiniScript values cannot be inspected ({value.GetType().Name})."
+				)
+			};
+		}
+
+		// --- Standard .NET objects ---
+		return BuildStandardPropertyList(target);
+	}
+
+	private PropertyListMorph BuildMiniScriptPropertyList(Miniscript.ValMap map)
+	{
+		var list = new PropertyListMorph();
+
+		var factory = new InspectorFactory(
+			navigate: obj =>
+			{
+				// Only navigate into inspectable objects
+				if (obj is Miniscript.ValMap)
+					NavigateForward(obj, "map");
+			}
+		);
+
+		foreach (var keyValue in map.Keys)
+		{
+			var key = keyValue.ToString();
+
+			list.AddMorph(new PropertyRowMorph(
+				factory,
+				key,
+				() => map[key],
+				v =>
+				{
+					// Assign directly back into the ValMap
+					map[key] = v as Miniscript.Value ?? Miniscript.ValNull.instance;
+				},
+				map[key].GetType()
+			));
+		}
+
+		list.RecalculateNameColumnWidth();
+		return list;
+	}
+
+	private PropertyListMorph BuildStandardPropertyList(object target)
+	{
+
 		var props = target.GetType()
 			.GetProperties(BindingFlags.Instance | BindingFlags.Public)
 			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0);

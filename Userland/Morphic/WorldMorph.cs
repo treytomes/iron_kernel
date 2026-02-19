@@ -7,6 +7,7 @@ using Userland.Services;
 using Miniscript;
 using Userland.Morphic.Halo;
 using Userland.Gfx;
+using Userland.Morphic.Inspector;
 
 namespace Userland.Morphic;
 
@@ -49,7 +50,7 @@ public sealed class WorldMorph : Morph
 	public ScriptOutputHub ScriptOutput => _scriptOutput;
 	public WorldScriptContext ScriptContext => _scriptContext;
 
-	public RadialColor BackgroundColor { get; set; } = new RadialColor(0, 2, 5);
+	public RadialColor BackgroundColor { get; set; } = new RadialColor(4, 4, 3);
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;
@@ -378,6 +379,22 @@ public sealed class WorldMorph : Morph
 	{
 		base.DrawSelf(rc);
 		rc.Fill(BackgroundColor);
+	}
+
+	/// <summary>
+	/// Open an inspector for a live Morph.
+	/// This mirrors the behavior of clicking the inspect halo handle.
+	/// </summary>
+	public void OpenInspector(object target)
+	{
+		if (target == null)
+			return;
+
+		ClearSelection();
+
+		var inspector = new InspectorMorph(target);
+		AddMorph(inspector);
+		inspector.CenterOnOwner();
 	}
 
 	#endregion
