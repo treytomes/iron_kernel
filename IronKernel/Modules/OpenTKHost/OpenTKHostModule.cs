@@ -59,6 +59,8 @@ internal sealed class OpenTKHostModule(
 		else if (_settings.Maximize)
 			_window.WindowState = WindowState.Maximized;
 
+		_window.Title = "Iron Kernel";
+
 		_bus.Subscribe<KernelShutdownRequested>(
 			runtime,
 			"KernelShutdownRequestHandler",

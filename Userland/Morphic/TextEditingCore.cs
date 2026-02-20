@@ -83,7 +83,11 @@ public sealed class TextEditingCore
 
 	public void Insert(char ch)
 	{
-		_buffer.Insert(CursorIndex, ch);
+		if (CursorIndex < 0) CursorIndex = 0;
+		if (CursorIndex < _buffer.Length)
+			_buffer.Insert(CursorIndex, ch);
+		else
+			_buffer.Append(ch);
 		CursorIndex++;
 	}
 

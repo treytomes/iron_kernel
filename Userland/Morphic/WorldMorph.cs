@@ -1,10 +1,10 @@
+using IronKernel.Common.ValueObjects;
+using Miniscript;
 using System.Collections.Concurrent;
 using System.Drawing;
-using IronKernel.Common.ValueObjects;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 using Userland.Services;
-using Miniscript;
 using Userland.Morphic.Halo;
 using Userland.Gfx;
 using Userland.Morphic.Inspector;
@@ -51,6 +51,7 @@ public sealed class WorldMorph : Morph
 	public WorldScriptContext ScriptContext => _scriptContext;
 
 	public RadialColor BackgroundColor { get; set; } = new RadialColor(4, 4, 3);
+
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;

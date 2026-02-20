@@ -116,10 +116,16 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		var lines = ComputeWrappedLines();
 		for (var i = 0; i < lines.Count; i++)
 		{
+			if (string.IsNullOrWhiteSpace(lines[i])) continue;
+
+			var text = lines[i];
+			var height = _font.TileSize.Height;
+			var position = new Point(0, i * height);
+
 			_font.WriteString(
 				rc,
-				lines[i],
-				new Point(0, i * _font.TileSize.Height),
+				text,
+				position,
 				EffectiveForegroundColor,
 				EffectiveBackgroundColor);
 		}

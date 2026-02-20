@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Miniscript;
 
 namespace Userland.Morphic.Inspector;
 
@@ -17,33 +18,31 @@ public class InspectorFactory : IInspectorFactory
 		Func<object?> valueProvider,
 		Action<object?>? setter = null)
 	{
-		// Console.WriteLine($"Inspecting type: {declaredType}");
-
 		// --- MiniScript scalar values ---
-		if (declaredType == typeof(Miniscript.ValNumber))
+		if (declaredType == typeof(ValNumber))
 		{
 			return new TextEditMorph(
 				Point.Empty,
-				(valueProvider() as Miniscript.ValNumber)?.ToString() ?? "0",
+				(valueProvider() as ValNumber)?.ToString() ?? "0",
 				s =>
 				{
 					if (double.TryParse(s, out var d))
-						setter?.Invoke(new Miniscript.ValNumber(d));
+						setter?.Invoke(new ValNumber(d));
 				},
 				s => double.TryParse(s, out _)
 			);
 		}
 
-		if (declaredType == typeof(Miniscript.ValString))
+		if (declaredType == typeof(ValString))
 		{
 			return new TextEditMorph(
 				Point.Empty,
-				(valueProvider() as Miniscript.ValString)?.ToString() ?? string.Empty,
-				s => setter?.Invoke(new Miniscript.ValString(s))
+				(valueProvider() as ValString)?.ToString() ?? string.Empty,
+				s => setter?.Invoke(new ValString(s))
 			);
 		}
 
-		if (declaredType == typeof(Miniscript.ValNull))
+		if (declaredType == typeof(ValNull))
 		{
 			return new LabelMorph
 			{

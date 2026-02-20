@@ -163,9 +163,9 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 			default:
 				var ch = e.ToText();
-				if (ch != null)
+				if (ch.HasValue)
 				{
-					_text = _text.Insert(_caretIndex, ch.Value.ToString());
+					_text = (_text ?? string.Empty).Insert(_caretIndex, ch.Value.ToString());
 					_caretIndex++;
 					OnTextChanged();
 				}

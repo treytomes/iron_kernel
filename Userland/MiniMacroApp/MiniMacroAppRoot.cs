@@ -12,6 +12,14 @@ namespace Userland.MiniMacro;
 
 public sealed class MiniMacroRoot
 {
+	#region Constants
+
+	private static readonly RadialColor BORDER_COLOR = new RadialColor(2, 1, 0);
+
+	#endregion
+
+	#region Fields
+
 	private readonly IServiceProvider _services;
 	private readonly ILogger<MiniMacroRoot> _logger;
 	private readonly IRenderingContext _rc;
@@ -21,6 +29,10 @@ public sealed class MiniMacroRoot
 
 	private readonly object _updateLock = new();
 	private readonly object _renderLock = new();
+
+	#endregion
+
+	#region Constructors
 
 	public MiniMacroRoot(
 		IServiceProvider services,
@@ -37,6 +49,10 @@ public sealed class MiniMacroRoot
 		_fileSystem = fileSystem;
 		_assets = assets;
 	}
+
+	#endregion
+
+	#region Methods
 
 	public async Task RunAsync(CancellationToken stoppingToken)
 	{
@@ -184,8 +200,10 @@ public sealed class MiniMacroRoot
 				return Task.CompletedTask;
 			});
 
-		bus.Publish(new AppFbSetBorder(new RadialColor(2, 1, 0)));
+		bus.Publish(new AppFbSetBorder(BORDER_COLOR));
 
 		_logger.LogInformation($"{nameof(MiniMacroRoot)} initialized.");
 	}
+
+	#endregion
 }
