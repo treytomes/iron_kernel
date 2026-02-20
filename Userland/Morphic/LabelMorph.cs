@@ -119,10 +119,10 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 			if (string.IsNullOrWhiteSpace(lines[i])) continue;
 
 			var text = lines[i];
-			var height = _font.TileSize.Height;
+			var height = _font?.TileSize.Height ?? 1;
 			var position = new Point(0, i * height);
 
-			_font.WriteString(
+			_font?.WriteString(
 				rc,
 				text,
 				position,

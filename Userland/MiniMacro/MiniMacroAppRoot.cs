@@ -91,20 +91,12 @@ public sealed class MiniMacroRoot
 				launcher.AddApp<DummyReplMorph>("Dummy REPL");
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
 				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
+				launcher.AddApp<FireDemoMorph>("Fire Demo");
 
 				world.AddMorph(launcher);
 			}));
 
 		world.AddMorph(toolbar);
-
-		var value = 2.0f;
-		world.AddMorph(new SliderWithEditorMorph(2, x => value = x)
-		{
-			Position = new Point(128, 128),
-			Min = 0.0f,
-			Max = 5.0f,
-			Step = 1.0f,
-		});
 
 		// var text = "Name";
 		// world.AddMorph(new TextEditMorph(new Point(0, 32), text, x => text = x));

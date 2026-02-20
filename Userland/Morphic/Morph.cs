@@ -46,7 +46,10 @@ public abstract class Morph : ICommandTarget
 			if (_position != value)
 			{
 				_position = value;
-				InvalidateLayout();
+
+				// TODO: This was causing UpdateLayout to be called everywhere every time the moues moves!
+				// InvalidateLayout();
+
 				SyncScriptState();
 			}
 		}
@@ -423,6 +426,7 @@ public abstract class Morph : ICommandTarget
 			if (child == null) continue;
 			child.UpdateLayout();
 		}
+		_layoutInvalid = false;
 	}
 
 	protected bool TryGetWorld(out WorldMorph world)

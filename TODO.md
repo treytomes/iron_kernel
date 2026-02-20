@@ -6,3 +6,4 @@
 * When committing text on a prompt, accept and close the prompt.
 * Mouse wheel should engage vertical scrollbar.
 * In the text editor, source lines need to not wrap around to the next line.  It just doesn't look right.
+* An exception in a single morph should log an error and "pause" the morph, but shouldn't crash the entire userland.
