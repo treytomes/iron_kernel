@@ -163,6 +163,7 @@ public sealed class TextDocument
 
 	public void Backspace()
 	{
+		if (CurrentLine == null) return;
 		var line = CurrentLine;
 
 		if (line.CursorIndex > 0)
@@ -175,6 +176,8 @@ public sealed class TextDocument
 
 		if (CaretLine == 0)
 			return;
+
+		if (CaretLine - 1 < 0 || CaretLine - 1 >= _lines.Count) return;
 
 		var prev = _lines[CaretLine - 1];
 		int prevLen = prev.Length;

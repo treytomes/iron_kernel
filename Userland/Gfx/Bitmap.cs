@@ -164,6 +164,11 @@ public class Bitmap : IImage<Bitmap, bool>
 		}
 	}
 
+	public void Clear(bool value)
+	{
+		Array.Fill(Data, value);
+	}
+
 	public bool GetPixel(int x, int y)
 	{
 		var index = (y * Size.Width + x) * BPP;
@@ -173,6 +178,14 @@ public class Bitmap : IImage<Bitmap, bool>
 			return false;
 		}
 		return Data[index];
+	}
+
+	public void WritePixels(ReadOnlySpan<bool> pixels)
+	{
+		if (pixels.Length != Data.Length)
+			throw new ArgumentException("Pixel buffer size mismatch.");
+
+		pixels.CopyTo(Data);
 	}
 
 	public void SetPixel(int x, int y, bool value)

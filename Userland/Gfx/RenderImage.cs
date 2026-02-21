@@ -11,6 +11,11 @@ public sealed class RenderImage
 	{
 	}
 
+	public RenderImage(int width, int height)
+		: base(width, height)
+	{
+	}
+
 	public void Render(IRenderingContext rc, Point position, RenderFlag flags = RenderFlag.None)
 	{
 		var x = position.X;

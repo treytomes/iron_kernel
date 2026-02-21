@@ -56,6 +56,12 @@ public class Image : IImage<Image, RadialColor>
 		Data = (RadialColor?[])data.Clone();
 	}
 
+	public Image(int width, int height)
+	{
+		Size = new Size(width, height);
+		Data = new RadialColor[width * height];
+	}
+
 	#endregion
 
 	#region Properties
@@ -78,6 +84,14 @@ public class Image : IImage<Image, RadialColor>
 
 	#region Methods
 
+	public void WritePixels(ReadOnlySpan<RadialColor?> pixels)
+	{
+		if (pixels.Length != Data.Length)
+			throw new ArgumentException("Pixel buffer size mismatch.");
+
+		pixels.CopyTo(Data);
+	}
+
 	public void Recolor(RadialColor? oldColor, RadialColor? newColor)
 	{
 		for (var i = 0; i < Data.Length; i++)
@@ -89,15 +103,22 @@ public class Image : IImage<Image, RadialColor>
 		}
 	}
 
+	public void Clear(RadialColor color)
+	{
+		Array.Fill(Data, color);
+	}
+
 	public RadialColor? GetPixel(int x, int y)
 	{
 		var index = (y * Size.Width + x) * BPP;
+		if (index < 0 || index > Data.Length) return null;
 		return Data[index];
 	}
 
 	public void SetPixel(int x, int y, RadialColor? color)
 	{
 		var index = (y * Size.Width + x) * BPP;
+		if (index < 0 || index > Data.Length) return;
 		Data[index] = color;
 	}
 

@@ -7,10 +7,11 @@ public static class IntrinsicRegistry
 {
 	public static void Register()
 	{
-		DialogIntrinsics.Register();
-		MorphIntrinsics.Register();
+		CanvasIntrinsics.Register();
 		ColorIntrinsics.Register();
+		DialogIntrinsics.Register();
 		FileSystemIntrinsics.Register();
+		MorphIntrinsics.Register();
 		TileMapIntrinsics.Register();
 
 		CreateInspectIntrinsic();

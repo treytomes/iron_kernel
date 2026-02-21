@@ -19,13 +19,15 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void Submit(ICommand command)
 	{
+		if (command == null) return;
 		if (!command.CanExecute())
 			return;
 
-		if (_activeTransaction != null)
+		var tx = _activeTransaction;
+		if (tx != null)
 		{
 			command.Execute();
-			_activeTransaction.Add(command);
+			tx.Add(command);
 			return;
 		}
 

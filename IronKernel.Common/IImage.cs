@@ -1,4 +1,5 @@
 using System.Drawing;
+using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Common;
 
@@ -19,6 +20,8 @@ public interface IImage<TImage, TPixel> : IImage<TImage>
 {
 	TPixel? this[int x, int y] { get; set; }
 
+	void Clear(TPixel color);
+	void WritePixels(ReadOnlySpan<TPixel?> pixels);
 	TPixel? GetPixel(int x, int y);
 	void SetPixel(int x, int y, TPixel color);
 }
