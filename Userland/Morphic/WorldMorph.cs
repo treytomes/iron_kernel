@@ -8,6 +8,8 @@ using Userland.Services;
 using Userland.Morphic.Halo;
 using Userland.Gfx;
 using Userland.Morphic.Inspector;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Userland.Morphic;
 
@@ -30,7 +32,7 @@ public sealed class WorldMorph : Morph
 
 	public WorldMorph(Size screenSize, IAssetService assets, IServiceProvider services)
 	{
-		_scriptContext = new WorldScriptContext(this, services);
+		_scriptContext = new WorldScriptContext(services.GetRequiredService<ILogger<WorldScriptContext>>(), this, services);
 		_interpreter.hostData = _scriptContext;
 		_scriptOutput.Attach(_interpreter);
 
@@ -223,6 +225,12 @@ public sealed class WorldMorph : Morph
 		if (KeyboardFocus != null)
 		{
 			KeyboardFocus.OnKey(e);
+		}
+
+		// Only forward to scripts if UI didn't handle it
+		if (!e.Handled)
+		{
+			_scriptContext?.OnKey(e);
 		}
 	}
 

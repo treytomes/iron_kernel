@@ -11,6 +11,7 @@ public static class IntrinsicRegistry
 		ColorIntrinsics.Register();
 		DialogIntrinsics.Register();
 		FileSystemIntrinsics.Register();
+		KeyboardIntrinsics.Register();
 		MorphIntrinsics.Register();
 		TileMapIntrinsics.Register();
 
