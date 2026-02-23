@@ -1,4 +1,5 @@
 using System.Drawing;
+using Microsoft.Extensions.Logging;
 using Userland.Morphic;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Layout;
@@ -9,7 +10,10 @@ namespace Userland.MiniMacro;
 
 public sealed class TextEditorWindowMorph : WindowMorph
 {
-	private readonly TextDocument _doc = new(string.Empty);
+	#region Fields
+
+	private readonly ILogger<TextEditorWindowMorph> _logger;
+	private readonly TextDocument _doc;
 	private readonly TextEditorMorph _editor;
 	private readonly IWindowService _windowService;
 	private readonly IFileSystem _fileSystem;
@@ -17,15 +21,20 @@ public sealed class TextEditorWindowMorph : WindowMorph
 	private string? _filename;
 	private bool _dirty;
 
+	#endregion
+
 	public TextEditorWindowMorph(
+		ILogger<TextEditorWindowMorph> logger,
 		IWindowService windowService,
 		IFileSystem fileSystem,
 		IClipboardService clipboard
 	) : base(Point.Empty, new Size(640, 400), "Text Editor")
 	{
+		_logger = logger;
 		_windowService = windowService;
 		_fileSystem = fileSystem;
 
+		_doc = new(_logger, string.Empty);
 		_doc.Changed += () =>
 		{
 			if (!_dirty)

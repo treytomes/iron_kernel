@@ -1,6 +1,7 @@
 using System.Drawing;
 using System.Text;
 using IronKernel.Common.ValueObjects;
+using Microsoft.Extensions.Logging;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Services;
@@ -10,6 +11,8 @@ namespace Userland.Morphic;
 public sealed class TextConsoleMorph : Morph
 {
 	#region Fields
+
+	private readonly ILogger _logger;
 	private ConsoleCell[,] _buffer;
 	private int _cursorX;
 	private int _cursorY;
@@ -41,8 +44,9 @@ public sealed class TextConsoleMorph : Morph
 
 	#region Constructor
 
-	public TextConsoleMorph(IClipboardService clipboard)
+	public TextConsoleMorph(ILogger logger, IClipboardService clipboard)
 	{
+		_logger = logger;
 		_clipboard = clipboard;
 		CellSize = new Size(1, 1);
 		Columns = 1;
@@ -666,7 +670,7 @@ public sealed class TextConsoleMorph : Morph
 			throw new InvalidOperationException("ReadLine already in progress.");
 
 		_isReadingLine = true;
-		_editor = new TextEditingCore();
+		_editor = new TextEditingCore(_logger);
 		_inputStartX = _cursorX;
 		_inputStartY = _cursorY;
 
@@ -779,6 +783,7 @@ public sealed class TextConsoleMorph : Morph
 	{
 		ClearSelection();
 		_editor = new TextEditingCore(
+			_logger,
 			_historyIndex == 0
 				? string.Empty
 				: _commandHistory[^_historyIndex]

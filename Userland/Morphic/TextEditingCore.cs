@@ -1,29 +1,42 @@
 using System.Text;
+using Microsoft.Extensions.Logging;
 
 namespace Userland.Morphic;
 
 public sealed class TextEditingCore
 {
+	#region Fields
+
+	private readonly ILogger _logger;
 	private readonly StringBuilder _buffer = new();
 
-	public StringBuilder Buffer => _buffer;
+	#endregion
 
-	public int CursorIndex { get; private set; }
+	#region Constructors
 
-	public int Length => _buffer.Length;
-
-	public bool IsEmpty => _buffer.Length == 0;
-
-	public int TabWidth { get; set; } = 4;
-
-	public TextEditingCore(string? initialText = null)
+	public TextEditingCore(ILogger logger, string? initialText = null)
 	{
+		_logger = logger;
 		if (!string.IsNullOrEmpty(initialText))
 		{
 			_buffer.Append(initialText);
 			CursorIndex = _buffer.Length;
 		}
 	}
+
+	#endregion
+
+	#region Properties
+
+	public StringBuilder Buffer => _buffer;
+	public int CursorIndex { get; private set; }
+	public int Length => _buffer.Length;
+	public bool IsEmpty => _buffer.Length == 0;
+	public int TabWidth { get; set; } = 4;
+
+	#endregion
+
+	#region Methods
 
 	/* ---------------- Cursor movement ---------------- */
 
@@ -101,8 +114,15 @@ public sealed class TextEditingCore
 		if (CursorIndex == 0)
 			return;
 
-		_buffer.Remove(CursorIndex - 1, 1);
-		CursorIndex--;
+		try
+		{
+			_buffer.Remove(CursorIndex - 1, 1);
+			CursorIndex--;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Failed to backspace from {CursorIndex} with length {Length}.", CursorIndex, _buffer.Length);
+		}
 	}
 
 	public void Delete()
@@ -171,4 +191,6 @@ public sealed class TextEditingCore
 	{
 		return char.IsLetterOrDigit(ch) || ch == '_';
 	}
+
+	#endregion
 }

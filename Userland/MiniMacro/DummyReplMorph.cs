@@ -1,4 +1,5 @@
 using System.Drawing;
+using Microsoft.Extensions.Logging;
 using Userland.Morphic;
 using Userland.Services;
 
@@ -6,13 +7,15 @@ namespace Userland.MiniMacro;
 
 public sealed class DummyReplMorph : WindowMorph
 {
+	private readonly ILogger<DummyReplMorph> _logger;
 	private readonly TextConsoleMorph _console;
 	private CancellationTokenSource? _cts;
 
-	public DummyReplMorph(IClipboardService clipboard)
+	public DummyReplMorph(ILogger<DummyReplMorph> logger, IClipboardService clipboard)
 		: base(Point.Empty, new Size(256, 192), "Dummy REPL")
 	{
-		_console = new TextConsoleMorph(clipboard);
+		_logger = logger;
+		_console = new TextConsoleMorph(_logger, clipboard);
 		Content.AddMorph(_console);
 	}
 

@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+
 namespace Userland.Morphic;
 
 /// <summary>
@@ -7,24 +9,27 @@ namespace Userland.Morphic;
 /// </summary>
 public sealed class TextDocument
 {
-	private readonly List<TextEditingCore> _lines = new();
-
-	private int _desiredColumn = -1;
-
-	#region Construction
-
-	public TextDocument(string? initialText = null)
-	{
-		SetText(initialText);
-	}
-
-	#endregion
-
 	#region Events
 
 	public event Action? Changed;
 
-	private void OnChanged() => Changed?.Invoke();
+	#endregion
+
+	#region Fields
+
+	private readonly ILogger _logger;
+	private readonly List<TextEditingCore> _lines = new();
+	private int _desiredColumn = -1;
+
+	#endregion
+
+	#region Constructors
+
+	public TextDocument(ILogger logger, string? initialText = null)
+	{
+		_logger = logger;
+		SetText(initialText);
+	}
 
 	#endregion
 
@@ -52,6 +57,10 @@ public sealed class TextDocument
 
 	#endregion
 
+	#region Methods
+
+	private void OnChanged() => Changed?.Invoke();
+
 	#region Text Initialization
 
 	public void SetText(string? text = null)
@@ -60,7 +69,7 @@ public sealed class TextDocument
 
 		if (string.IsNullOrEmpty(text))
 		{
-			_lines.Add(new TextEditingCore());
+			_lines.Add(new TextEditingCore(_logger));
 			CaretLine = 0;
 			CaretColumn = 0;
 			OnChanged();
@@ -69,10 +78,10 @@ public sealed class TextDocument
 
 		var split = text.Split('\n');
 		foreach (var line in split)
-			_lines.Add(new TextEditingCore(line));
+			_lines.Add(new TextEditingCore(_logger, line));
 
 		if (_lines.Count == 0)
-			_lines.Add(new TextEditingCore());
+			_lines.Add(new TextEditingCore(_logger));
 
 		CaretLine = _lines.Count - 1;
 		_lines[CaretLine].MoveToEnd();
@@ -364,7 +373,7 @@ public sealed class TextDocument
 		var rightText = line.Buffer.ToString(index, line.Length - index);
 		line.Buffer.Remove(index, line.Length - index);
 
-		var newLine = new TextEditingCore(rightText);
+		var newLine = new TextEditingCore(_logger, rightText);
 		_lines.Insert(CaretLine + 1, newLine);
 
 		CaretLine++;
@@ -383,6 +392,8 @@ public sealed class TextDocument
 			_lines.Select(l => l.ToString())
 		);
 	}
+
+	#endregion
 
 	#endregion
 }

@@ -21,7 +21,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
 	{
 		_logger = logger;
-		_console = new TextConsoleMorph(clipboard);
+		_console = new TextConsoleMorph(logger, clipboard);
 		Content.AddMorph(_console);
 
 		_interpreter = new Interpreter
@@ -122,7 +122,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			}
 
 			// Pump async intrinsics
-			while (_interpreter.Running())
+			while (_interpreter.Running() && !_interpreter.NeedMoreInput())
 			{
 				// Allow the VM to consume completed async intrinsics
 				_interpreter.RunUntilDone(returnEarly: false);
