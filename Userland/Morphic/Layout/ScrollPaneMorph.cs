@@ -97,13 +97,13 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 	{
 		var bar = new DockPanelMorph { Size = new Size(128, 12) };
 
-		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "<")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ((char)(1 * 16 + 1)).ToString())
 		{
 			Command = new ActionCommand(() => ScrollBy(-ScrollStep, 0))
 		});
 		bar.SetDock(bar.Submorphs[^1], Dock.Left);
 
-		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ">")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ((char)(1 * 16 + 2)).ToString())
 		{
 			Command = new ActionCommand(() => ScrollBy(ScrollStep, 0))
 		});
@@ -129,13 +129,13 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 	{
 		var bar = new DockPanelMorph { Size = new Size(12, 128) };
 
-		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "^")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ((char)(1 * 16 + 3)).ToString())
 		{
 			Command = new ActionCommand(() => ScrollBy(0, -ScrollStep))
 		});
 		bar.SetDock(bar.Submorphs[^1], Dock.Top);
 
-		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), "v")
+		bar.AddMorph(new ButtonMorph(Point.Empty, new Size(12, 12), ((char)(1 * 16 + 4)).ToString())
 		{
 			Command = new ActionCommand(() => ScrollBy(0, ScrollStep))
 		});
