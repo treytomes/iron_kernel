@@ -731,5 +731,16 @@ public abstract class Morph : ICommandTarget
 		owner.RemoveMorph(this);
 	}
 
+	protected void ReleaseFocus()
+	{
+		if (TryGetWorld(out var world))
+			world.ReleaseKeyboard(this);
+	}
+
+	protected bool HasKeyboardFocus()
+	{
+		return TryGetWorld(out var world) && world.KeyboardFocus == this;
+	}
+
 	#endregion
 }

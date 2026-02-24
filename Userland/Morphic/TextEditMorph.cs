@@ -8,12 +8,15 @@ namespace Userland.Morphic;
 
 public sealed class TextEditMorph : Morph, IValueContentMorph
 {
-	#region Constants
-	private const int Padding = 2;
-	private const double CaretBlinkMs = 500;
+	#region Events
+
+	public event EventHandler? OnCommit = null;
+	public event EventHandler? OnCancel = null;
+
 	#endregion
 
 	#region Fields
+
 	private string _text;
 	private string _originalText;
 	private int _caretIndex;
@@ -25,6 +28,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	private double _caretBlinkTime;
 	private bool _caretVisible = true;
+
 	#endregion
 
 	#region Constructors
@@ -64,9 +68,15 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	#endregion
 
-	#region Focus
+	#region Properties
 
 	public override bool WantsKeyboardFocus => true;
+	public int Padding { get; set; } = 2;
+	public double CaretBlinkMs { get; set; } = 500;
+
+	#endregion
+
+	#region Methods
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
@@ -82,10 +92,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		e.MarkHandled();
 	}
-
-	#endregion
-
-	#region Update (caret blink)
 
 	public override void Update(double deltaMs)
 	{
@@ -107,10 +113,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		}
 	}
 
-	#endregion
-
-	#region Keyboard Input
-
 	public override void OnKey(KeyEvent e)
 	{
 		if (e.Action != InputAction.Press)
@@ -121,11 +123,13 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 			case Key.Enter:
 				CommitOrCancel();
 				ReleaseFocus();
+				OnCommit?.Invoke(this, EventArgs.Empty);
 				break;
 
 			case Key.Escape:
 				CancelEdit();
 				ReleaseFocus();
+				OnCancel?.Invoke(this, EventArgs.Empty);
 				break;
 
 			case Key.Left:
@@ -177,10 +181,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		e.MarkHandled();
 	}
 
-	#endregion
-
-	#region Layout
-
 	protected override void UpdateLayout()
 	{
 		_label.Position = new Point(Padding, Padding);
@@ -190,10 +190,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		base.UpdateLayout();
 	}
-
-	#endregion
-
-	#region Rendering
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
@@ -220,10 +216,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		}
 	}
 
-	#endregion
-
-	#region Value Refresh (external updates)
-
 	public void Refresh(object? value)
 	{
 		var newText = value?.ToString() ?? string.Empty;
@@ -242,10 +234,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		InvalidateLayout();
 		Invalidate();
 	}
-
-	#endregion
-
-	#region Helpers
 
 	private void OnTextChanged()
 	{
@@ -274,17 +262,6 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		_caretIndex = _text.Length;
 		InvalidateLayout();
 		Invalidate();
-	}
-
-	private void ReleaseFocus()
-	{
-		if (TryGetWorld(out var world))
-			world.ReleaseKeyboard(this);
-	}
-
-	private bool HasKeyboardFocus()
-	{
-		return TryGetWorld(out var world) && world.KeyboardFocus == this;
 	}
 
 	private int MeasureCaretOffset()

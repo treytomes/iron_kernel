@@ -790,12 +790,6 @@ public sealed class TextEditorMorph : Morph
 
 	#region Helpers
 
-	private bool HasKeyboardFocus()
-	{
-		return TryGetWorld(out var world) &&
-			   world.KeyboardFocus == this;
-	}
-
 	private bool IsActiveLine(int lineIndex)
 	{
 		return lineIndex == _document.CaretLine;

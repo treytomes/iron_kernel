@@ -37,7 +37,7 @@ public sealed class WindowService : IWindowService
 		var window = new PromptWindowMorph(
 			message,
 			defaultValue,
-			result => tcs.SetResult(result)
+			tcs.SetResult
 		);
 		_world.AddMorph(window);
 		window.CenterOnOwner();
