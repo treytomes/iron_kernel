@@ -37,9 +37,9 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 			Spacing = 2
 		};
 
-		_r = CreateChannelSlider(v => OnChannelChanged(Channel.R, v));
-		_g = CreateChannelSlider(v => OnChannelChanged(Channel.G, v));
-		_b = CreateChannelSlider(v => OnChannelChanged(Channel.B, v));
+		_r = CreateChannelSlider("R:", v => OnChannelChanged(Channel.R, v));
+		_g = CreateChannelSlider("G:", v => OnChannelChanged(Channel.G, v));
+		_b = CreateChannelSlider("B:", v => OnChannelChanged(Channel.B, v));
 
 		_sliderStack.AddMorph(_r);
 		_sliderStack.AddMorph(_g);
@@ -75,9 +75,9 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	#endregion
 
 	#region Helpers
-	private static SliderWithEditorMorph CreateChannelSlider(Action<float> setter)
+	private static SliderWithEditorMorph CreateChannelSlider(string labelText, Action<float> setter)
 	{
-		return new SliderWithEditorMorph(0, setter)
+		return new SliderWithEditorMorph(labelText, 0, setter)
 		{
 			Min = 0,
 			Max = 5,

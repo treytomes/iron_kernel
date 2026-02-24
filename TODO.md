@@ -6,6 +6,8 @@
 
 * In the console, if typing on bottom row and wrapping occurs, scroll the window.
 * There are a lot of instabilities in string slicing between the text editor, text editor core, and console.
+* Inspector changes:
+	* Inline editors for Point and Size.
 * Text Editor changes:
 	* Source lines need to not wrap around to the next line.  It just doesn't look right.
 	* Ctrl+S to save.

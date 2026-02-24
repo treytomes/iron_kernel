@@ -8,17 +8,61 @@ namespace Userland.Morphic;
 public sealed class SliderWithEditorMorph : HorizontalStackMorph, IValueContentMorph
 {
 	#region Fields
+
 	private float _value;
 	private readonly Action<float>? _setter;
 	private readonly SliderTrackMorph _track;
 	private readonly TextEditMorph _editor;
 	private bool _suppressEditorCallback;
-	#endregion
-
-	#region Configuration
 	private float _min = 0f;
 	private float _max = 1f;
 	private float _step = 0f;
+
+	#endregion
+
+	#region Constructors
+
+	public SliderWithEditorMorph(
+		string labelText,
+		float initialValue,
+		Action<float>? setter)
+	{
+		_value = initialValue;
+		_setter = setter;
+
+		_editor = new TextEditMorph(
+			position: Point.Empty,
+	#endregion
+
+		#region Value helpers
+			initialText: initialValue.ToString("0.##"),
+			setter: OnEditorCommitted,
+			validator: ValidateText
+		);
+
+		_track = new SliderTrackMorph(
+			getNormalized: () => ValueToNormalized(_value),
+			setNormalized: t =>
+			{
+				SetValue(NormalizedToValue(t), fromUser: true);
+			})
+		{
+			Min = Min,
+			Max = Max,
+			Step = Step
+		};
+
+		AddMorph(new LabelMorph()
+		{
+			Text = labelText,
+		});
+		AddMorph(_editor);
+		AddMorph(_track);
+	}
+
+		#endregion
+
+	#region Properties
 
 	public float Min
 	{
@@ -52,48 +96,17 @@ public sealed class SliderWithEditorMorph : HorizontalStackMorph, IValueContentM
 			PropagateRange();
 		}
 	}
-	#endregion
 
-	#region Value
 	public float Value
 	{
 		get => _value;
 		set => SetValue(value, fromUser: false);
 	}
+
 	#endregion
 
-	#region Construction
-	public SliderWithEditorMorph(
-		float initialValue,
-		Action<float>? setter)
-	{
-		_value = initialValue;
-		_setter = setter;
+	#region Methods
 
-		_editor = new TextEditMorph(
-			position: Point.Empty,
-			initialText: initialValue.ToString("0.##"),
-			setter: OnEditorCommitted,
-			validator: ValidateText);
-
-		_track = new SliderTrackMorph(
-			getNormalized: () => ValueToNormalized(_value),
-			setNormalized: t =>
-			{
-				SetValue(NormalizedToValue(t), fromUser: true);
-			})
-		{
-			Min = Min,
-			Max = Max,
-			Step = Step
-		};
-
-		AddMorph(_editor);
-		AddMorph(_track);
-	}
-	#endregion
-
-	#region IValueContentMorph
 	public void Refresh(object? value)
 	{
 		if (value is not float f)
@@ -101,9 +114,7 @@ public sealed class SliderWithEditorMorph : HorizontalStackMorph, IValueContentM
 
 		SetValue(f, fromUser: false);
 	}
-	#endregion
 
-	#region Editor callbacks
 	private void OnEditorCommitted(string text)
 	{
 		if (_suppressEditorCallback)
@@ -120,9 +131,7 @@ public sealed class SliderWithEditorMorph : HorizontalStackMorph, IValueContentM
 
 		return v >= Min && v <= Max;
 	}
-	#endregion
 
-	#region Value helpers
 	private void SetValue(float v, bool fromUser)
 	{
 		var newValue = ClampAndSnap(v);
