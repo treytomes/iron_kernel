@@ -51,7 +51,7 @@ public sealed class WindowService : IWindowService
 
 		var window = new ConfirmWindowMorph(
 			message,
-			result => tcs.SetResult(result)
+			tcs.SetResult
 		);
 
 		_world.AddMorph(window);
