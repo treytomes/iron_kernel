@@ -1,10 +1,10 @@
+using IronKernel.Common.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
 using Userland.Services;
 using Userland.Scripting;
-using Userland.Morphic.Events;
-using IronKernel.Common.ValueObjects;
-using Microsoft.Extensions.Logging;
 
 namespace Userland.Morphic;
 

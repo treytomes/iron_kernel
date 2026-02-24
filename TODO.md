@@ -17,5 +17,8 @@
 	* Shift+Tab should reverse-indent.
 	* The alert dialog on save is unnecessary.
 	* Ctrl+X on a row should cut the row into the copy buffer.
+* A `dir` intrinsic to list directory contents.
+* Some kind of "current directory" tracking per Interpreter instance.
+	* This might tie into the idea of an "Interpreter Process"
 
-
+* There are a lot of instabilities in string slicing between the text editor, text editor core, and console.

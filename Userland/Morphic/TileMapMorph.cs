@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Miniscript;
 using Userland.Gfx;
 using Userland.Services;
 
@@ -129,9 +130,23 @@ public sealed class TileMapMorph : Morph
 		rc.PopOffset();
 	}
 
+	protected override ValMap CreateScriptObject()
+	{
+		var map = base.CreateScriptObject();
+		map["scrollX"] = new ValNumber(_scrollOffset.X);
+		map["scrollY"] = new ValNumber(_scrollOffset.Y);
+		return map;
+	}
+
 	protected override void ApplyScriptState()
 	{
 		base.ApplyScriptState();
+
+		if (ScriptObject["scrollX"] is ValNumber sx && ScriptObject["scrollY"] is ValNumber sy)
+		{
+			_scrollOffset = new Point(sx.IntValue(), sy.IntValue());
+			Invalidate();
+		}
 
 		for (int y = 0; y < MapSize.Height; y++)
 			for (int x = 0; x < MapSize.Width; x++)

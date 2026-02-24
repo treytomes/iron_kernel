@@ -708,26 +708,36 @@ public sealed class TextConsoleMorph : Morph
 		int y = _inputStartY;
 
 		int index = 0;
-		foreach (var ch in _editor.Buffer.ToString())
+		try
 		{
-			if (y >= Rows)
-				break;
-
-			_buffer[y, x] = new ConsoleCell
+			var text = _editor.Buffer.ToString();
+			for (var n = 0; n < text.Length; n++)
 			{
-				Char = ch,
-				Foreground = CurrentForegroundColor,
-				Background = CurrentBackgroundColor
-			};
+				var ch = text[n];
 
-			index++;
+				if (y >= Rows)
+					break;
 
-			x++;
-			if (x >= Columns)
-			{
-				x = 0;
-				y++;
+				_buffer[y, x] = new ConsoleCell
+				{
+					Char = ch,
+					Foreground = CurrentForegroundColor,
+					Background = CurrentBackgroundColor
+				};
+
+				index++;
+
+				x++;
+				if (x >= Columns)
+				{
+					x = 0;
+					y++;
+				}
 			}
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Unknown error while redrawing text.");
 		}
 	}
 

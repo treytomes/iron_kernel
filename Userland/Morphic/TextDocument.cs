@@ -367,18 +367,25 @@ public sealed class TextDocument
 
 	private void SplitLine()
 	{
-		var line = CurrentLine;
-		int index = line.CursorIndex;
+		try
+		{
+			var line = CurrentLine;
+			int index = Math.Max(line.CursorIndex, 0);
 
-		var rightText = line.Buffer.ToString(index, line.Length - index);
-		line.Buffer.Remove(index, line.Length - index);
+			var rightText = line.Buffer.ToString(index, line.Length - index);
+			line.Buffer.Remove(index, line.Length - index);
 
-		var newLine = new TextEditingCore(_logger, rightText);
-		_lines.Insert(CaretLine + 1, newLine);
+			var newLine = new TextEditingCore(_logger, rightText);
+			_lines.Insert(CaretLine + 1, newLine);
 
-		CaretLine++;
-		newLine.MoveToStart();
-		_desiredColumn = -1;
+			CaretLine++;
+			newLine.MoveToStart();
+			_desiredColumn = -1;
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "Unable to split line.");
+		}
 	}
 
 	#endregion

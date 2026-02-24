@@ -13,6 +13,7 @@ public static class IntrinsicRegistry
 		FileSystemIntrinsics.Register();
 		KeyboardIntrinsics.Register();
 		MorphIntrinsics.Register();
+		SpriteDisplayIntrinsics.Register();
 		TileMapIntrinsics.Register();
 
 		CreateInspectIntrinsic();
