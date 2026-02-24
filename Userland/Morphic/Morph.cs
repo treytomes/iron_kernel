@@ -357,6 +357,7 @@ public abstract class Morph : ICommandTarget
 	public virtual void OnPointerWheel(PointerWheelEvent e) { }
 
 	public virtual void OnPointerMove(PointerMoveEvent e) { }
+
 	public virtual void OnKey(KeyEvent e) { }
 
 	public void DispatchPointerDown(PointerDownEvent e)
@@ -707,6 +708,27 @@ public abstract class Morph : ICommandTarget
 			var morph = Submorphs[n];
 			morph?.ApplyScriptState();
 		}
+	}
+
+	public void CaptureKeyboard()
+	{
+		var world = GetWorld();
+		if (world == null) return;
+		world.CaptureKeyboard(this);
+	}
+
+	public void CapturePointer()
+	{
+		var world = GetWorld();
+		if (world == null) return;
+		world.CapturePointer(this);
+	}
+
+	public void Close()
+	{
+		var owner = Owner;
+		if (owner == null) return;
+		owner.RemoveMorph(this);
 	}
 
 	#endregion
