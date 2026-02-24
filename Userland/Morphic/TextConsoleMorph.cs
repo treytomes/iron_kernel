@@ -669,6 +669,7 @@ public sealed class TextConsoleMorph : Morph
 		if (_isReadingLine)
 			throw new InvalidOperationException("ReadLine already in progress.");
 
+		CaptureKeyboard();
 		_isReadingLine = true;
 		_editor = new TextEditingCore(_logger);
 		_inputStartX = _cursorX;
