@@ -62,11 +62,11 @@ public sealed class WorldScriptContext
 			switch (e.Action)
 			{
 				case InputAction.Press:
-					Keyboard.KeysDown.Add(e.Key);
+					Keyboard.SetKeyState(e.Key, false);
 					break;
 
 				case InputAction.Release:
-					Keyboard.KeysDown.Remove(e.Key);
+					Keyboard.SetKeyState(e.Key, false);
 					break;
 			}
 		}

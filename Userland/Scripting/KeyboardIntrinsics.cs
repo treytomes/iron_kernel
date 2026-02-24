@@ -45,7 +45,7 @@ public static class KeyboardIntrinsics
 			if (!TryParseKey(keyVal, out var key))
 				return Intrinsic.Result.False;
 
-			return world.Keyboard.KeysDown.Contains(key)
+			return world.Keyboard.GetKeyState(key)
 				? Intrinsic.Result.True
 				: Intrinsic.Result.False;
 		};
@@ -68,7 +68,7 @@ public static class KeyboardIntrinsics
 			if (!TryParseKey(keyVal, out var key))
 				return Intrinsic.Result.False;
 
-			return world.Keyboard.KeysDown.Contains(key)
+			return world.Keyboard.GetKeyState(key)
 				? Intrinsic.Result.False
 				: Intrinsic.Result.True;
 		};
@@ -86,7 +86,7 @@ public static class KeyboardIntrinsics
 			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.False;
 
-			return world.Keyboard.KeysDown.Count > 0
+			return world.Keyboard.IsAnyKeyDown()
 				? Intrinsic.Result.True
 				: Intrinsic.Result.False;
 		};
