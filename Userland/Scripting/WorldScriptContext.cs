@@ -4,9 +4,10 @@ using Microsoft.Extensions.Logging;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 using Userland.Services;
-using Userland.Scripting;
+using Userland.Morphic;
+using Miniscript;
 
-namespace Userland.Morphic;
+namespace Userland.Scripting;
 
 public sealed class WorldScriptContext
 {
@@ -74,6 +75,20 @@ public sealed class WorldScriptContext
 		{
 			_logger.LogError(ex, "Failed to process key event ({Action}, {Handled}, {Key}, {Modifiers}).", e.Action, e.Handled, e.Key, e.Modifiers);
 		}
+	}
+
+	public void EnsureEnv(TAC.Context ctx)
+	{
+		if (ctx.interpreter.GetGlobalValue("env") is not ValMap env)
+		{
+			env = new ValMap();
+		}
+		if (env["curdir"] is not Value curdirVal)
+		{
+			env["curdir"] = new ValString("");
+		}
+
+		ctx.interpreter.SetGlobalValue("env", env);
 	}
 
 	#endregion

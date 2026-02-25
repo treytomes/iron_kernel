@@ -7,9 +7,9 @@ using Userland.Morphic.Events;
 using Userland.Services;
 using Userland.Morphic.Halo;
 using Userland.Gfx;
-using Userland.Morphic.Inspector;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Userland.Scripting;
 
 namespace Userland.Morphic;
 
