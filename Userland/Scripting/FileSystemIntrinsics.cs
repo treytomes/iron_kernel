@@ -1,5 +1,4 @@
 using Miniscript;
-using Userland.Morphic;
 
 namespace Userland.Scripting;
 
@@ -13,276 +12,270 @@ public static class FileSystemIntrinsics
 		CreateDirIntrinsic();
 		CreateMkdirIntrinsic();
 		CreateDelIntrinsic();
+		CreateCopyIntrinsic();
+		CreateMoveIntrinsic();
+		CreatePwdIntrinsic();
+		CreateCdIntrinsic();
 	}
+
+	// ============================================================
+	// Path resolution helpers
+	// ============================================================
+
+	private static string ResolvePath(
+		TAC.Context ctx,
+		WorldScriptContext world,
+		string path)
+	{
+		world.EnsureEnv(ctx);
+
+		// Root shortcut
+		if (path == "/" || path == "file://")
+			return "file://";
+
+		// Strip scheme if present
+		if (path.StartsWith("file://"))
+			path = path.Substring("file://".Length);
+
+		// Normalize separators
+		path = path.Replace('\\', '/');
+
+		// Get current directory (without scheme)
+		var env = ctx.interpreter.GetGlobalValue("env") as ValMap;
+		var curdir = env!["curdir"].ToString();
+		if (curdir.StartsWith("file://"))
+			curdir = curdir.Substring("file://".Length);
+
+		// Build combined path
+		string combined;
+		if (path.StartsWith("/"))
+		{
+			// Absolute path
+			combined = path;
+		}
+		else
+		{
+			// Relative path
+			combined = string.IsNullOrEmpty(curdir)
+				? path
+				: $"{curdir}/{path}";
+		}
+
+		// Normalize path segments (handle . and ..)
+		var parts = new Stack<string>();
+		foreach (var part in combined.Split('/', StringSplitOptions.RemoveEmptyEntries))
+		{
+			if (part == ".")
+				continue;
+			if (part == "..")
+			{
+				if (parts.Count > 0)
+					parts.Pop();
+				continue;
+			}
+			parts.Push(part);
+		}
+
+		var normalized = string.Join('/', parts.Reverse());
+		return string.IsNullOrEmpty(normalized)
+			? "file://"
+			: $"file://{normalized}";
+	}
+
+	private static string ResolveScriptPath(
+		TAC.Context ctx,
+		WorldScriptContext world,
+		string name)
+	{
+		var path = ResolvePath(ctx, world, name);
+		if (!Path.HasExtension(path))
+			path += ".ms";
+		return path;
+	}
+
+	// ============================================================
+	// import(name)
+	// ============================================================
 
 	private static void CreateImportIntrinsic()
 	{
 		var import = Intrinsic.Create("import");
 		import.AddParam("name");
 
-		import.code = (ctx, partialResult) =>
+		import.code = (ctx, partial) =>
 		{
-			// SECOND INVOCATION:
-			// Import function finished; retrieve result and bind into caller scope.
-			if (partialResult != null)
+			if (partial != null)
 			{
-				// Result of import function is stored in temp 0
-				if (ctx.GetTemp(0) is not Value imported)
-					return Intrinsic.Result.Null;
-
-				// Bind to caller scope under module name
-				var caller = ctx.parent;
-				caller?.SetVar(partialResult.result.ToString(), imported);
-
+				if (ctx.GetTemp(0) is Value imported)
+					ctx.parent?.SetVar(partial.result.ToString(), imported);
 				return Intrinsic.Result.Null;
 			}
 
-			// FIRST INVOCATION:
 			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
 
-			var nameVal = ctx.GetVar("name");
-			var libName = nameVal?.ToString();
-			if (string.IsNullOrWhiteSpace(libName))
+			var name = ctx.GetVar("name")?.ToString();
+			if (string.IsNullOrWhiteSpace(name))
 				return Error(ctx, "import(name): name is required");
-
-			// Resolve file: file://name.ms
-			var uri = $"file://{libName}.ms";
 
 			string source;
 			try
 			{
-				// Synchronous read is REQUIRED here.
-				// import must be VM-driven, not async-driven.
-				source = world.FileSystem.ReadText(uri);
+				source = world.FileSystem.ReadText(
+					ResolveScriptPath(ctx, world, name));
 			}
 			catch (Exception ex)
 			{
-				return Error(ctx, $"import: failed to read {libName}: {ex.Message}");
+				return Error(ctx, $"import: {ex.Message}");
 			}
 
-			// Parse module source
-			var parser = new Parser();
-			parser.errorContext = $"{libName}.ms";
+			var parser = new Parser { errorContext = name };
 			parser.Parse(source);
-
-			// Create implicit import function (returns locals unless overridden)
 			var fn = parser.CreateImport();
 
-			// Push function call onto VM stack
-			// Result goes into temp 0
 			ctx.vm.ManuallyPushCall(
 				new ValFunction(fn),
-				new ValTemp(0)
-			);
+				new ValTemp(0));
 
-			// Return partial result containing module name;
-			// VM will resume us after function finishes.
-			return new Intrinsic.Result(new ValString(libName), done: false);
+			return new Intrinsic.Result(new ValString(name), done: false);
 		};
 	}
+
+	// ============================================================
+	// run(filename)
+	// ============================================================
 
 	private static void CreateRunIntrinsic()
 	{
 		var run = Intrinsic.Create("run");
 		run.AddParam("filename");
 
-		run.code = (ctx, partialResult) =>
+		run.code = (ctx, _) =>
 		{
 			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
 
-			var filename = ctx.GetVar("filename")?.ToString();
-			if (string.IsNullOrWhiteSpace(filename))
+			var name = ctx.GetVar("filename")?.ToString();
+			if (string.IsNullOrWhiteSpace(name))
 				return Error(ctx, "run(filename): filename is required");
-			filename = $"file://{filename}.ms";
 
 			string source;
 			try
 			{
-				source = world.FileSystem.ReadText(filename);
+				source = world.FileSystem.ReadText(
+					ResolveScriptPath(ctx, world, name));
 			}
 			catch (Exception ex)
 			{
-				return Error(ctx, $"run: failed to read file: {ex.Message}");
+				return Error(ctx, $"run: {ex.Message}");
 			}
 
-			// Stop current script and schedule new one
 			world.PendingRunSource = source;
-
-			// Force VM to yield / stop execution
 			ctx.vm.yielding = true;
-
-			// run never returns a value
 			return Intrinsic.Result.Null;
 		};
 	}
+
+	// ============================================================
+	// edit(filename)
+	// ============================================================
 
 	private static void CreateEditIntrinsic()
 	{
 		var edit = Intrinsic.Create("edit");
-		edit.AddParam("filename", ValNull.instance);
+		edit.AddParam("filename");
 
-		edit.code = (ctx, partialResult) =>
+		edit.code = (ctx, _) =>
 		{
-			// First invocation
-			if (partialResult == null)
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				var filenameVal = ctx.GetVar("filename");
-				string? filename =
-					filenameVal == ValNull.instance ? null : filenameVal.ToString();
-				if (string.IsNullOrWhiteSpace(filename))
-				{
-					return Error(ctx, "edit(filename): filename is required");
-				}
-
-				// MiniScript-visible state
-				var state = new ValMap
-				{
-					["done"] = ValNumber.zero
-				};
-
-				if (!filename.StartsWith("file://"))
-				{
-					filename = $"file://{filename}";
-				}
-
-				if (!world.FileSystem.Exists(filename))
-				{
-					filename = $"{filename}.ms";
-				}
-
-				// Kick off file open
-				try
-				{
-					world.WindowService.EditFile(filename);
-				}
-				catch (Exception ex)
-				{
-					return Error(ctx, $"edit: failed to open file for editing: {ex.Message}");
-				}
-
-				// Mark intrinsic as complete
-				state["done"] = ValNumber.one;
-
-				return new Intrinsic.Result(state, done: false);
-			}
-
-			// Subsequent invocations
-			var map = partialResult.result as ValMap;
-			if (map == null)
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
 
-			if (!map["done"].BoolValue())
-				return partialResult; // still waiting
+			var name = ctx.GetVar("filename")?.ToString();
+			if (string.IsNullOrWhiteSpace(name))
+				return Error(ctx, "edit(filename): filename is required");
 
-			// Finished
+			var path = ResolveScriptPath(ctx, world, name);
+			try
+			{
+				world.WindowService.EditFile(path);
+			}
+			catch (Exception ex)
+			{
+				return Error(ctx, $"edit: {ex.Message}");
+			}
+
 			return Intrinsic.Result.Null;
 		};
 	}
 
-	// ------------------------------------------------------------
-	// dir(path)
-	// ------------------------------------------------------------
+	// ============================================================
+	// dir(path?, prettyPrint?)
+	// ============================================================
+
 	private static void CreateDirIntrinsic()
 	{
 		var dir = Intrinsic.Create("dir");
 		dir.AddParam("path", ValNull.instance);
-		dir.AddParam("prettyPrint", ValNumber.one); // default true
+		dir.AddParam("prettyPrint", ValNumber.one);
 
 		dir.code = (ctx, _) =>
 		{
-			try
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			string path;
+			var p = ctx.GetVar("path");
+			world.EnsureEnv(ctx);
+			if (p == null || p == ValNull.instance || string.IsNullOrWhiteSpace(p.ToString()))
 			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
+				// path = ResolvePath(ctx, world, (ctx.interpreter.GetGlobalValue("env") as ValMap)!["curdir"].ToString());
+				path = (ctx.interpreter.GetGlobalValue("env") as ValMap)!["curdir"].ToString();
+				Console.WriteLine("path0=" + path);
+			}
+			else
+			{
+				path = ResolvePath(ctx, world, p.ToString());
+				Console.WriteLine("path1=" + path);
+			}
 
-				// Resolve path
-				var pathVal = ctx.GetVar("path");
-				string path;
+			var entries = world.FileSystem.ListDirectory(path);
+			bool pretty = ctx.GetVar("prettyPrint")?.BoolValue() ?? true;
 
-				if (pathVal == null || pathVal == ValNull.instance || string.IsNullOrWhiteSpace(pathVal.ToString()))
-				{
-					// Default to globals.env.curdir
-					world.EnsureEnv(ctx);
-					if (ctx.interpreter.GetGlobalValue("env") is not ValMap env ||
-						env["curdir"] is not Value curdirVal)
-					{
-						world.EnsureEnv(ctx);
-						return Error(ctx, "dir: globals.env.curdir not defined");
-					}
-					path = curdirVal.ToString();
-				}
-				else
-				{
-					path = pathVal.ToString();
-				}
-				if (!path.StartsWith("file://"))
-				{
-					path = $"file://{path}";
-				}
+			if (pretty)
+			{
+				ctx.interpreter.standardOutput?.Invoke($"{path} :", true);
+				ctx.interpreter.standardOutput?.Invoke(
+					$"  {"NAME",-30}  {"SIZE",8}  {"MODIFIED",19}", true);
 
-				bool prettyPrint = ctx.GetVar("prettyPrint")?.BoolValue() ?? true;
-
-				var entries = world.FileSystem.ListDirectory(path);
-
-				// Pretty-print mode
-				if (prettyPrint)
-				{
-					ctx.interpreter.standardOutput?.Invoke($"{path} :", true);
-					// Header (optional, but useful)
-					const int COLUMN_WIDTH_NAME = -30;
-					const int COLUMN_WIDTH_SIZE = 8;
-					const int COLUMN_WIDTH_MODIFIED = 19;
-					ctx.interpreter.standardOutput?.Invoke(
-							$"  {"NAME",COLUMN_WIDTH_NAME}  {"SIZE",COLUMN_WIDTH_SIZE}  {"MODIFIED",COLUMN_WIDTH_MODIFIED}", true);
-					foreach (var e in entries)
-					{
-						var sizeText = e.IsDirectory
-							? "DIR"
-							: (e.Size?.ToString() ?? "");
-
-						var dateText = e.LastModified.ToString("yyyy-MM-dd HH:mm:ss");
-
-						ctx.interpreter.standardOutput?.Invoke(
-							$"  {e.Name,COLUMN_WIDTH_NAME}  {sizeText,COLUMN_WIDTH_SIZE}  {dateText,COLUMN_WIDTH_MODIFIED}", true);
-					}
-
-					return Intrinsic.Result.Null;
-				}
-
-				// Structured return mode
-				var result = new ValList();
 				foreach (var e in entries)
 				{
-					var map = new ValMap
-					{
-						["name"] = new ValString(e.Name),
-						["isDirectory"] = ValNumber.Truth(e.IsDirectory),
-						["size"] = e.Size.HasValue
-							? new ValNumber(e.Size.Value)
-							: ValNull.instance,
-						["lastModified"] =
-							new ValString(e.LastModified.ToUniversalTime().ToString("o"))
-					};
-					result.values.Add(map);
+					var size = e.IsDirectory ? "DIR" : (e.Size?.ToString() ?? "");
+					var date = e.LastModified.ToString("yyyy-MM-dd HH:mm:ss");
+					ctx.interpreter.standardOutput?.Invoke(
+						$"  {e.Name,-30}  {size,8}  {date,19}", true);
 				}
+				return Intrinsic.Result.Null;
+			}
 
-				return new Intrinsic.Result(result);
-			}
-			catch (Exception ex)
+			var list = new ValList();
+			foreach (var e in entries)
 			{
-				return Error(ctx, $"dir error: {ex.Message}");
+				list.values.Add(new ValMap
+				{
+					["name"] = new ValString(e.Name),
+					["isDirectory"] = ValNumber.Truth(e.IsDirectory),
+					["size"] = e.Size.HasValue ? new ValNumber(e.Size.Value) : ValNull.instance,
+					["lastModified"] = new ValString(e.LastModified.ToUniversalTime().ToString("o"))
+				});
 			}
+			return new Intrinsic.Result(list);
 		};
 	}
 
-	// ------------------------------------------------------------
+	// ============================================================
 	// mkdir(path)
-	// ------------------------------------------------------------
+	// ============================================================
+
 	private static void CreateMkdirIntrinsic()
 	{
 		var mkdir = Intrinsic.Create("mkdir");
@@ -290,41 +283,22 @@ public static class FileSystemIntrinsics
 
 		mkdir.code = (ctx, _) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				var path = ctx.GetVar("path")?.ToString();
-				if (string.IsNullOrWhiteSpace(path))
-					return Error(ctx, "mkdir(path): path is required");
-
-				if (!path.StartsWith("file://"))
-				{
-					path = $"file://{path}";
-				}
-
-				var fs = world.FileSystem;
-
-				Console.WriteLine("Does it exist?");
-				if (fs.Exists(path))
-					return Error(ctx, $"mkdir: path already exists: {path}");
-				Console.WriteLine("It must not exist.");
-
-				fs.CreateDirectory(path);
-
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"mkdir error: {ex.Message}");
-			}
+
+			var path = ResolvePath(ctx, world, ctx.GetVar("path")?.ToString() ?? "");
+			if (world.FileSystem.Exists(path))
+				return Error(ctx, $"mkdir: path already exists: {path}");
+
+			world.FileSystem.CreateDirectory(path);
+			return Intrinsic.Result.Null;
 		};
 	}
 
-	// ------------------------------------------------------------
+	// ============================================================
 	// del(path)
-	// ------------------------------------------------------------
+	// ============================================================
+
 	private static void CreateDelIntrinsic()
 	{
 		var del = Intrinsic.Create("del");
@@ -332,38 +306,151 @@ public static class FileSystemIntrinsics
 
 		del.code = (ctx, _) =>
 		{
-			try
-			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
-				var path = ctx.GetVar("path")?.ToString();
-				if (string.IsNullOrWhiteSpace(path))
-					return Error(ctx, "del(path): path is required");
-
-				if (!path.StartsWith("file://"))
-				{
-					path = $"file://{path}";
-				}
-
-				var fs = world.FileSystem;
-
-				if (!fs.Exists(path))
-					return Error(ctx, $"del: path does not exist: {path}");
-
-				fs.Delete(path);
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
 				return Intrinsic.Result.Null;
-			}
-			catch (Exception ex)
-			{
-				return Error(ctx, $"del error: {ex.Message}");
-			}
+
+			var path = ResolvePath(ctx, world, ctx.GetVar("path")?.ToString() ?? "");
+			if (!world.FileSystem.Exists(path))
+				return Error(ctx, $"del: path does not exist: {path}");
+
+			world.FileSystem.Delete(path);
+			return Intrinsic.Result.Null;
 		};
 	}
 
-	// ------------------------------------------------------------
-	// Helpers
-	// ------------------------------------------------------------
+	// ============================================================
+	// copy(from, to)
+	// ============================================================
+
+	private static void CreateCopyIntrinsic()
+	{
+		var copy = Intrinsic.Create("copy");
+		copy.AddParam("from");
+		copy.AddParam("to");
+
+		copy.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			var from = ResolvePath(ctx, world, ctx.GetVar("from")?.ToString() ?? "");
+			var to = ResolvePath(ctx, world, ctx.GetVar("to")?.ToString() ?? "");
+
+			if (!world.FileSystem.Exists(from))
+				return Error(ctx, $"copy: source does not exist: {from}");
+
+			var data = world.FileSystem.Read(from);
+			var write = world.FileSystem.Write(to, data.Data, data.MimeType);
+			if (!write.Success)
+				return Error(ctx, $"copy: failed to write: {to}");
+
+			return Intrinsic.Result.Null;
+		};
+	}
+
+	// ============================================================
+	// move(from, to)
+	// ============================================================
+
+	private static void CreateMoveIntrinsic()
+	{
+		var move = Intrinsic.Create("move");
+		move.AddParam("from");
+		move.AddParam("to");
+
+		move.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			var from = ResolvePath(ctx, world, ctx.GetVar("from")?.ToString() ?? "");
+			var to = ResolvePath(ctx, world, ctx.GetVar("to")?.ToString() ?? "");
+
+			if (!world.FileSystem.Exists(from))
+				return Error(ctx, $"move: source does not exist: {from}");
+
+			var data = world.FileSystem.Read(from);
+			var write = world.FileSystem.Write(to, data.Data, data.MimeType);
+			if (!write.Success)
+				return Error(ctx, $"move: failed to write: {to}");
+
+			world.FileSystem.Delete(from);
+			return Intrinsic.Result.Null;
+		};
+	}
+
+	private static void CreatePwdIntrinsic()
+	{
+		var pwd = Intrinsic.Create("pwd");
+		pwd.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			world.EnsureEnv(ctx);
+
+			if (ctx.interpreter.GetGlobalValue("env") is not ValMap env ||
+				env["curdir"] is not Value curdir)
+			{
+				return Error(ctx, "pwd: env.curdir not defined");
+			}
+
+			return new Intrinsic.Result(curdir);
+		};
+	}
+
+	private static void CreateCdIntrinsic()
+	{
+		var cd = Intrinsic.Create("cd");
+		cd.AddParam("path", ValNull.instance);
+
+		cd.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			world.EnsureEnv(ctx);
+
+			var env = ctx.interpreter.GetGlobalValue("env") as ValMap;
+			if (env == null)
+				return Error(ctx, "cd: env not initialized");
+
+			string path;
+
+			var pathVal = ctx.GetVar("path");
+			if (pathVal == null || pathVal == ValNull.instance || string.IsNullOrWhiteSpace(pathVal.ToString()))
+			{
+				// Default to filesystem root
+				path = "file://";
+			}
+			else
+			{
+				path = ResolvePath(ctx, world, pathVal.ToString());
+			}
+
+			// Validate target exists and is a directory
+			if (!world.FileSystem.Exists(path))
+				return Error(ctx, $"cd: path does not exist: {path}");
+
+			try
+			{
+				// Directory must be listable
+				world.FileSystem.ListDirectory(path);
+			}
+			catch
+			{
+				return Error(ctx, $"cd: not a directory: {path}");
+			}
+
+			env["curdir"] = new ValString(path);
+			return Intrinsic.Result.Null;
+		};
+	}
+
+	// ============================================================
+	// Error helper
+	// ============================================================
+
 	private static Intrinsic.Result Error(TAC.Context ctx, string message)
 	{
 		ctx.interpreter.errorOutput?.Invoke(message, true);

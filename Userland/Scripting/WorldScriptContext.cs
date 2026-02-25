@@ -85,7 +85,7 @@ public sealed class WorldScriptContext
 		}
 		if (env["curdir"] is not Value curdirVal)
 		{
-			env["curdir"] = new ValString("");
+			env["curdir"] = new ValString("file://");
 		}
 
 		ctx.interpreter.SetGlobalValue("env", env);
