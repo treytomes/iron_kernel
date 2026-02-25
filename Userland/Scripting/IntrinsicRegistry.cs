@@ -38,12 +38,12 @@ public static class IntrinsicRegistry
 				if (morph != null)
 				{
 					// Engine-level morph inspection
-					world.World.OpenInspector(morph);
+					world.WindowService.Inspect(morph);
 					return Intrinsic.Result.Null;
 				}
 
 				// 2. Fallback: inspect MiniScript value
-				world.World.OpenInspector(value);
+				world.WindowService.Inspect(value);
 				return Intrinsic.Result.Null;
 			}
 			catch (Exception ex)

@@ -390,21 +390,5 @@ public sealed class WorldMorph : Morph
 		rc.Fill(BackgroundColor);
 	}
 
-	/// <summary>
-	/// Open an inspector for a live Morph.
-	/// This mirrors the behavior of clicking the inspect halo handle.
-	/// </summary>
-	public void OpenInspector(object target)
-	{
-		if (target == null)
-			return;
-
-		ClearSelection();
-
-		var inspector = new InspectorMorph(target);
-		AddMorph(inspector);
-		inspector.CenterOnOwner();
-	}
-
 	#endregion
 }

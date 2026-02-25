@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Userland.MiniMacro;
 using Userland.Morphic;
+using Userland.Morphic.Inspector;
 
 namespace Userland.Services;
 
@@ -71,5 +72,21 @@ public sealed class WindowService : IWindowService
 		{
 			await editor.OpenFileAsync(filename);
 		}
+	}
+
+	/// <summary>
+	/// Open an object inspector.
+	/// This mirrors the behavior of clicking the inspect halo handle.
+	/// </summary>
+	public void Inspect(object target)
+	{
+		if (target == null)
+			return;
+
+		_world.ClearSelection();
+
+		var inspector = new InspectorMorph(target);
+		_world.AddMorph(inspector);
+		inspector.CenterOnOwner();
 	}
 }
