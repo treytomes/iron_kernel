@@ -59,6 +59,12 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		UpdateTitle();
 	}
 
+	protected override void OnLoad(IAssetService assetService)
+	{
+		base.OnLoad(assetService);
+		_editor.CaptureKeyboard();
+	}
+
 	protected override void UpdateLayout()
 	{
 		Content.Submorphs[0].Size = Content.Size;

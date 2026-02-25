@@ -10,6 +10,7 @@ namespace Userland.Morphic;
 public sealed class TextEditorMorph : Morph
 {
 	#region Fields
+
 	private readonly TextDocument _document;
 	private readonly IClipboardService _clipboard;
 
@@ -25,17 +26,10 @@ public sealed class TextEditorMorph : Morph
 	private (int line, int column)? _selectionCaret;
 
 	private bool _mouseSelecting;
-	#endregion
-
-	#region Configuration
-
-	public bool ShowLineNumbers { get; set; } = true;
-
-	public int TabWidth { get; set; } = 4;
 
 	#endregion
 
-	#region Construction
+	#region Constructors
 
 	public TextEditorMorph(TextDocument document, IClipboardService clipboard)
 	{
@@ -46,8 +40,10 @@ public sealed class TextEditorMorph : Morph
 
 	#endregion
 
-	#region Focus
+	#region Properties
 
+	public bool ShowLineNumbers { get; set; } = true;
+	public int TabWidth { get; set; } = 4;
 	public override bool WantsKeyboardFocus => true;
 
 	#endregion
