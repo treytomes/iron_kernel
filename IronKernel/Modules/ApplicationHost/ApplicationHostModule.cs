@@ -188,6 +188,39 @@ internal sealed class ApplicationHostModule(
 		_bridge.Request<AppAssetImageQuery, AssetImageQuery>("AppAssetImageQueryHandler", (e, ct) => new(e.CorrelationID, e.Url));
 		_bridge.Forward<AssetImageResponse, AppAssetImageResponse>("AppAssetImageResponse", (e, ct) => new(e.CorrelationID, e.Url, e.Image));
 
+		// Directory create
+
+		_bridge.Request<AppDirectoryCreateCommand, DirectoryCreateCommand>(
+			"DirectoryCreateCommandHandler",
+			(e, ct) => new(e.CorrelationID, e.Url)
+		);
+
+		_bridge.Forward<DirectoryCreateResult, AppDirectoryCreateResult>(
+			"DirectoryCreateResponseHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Success,
+				e.Error
+			)
+		);
+
+		// File exists
+
+		_bridge.Request<AppFileExistsQuery, FileExistsQuery>(
+			"FileExistsQueryHandler",
+			(e, ct) => new(e.CorrelationID, e.Url)
+		);
+
+		_bridge.Forward<FileExistsResponse, AppFileExistsResponse>(
+			"FileExistsResponseHandler",
+			(e, ct) => new(
+				e.CorrelationID,
+				e.Url,
+				e.Exists
+			)
+		);
+
 		// File read
 
 		_bridge.Request<AppFileReadQuery, FileReadQuery>(

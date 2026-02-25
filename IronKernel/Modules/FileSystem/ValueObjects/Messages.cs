@@ -3,6 +3,34 @@ using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.FileSystem.ValueObjects;
 
+
+
+public sealed record DirectoryCreateCommand(
+	Guid CorrelationID,
+	string Url
+) : Command(CorrelationID);
+
+public sealed record DirectoryCreateResult(
+	Guid CorrelationID,
+	string Url,
+	bool Success,
+	string? Error
+) : Response<bool>(CorrelationID, Success);
+
+
+
+public sealed record FileExistsQuery(
+	Guid CorrelationID,
+	string Url
+) : Query(CorrelationID);
+
+public sealed record FileExistsResponse(
+	Guid CorrelationID,
+	string Url,
+	bool Exists
+) : Response<bool?>(CorrelationID, Exists);
+
+
 public sealed record FileReadQuery(
 	Guid CorrelationID,
 	string Url
@@ -11,9 +39,9 @@ public sealed record FileReadQuery(
 public sealed record FileReadResponse(
 	Guid CorrelationID,
 	string Url,
-	byte[] Data,
+	byte[]? Data,
 	string? MimeType
-) : Response<byte[]>(CorrelationID, Data);
+) : Response<byte[]?>(CorrelationID, Data);
 
 
 

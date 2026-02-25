@@ -74,6 +74,20 @@ public sealed class WindowService : IWindowService
 		}
 	}
 
+	public void EditFile(string? filename)
+	{
+		// Create the editor window (DI / factory style depends on your setup)
+		var editor = _services.GetRequiredService<TextEditorWindowMorph>();
+
+		_world.AddMorph(editor);
+
+		// Kick off async file open.
+		if (!string.IsNullOrWhiteSpace(filename))
+		{
+			editor.OpenFile(filename);
+		}
+	}
+
 	/// <summary>
 	/// Open an object inspector.
 	/// This mirrors the behavior of clicking the inspect halo handle.

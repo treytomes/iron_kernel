@@ -2,6 +2,18 @@ using System.Drawing;
 
 namespace IronKernel.Common.ValueObjects;
 
+public sealed record AppDirectoryCreateCommand(
+	Guid CorrelationID,
+	string Url
+) : Command(CorrelationID);
+
+public sealed record AppDirectoryCreateResult(
+	Guid CorrelationID,
+	string Url,
+	bool Success,
+	string? Error
+) : Response<bool>(CorrelationID, Success);
+
 public sealed record AppUpdateTick(double TotalTime, double ElapsedTime);
 
 // The render tick is effectively the vsync signal.
@@ -35,6 +47,18 @@ public sealed record AppFbInfoResponse(Guid CorrelationID, Size Size) : Response
 public sealed record AppAssetImageQuery(Guid CorrelationID, string Url) : Query(CorrelationID);
 public sealed record AppAssetImageResponse(Guid CorrelationID, string Url, Image Image) : Response<Image>(CorrelationID, Image);
 
+public sealed record AppFileExistsQuery(
+	Guid CorrelationID,
+	string Url
+) : Query(CorrelationID);
+
+public sealed record AppFileExistsResponse(
+	Guid CorrelationID,
+	string Url,
+	bool Exists
+) : Response<bool>(CorrelationID, Exists);
+
+
 /// <summary>
 /// Read a file as raw bytes from user storage.
 /// </summary>
@@ -46,9 +70,9 @@ public sealed record AppFileReadQuery(
 public sealed record AppFileReadResponse(
 	Guid CorrelationID,
 	string Url,
-	byte[] Data,
+	byte[]? Data,
 	string? MimeType
-) : Response<byte[]>(CorrelationID, Data);
+) : Response<byte[]?>(CorrelationID, Data);
 
 
 /// <summary>

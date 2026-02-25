@@ -128,6 +128,28 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		}
 	}
 
+	public async void OpenFile(string? filename)
+	{
+		if (string.IsNullOrWhiteSpace(filename))
+		{
+			await _windowService.AlertAsync("You must provide a filename.");
+			return;
+		}
+
+		try
+		{
+			var text = _fileSystem.ReadText(filename);
+			_doc.SetText(text);
+			_filename = filename;
+			_dirty = false;
+			UpdateTitle();
+		}
+		catch
+		{
+			await _windowService.AlertAsync($"File not found:\n{filename}");
+		}
+	}
+
 	private async Task SaveFileAsync()
 	{
 		if (string.IsNullOrWhiteSpace(_filename))

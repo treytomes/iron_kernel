@@ -25,6 +25,3 @@
 	* `mkdir` to make directories.
 	* `del` to delete either files or directories.
 	* An `input` intrinsic to gather input in the REPL.
-	* `run` or `edit` hang when file doesn't exist.
-* Common dialog changes:
-	* When opening text editor or REPL, keyboard focus should be immediate.

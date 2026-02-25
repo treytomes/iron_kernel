@@ -6,5 +6,6 @@ public interface IWindowService
 	Task<string?> PromptAsync(string message, string? defaultValue = null);
 	Task<bool> ConfirmAsync(string message);
 	Task EditFileAsync(string? filename);
+	void EditFile(string? filename);
 	void Inspect(object target);
 }

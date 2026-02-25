@@ -28,7 +28,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	#region Constructors
 
 	public MiniScriptReplMorph(ILogger<MiniScriptReplMorph> logger, IClipboardService clipboard)
-		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
+		: base(Point.Empty, new Size(920, 440), "MiniScript REPL")
 	{
 		_logger = logger;
 		_console = new TextConsoleMorph(logger, clipboard);
@@ -84,6 +84,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		_ = RunAsync(_cts.Token);
 
 		_console.CaptureKeyboard();
+		Position = new Point(20, Position.Y);
 	}
 
 	protected override void OnUnload()

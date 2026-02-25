@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
@@ -36,6 +37,16 @@ internal sealed class FileSystemModule(
 			"FileSystemModule initialized at {UserRoot}",
 			_userRoot);
 
+		_bus.Subscribe<DirectoryCreateCommand>(
+			runtime,
+			"DirectoryWriteHandler",
+			HandleDirCreateAsync);
+
+		_bus.Subscribe<FileExistsQuery>(
+			runtime,
+			"FileExistsHandler",
+			HandleExistsAsync);
+
 		_bus.Subscribe<FileReadQuery>(
 			runtime,
 			"FileReadHandler",
@@ -61,17 +72,80 @@ internal sealed class FileSystemModule(
 
 	#region Handlers
 
+	private Task HandleDirCreateAsync(DirectoryCreateCommand msg, CancellationToken ct)
+	{
+		if (!TryResolvePath(msg.Url, out var path, out var error))
+		{
+			_logger.LogWarning("Exists denied for {Url}: {Error}", msg.Url, error);
+			_bus.Publish(new DirectoryCreateResult(
+				msg.CorrelationID,
+				msg.Url,
+				false,
+				error));
+		}
+
+		var exists = Directory.Exists(path);
+		if (exists)
+		{
+			_bus.Publish(new DirectoryCreateResult(
+				msg.CorrelationID,
+				msg.Url,
+				false,
+				"The directory already exists."));
+			return Task.CompletedTask;
+		}
+
+		var newDir = Directory.CreateDirectory(path);
+		_bus.Publish(new DirectoryCreateResult(
+			msg.CorrelationID,
+			msg.Url,
+			newDir.Exists,
+			null));
+		return Task.CompletedTask;
+	}
+
+	private Task HandleExistsAsync(FileExistsQuery msg, CancellationToken ct)
+	{
+		if (!TryResolvePath(msg.Url, out var path, out var error))
+		{
+			_logger.LogWarning("Exists denied for {Url}: {Error}", msg.Url, error);
+			_bus.Publish(new FileExistsResponse(
+				msg.CorrelationID,
+				msg.Url,
+				false));
+			return Task.CompletedTask;
+		}
+
+		// Console.WriteLine($"Does it exist? {path}, {File.Exists(path)}, {Directory.Exists(path)}, {File.Exists(path) || Directory.Exists(path)}");
+
+		_bus.Publish(new FileExistsResponse(
+			msg.CorrelationID,
+			msg.Url,
+			File.Exists(path) || Directory.Exists(path)));
+		return Task.CompletedTask;
+	}
+
 	private Task HandleReadAsync(FileReadQuery msg, CancellationToken ct)
 	{
 		if (!TryResolvePath(msg.Url, out var path, out var error))
 		{
-			_logger.LogWarning("Read denied: {Error}", error);
+			_logger.LogWarning("Read denied for {Url}: {Error}", msg.Url, error);
+			_bus.Publish(new FileReadResponse(
+				msg.CorrelationID,
+				msg.Url,
+				null,
+				string.Empty));
 			return Task.CompletedTask;
 		}
 
 		if (!File.Exists(path))
 		{
 			_logger.LogWarning("File not found: {Path}", path);
+			_bus.Publish(new FileReadResponse(
+				msg.CorrelationID,
+				msg.Url,
+				null,
+				string.Empty));
 			return Task.CompletedTask;
 		}
 
@@ -141,23 +215,31 @@ internal sealed class FileSystemModule(
 
 		try
 		{
-			if (!File.Exists(path))
+			var isFile = File.Exists(path);
+			var isDir = !isFile && Directory.Exists(path);
+
+			if (isDir)
 			{
+				Directory.Delete(path);
 				_bus.Publish(new FileDeleteResult(
 					msg.CorrelationID,
 					msg.Url,
-					false,
-					"File does not exist."));
-				return Task.CompletedTask;
+					true,
+					null));
 			}
-
-			File.Delete(path);
-
-			_bus.Publish(new FileDeleteResult(
-				msg.CorrelationID,
-				msg.Url,
-				true,
-				null));
+			else if (isFile)
+			{
+				File.Delete(path);
+				_bus.Publish(new FileDeleteResult(
+					msg.CorrelationID,
+					msg.Url,
+					true,
+					null));
+			}
+			else
+			{
+				throw new FileNotFoundException("File does not exist.", msg.Url);
+			}
 		}
 		catch (Exception ex)
 		{
@@ -171,19 +253,25 @@ internal sealed class FileSystemModule(
 		return Task.CompletedTask;
 	}
 
-	private Task HandleDirectoryListAsync(
-		DirectoryListQuery msg,
-		CancellationToken ct)
+	private Task HandleDirectoryListAsync(DirectoryListQuery msg, CancellationToken ct)
 	{
 		if (!TryResolvePath(msg.Url, out var path, out var error))
 		{
 			_logger.LogWarning("Directory list denied: {Error}", error);
+			_bus.Publish(new DirectoryListResponse(
+				msg.CorrelationID,
+				msg.Url,
+				[]));
 			return Task.CompletedTask;
 		}
 
 		if (!Directory.Exists(path))
 		{
 			_logger.LogWarning("Directory not found: {Path}", path);
+			_bus.Publish(new DirectoryListResponse(
+				msg.CorrelationID,
+				msg.Url,
+				[]));
 			return Task.CompletedTask;
 		}
 
@@ -221,10 +309,15 @@ internal sealed class FileSystemModule(
 		catch (Exception ex)
 		{
 			_logger.LogError(ex, "Failed to list directory: {Path}", path);
+			_bus.Publish(new DirectoryListResponse(
+				msg.CorrelationID,
+				msg.Url,
+				[]));
 		}
 
 		return Task.CompletedTask;
 	}
+
 	#endregion
 
 	#region Path Resolution
@@ -242,10 +335,7 @@ internal sealed class FileSystemModule(
 		return Path.GetFullPath(userDir);
 	}
 
-	private bool TryResolvePath(
-		string url,
-		out string fullPath,
-		out string? error)
+	private bool TryResolvePath(string url, out string fullPath, out string? error)
 	{
 		fullPath = string.Empty;
 		error = null;

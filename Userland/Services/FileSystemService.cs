@@ -14,6 +14,46 @@ public sealed class FileSystemService(IApplicationBus bus) : IFileSystem
 
 	#region Methods
 
+	public async Task<DirectoryEntry> CreateDirectoryAsync(string url, CancellationToken ct = default)
+	{
+		var response =
+			await _bus.CommandAsync<
+				AppDirectoryCreateCommand,
+				AppDirectoryCreateResult>(
+				id => new AppDirectoryCreateCommand(id, url),
+				ct);
+
+		return new DirectoryEntry(url, true, null, DateTime.Now);
+	}
+
+	public DirectoryEntry CreateDirectory(string url, CancellationToken ct = default)
+	{
+		return CreateDirectoryAsync(url, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
+	}
+
+	public async Task<bool> ExistsAsync(string url, CancellationToken ct = default)
+	{
+		var response =
+			await _bus.QueryAsync<
+				AppFileExistsQuery,
+				AppFileExistsResponse>(
+				id => new AppFileExistsQuery(id, url),
+				ct);
+
+		return response.Exists;
+	}
+
+	public bool Exists(string url, CancellationToken ct = default)
+	{
+		return ExistsAsync(url, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
+	}
+
 	public async Task<FileReadResult> ReadAsync(string url, CancellationToken ct = default)
 	{
 		var response =
@@ -22,6 +62,11 @@ public sealed class FileSystemService(IApplicationBus bus) : IFileSystem
 				AppFileReadResponse>(
 				id => new AppFileReadQuery(id, url),
 				ct);
+
+		if (response.Data == null)
+		{
+			throw new FileNotFoundException("File could not be read.", url);
+		}
 
 		return new FileReadResult(
 			response.Data,
