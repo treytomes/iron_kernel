@@ -33,12 +33,7 @@ public static class FileSystemTextExtensions
 		string url,
 		CancellationToken ct = default)
 	{
-		// Force synchronous completion
-		var result = fs.ReadAsync(url, ct)
-			.ConfigureAwait(false)
-			.GetAwaiter()
-			.GetResult();
-
+		var result = fs.Read(url, ct);
 		return Encoding.UTF8.GetString(result.Data);
 	}
 
@@ -53,9 +48,6 @@ public static class FileSystemTextExtensions
 	{
 		var data = Encoding.UTF8.GetBytes(text);
 
-		return fs.WriteAsync(url, data, "text/plain", ct)
-			.ConfigureAwait(false)
-			.GetAwaiter()
-			.GetResult();
+		return fs.Write(url, data, "text/plain", ct);
 	}
 }

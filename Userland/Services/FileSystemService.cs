@@ -4,20 +4,17 @@ using Userland.ValueObjects;
 
 namespace Userland.Services;
 
-public sealed class FileSystemService : IFileSystem
+public sealed class FileSystemService(IApplicationBus bus) : IFileSystem
 {
-	private readonly IApplicationBus _bus;
+	#region Fields
 
-	public FileSystemService(IApplicationBus bus)
-	{
-		_bus = bus;
-	}
+	private readonly IApplicationBus _bus = bus;
 
-	#region Read
+	#endregion
 
-	public async Task<FileReadResult> ReadAsync(
-		string url,
-		CancellationToken ct = default)
+	#region Methods
+
+	public async Task<FileReadResult> ReadAsync(string url, CancellationToken ct = default)
 	{
 		var response =
 			await _bus.QueryAsync<
@@ -31,15 +28,15 @@ public sealed class FileSystemService : IFileSystem
 			response.MimeType);
 	}
 
-	#endregion
+	public FileReadResult Read(string url, CancellationToken ct = default)
+	{
+		return ReadAsync(url, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
+	}
 
-	#region Write
-
-	public async Task<FileWriteResult> WriteAsync(
-		string url,
-		byte[] data,
-		string? mimeType = null,
-		CancellationToken ct = default)
+	public async Task<FileWriteResult> WriteAsync(string url, byte[] data, string? mimeType = null, CancellationToken ct = default)
 	{
 		var response =
 			await _bus.CommandAsync<
@@ -57,13 +54,15 @@ public sealed class FileSystemService : IFileSystem
 			response.Error);
 	}
 
-	#endregion
+	public FileWriteResult Write(string url, byte[] data, string? mimeType = null, CancellationToken ct = default)
+	{
+		return WriteAsync(url, data, mimeType, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
+	}
 
-	#region Delete
-
-	public async Task<FileDeleteResult> DeleteAsync(
-		string url,
-		CancellationToken ct = default)
+	public async Task<FileDeleteResult> DeleteAsync(string url, CancellationToken ct = default)
 	{
 		var response =
 			await _bus.CommandAsync<
@@ -77,13 +76,15 @@ public sealed class FileSystemService : IFileSystem
 			response.Error);
 	}
 
-	#endregion
+	public FileDeleteResult Delete(string url, CancellationToken ct = default)
+	{
+		return DeleteAsync(url, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
+	}
 
-	#region Directory Listing
-
-	public async Task<IReadOnlyList<DirectoryEntry>> ListDirectoryAsync(
-		string url,
-		CancellationToken ct = default)
+	public async Task<IReadOnlyList<DirectoryEntry>> ListDirectoryAsync(string url, CancellationToken ct = default)
 	{
 		var response =
 			await _bus.QueryAsync<
@@ -93,6 +94,14 @@ public sealed class FileSystemService : IFileSystem
 				ct);
 
 		return response.Entries;
+	}
+
+	public IReadOnlyList<DirectoryEntry> ListDirectory(string url, CancellationToken ct = default)
+	{
+		return ListDirectoryAsync(url, ct)
+			.ConfigureAwait(false)
+			.GetAwaiter()
+			.GetResult();
 	}
 
 	#endregion
