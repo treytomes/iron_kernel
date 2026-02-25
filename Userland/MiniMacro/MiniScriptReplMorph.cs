@@ -9,13 +9,23 @@ namespace Userland.MiniMacro;
 
 public sealed class MiniScriptReplMorph : WindowMorph
 {
+	#region Constants
+
 	private const string PROMPT_PRIMARY = "> ";
 	private const string PROMPT_CONTINUATION = "| ";
+
+	#endregion
+
+	#region Fields
 
 	private readonly TextConsoleMorph _console;
 	private readonly Interpreter _interpreter;
 	private CancellationTokenSource? _cts;
 	private readonly ILogger<MiniScriptReplMorph> _logger;
+
+	#endregion
+
+	#region Constructors
 
 	public MiniScriptReplMorph(ILogger<MiniScriptReplMorph> logger, IClipboardService clipboard)
 		: base(Point.Empty, new Size(640, 400), "MiniScript REPL")
@@ -60,6 +70,10 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		};
 	}
 
+	#endregion
+
+	#region Methods
+
 	protected override void OnLoad(IAssetService assets)
 	{
 		_cts = new CancellationTokenSource();
@@ -68,6 +82,8 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		if (world == null) _logger.LogWarning("World is undefined.");
 		_interpreter.hostData = world?.ScriptContext;
 		_ = RunAsync(_cts.Token);
+
+		_console.CaptureKeyboard();
 	}
 
 	protected override void OnUnload()
@@ -136,4 +152,6 @@ public sealed class MiniScriptReplMorph : WindowMorph
 				_console.WriteLine();
 		}
 	}
+
+	#endregion
 }

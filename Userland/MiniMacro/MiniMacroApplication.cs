@@ -80,7 +80,6 @@ public sealed class MiniMacroApplication(
 		// ------------------------------------------------------------------
 		// Launcher apps
 		// ------------------------------------------------------------------
-		services.AddTransient<DummyReplMorph>();
 		services.AddTransient<MiniScriptReplMorph>();
 		services.AddTransient<TextEditorWindowMorph>();
 		services.AddTransient<FireDemoMorph>();

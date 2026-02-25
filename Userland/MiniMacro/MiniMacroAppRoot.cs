@@ -88,7 +88,6 @@ public sealed class MiniMacroRoot
 			new ActionCommand(() =>
 			{
 				var launcher = new LauncherMorph(_services, new Point(16, 16));
-				launcher.AddApp<DummyReplMorph>("Dummy REPL");
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
 				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
 				launcher.AddApp<FireDemoMorph>("Fire Demo");
