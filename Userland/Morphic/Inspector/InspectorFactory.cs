@@ -76,7 +76,7 @@ public class InspectorFactory : IInspectorFactory
 		}
 
 		// --- Numeric primitives (first slice) ---
-		if (IsNumericType(declaredType))
+		if (declaredType.IsNumeric())
 		{
 			return new TextEditMorph(
 				Point.Empty,
@@ -107,21 +107,6 @@ public class InspectorFactory : IInspectorFactory
 	}
 
 	#region Helpers
-
-	private static bool IsNumericType(Type? type)
-	{
-		return type == typeof(byte)
-			|| type == typeof(sbyte)
-			|| type == typeof(short)
-			|| type == typeof(ushort)
-			|| type == typeof(int)
-			|| type == typeof(uint)
-			|| type == typeof(long)
-			|| type == typeof(ulong)
-			|| type == typeof(float)
-			|| type == typeof(double)
-			|| type == typeof(decimal);
-	}
 
 	private static bool TryParseNumber(Type type, string text, out object? value)
 	{
