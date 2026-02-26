@@ -26,6 +26,7 @@
 		"glsl",
 		"Grabbable",
 		"inspectable",
+		"ironkernel",
 		"Krita",
 		"Lerp",
 		"microkernel",
@@ -45,6 +46,7 @@
 		"undoable",
 		"Unshifted",
 		"userland",
+		"venv",
 		"vsync",
 		"waitables"
 	]
