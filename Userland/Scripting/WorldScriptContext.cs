@@ -63,7 +63,7 @@ public sealed class WorldScriptContext
 			switch (e.Action)
 			{
 				case InputAction.Press:
-					Keyboard.SetKeyState(e.Key, false);
+					Keyboard.SetKeyState(e.Key, true);
 					break;
 
 				case InputAction.Release:
@@ -83,7 +83,7 @@ public sealed class WorldScriptContext
 		{
 			env = new ValMap();
 		}
-		if (env["curdir"] is not Value curdirVal)
+		if (env["curdir"] is not Value)
 		{
 			env["curdir"] = new ValString("file://");
 		}

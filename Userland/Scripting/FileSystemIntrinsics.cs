@@ -137,7 +137,12 @@ public static class FileSystemIntrinsics
 				new ValFunction(fn),
 				new ValTemp(0));
 
-			return new Intrinsic.Result(new ValString(name), done: false);
+			var importName = name;
+			if (importName.Contains("/"))
+			{
+				importName = importName.Split('/').Last();
+			}
+			return new Intrinsic.Result(new ValString(importName), done: false);
 		};
 	}
 

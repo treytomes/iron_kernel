@@ -74,7 +74,8 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 
 	private RadialColor EffectiveForegroundColor =>
 		_foregroundColorOverride
-		?? GetWorld()!.Style.LabelForegroundColor;
+		?? GetWorld()?.Style.LabelForegroundColor
+		?? RadialColor.White;
 
 	private RadialColor? EffectiveBackgroundColor =>
 		_backgroundColorOverride

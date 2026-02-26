@@ -10,11 +10,14 @@ public sealed class KeyboardState
 	public void SetKeyState(Key key, bool isPressed)
 	{
 		_keysDown.AddOrUpdate(key, isPressed, (k, v) => isPressed);
+		// Console.WriteLine($"SetKeyState({key}, {isPressed})");
 	}
 
 	public bool GetKeyState(Key key)
 	{
-		return _keysDown.GetOrAdd(key, false);
+		var value = _keysDown.GetOrAdd(key, false);
+		// Console.WriteLine($"GetKeyState({key}={value})");
+		return value;
 	}
 
 	public bool IsAnyKeyDown()
