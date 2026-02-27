@@ -13,7 +13,9 @@ namespace IronKernel.Kernel;
 public sealed class ModuleRuntime : IModuleRuntime
 {
 	private static readonly TimeSpan SlowTaskThreshold = TimeSpan.FromSeconds(1);
-	private static readonly TimeSpan HungTaskThreshold = TimeSpan.FromSeconds(5);
+
+	// private static readonly TimeSpan HungTaskThreshold = TimeSpan.FromSeconds(5);
+	private static readonly TimeSpan HungTaskThreshold = TimeSpan.FromSeconds(30);
 
 	private readonly Type _moduleType;
 	private readonly IMessageBus _bus;
