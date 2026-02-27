@@ -14,4 +14,9 @@ public sealed class KeyEvent : MorphicEvent
 	public InputAction Action { get; }
 	public KeyModifier Modifiers { get; }
 	public Key Key { get; }
+
+	public override string ToString()
+	{
+		return $"{nameof(KeyEvent)}({Handled}, {Action}, {Modifiers}, {Key})";
+	}
 }

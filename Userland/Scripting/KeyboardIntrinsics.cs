@@ -45,7 +45,11 @@ public static class KeyboardIntrinsics
 			if (!TryParseKey(keyVal, out var key))
 				return Intrinsic.Result.False;
 
-			return world.Keyboard.GetKeyState(key)
+			var keyState = world.Keyboard.GetKeyState(key);
+			// if (keyState == true)
+			// 	Console.WriteLine($"Key state: {key} = {keyState}");
+
+			return keyState
 				? Intrinsic.Result.True
 				: Intrinsic.Result.False;
 		};

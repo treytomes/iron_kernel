@@ -63,6 +63,7 @@ public sealed class WorldScriptContext
 			switch (e.Action)
 			{
 				case InputAction.Press:
+				case InputAction.Repeat:
 					Keyboard.SetKeyState(e.Key, true);
 					break;
 
