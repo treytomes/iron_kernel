@@ -235,12 +235,10 @@ public static class FileSystemIntrinsics
 			{
 				// path = ResolvePath(ctx, world, (ctx.interpreter.GetGlobalValue("env") as ValMap)!["curdir"].ToString());
 				path = (ctx.interpreter.GetGlobalValue("env") as ValMap)!["curdir"].ToString();
-				Console.WriteLine("path0=" + path);
 			}
 			else
 			{
 				path = ResolvePath(ctx, world, p.ToString());
-				Console.WriteLine("path1=" + path);
 			}
 
 			var entries = world.FileSystem.ListDirectory(path);
