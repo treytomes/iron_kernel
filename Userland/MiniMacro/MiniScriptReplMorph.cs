@@ -9,6 +9,13 @@ namespace Userland.MiniMacro;
 
 public sealed class MiniScriptReplMorph : WindowMorph
 {
+	private enum ReplState
+	{
+		Initializing,
+		Reading,
+		Running,
+	}
+
 	#region Constants
 
 	private const string PROMPT_PRIMARY = "> ";
@@ -20,8 +27,9 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 	private readonly TextConsoleMorph _console;
 	private readonly Interpreter _interpreter;
-	private CancellationTokenSource? _cts;
 	private readonly ILogger<MiniScriptReplMorph> _logger;
+	private ReplState _state = ReplState.Initializing;
+	private Task<string>? _readTask = null;
 
 	#endregion
 
@@ -72,16 +80,24 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 	#endregion
 
+	#region Properties
+
+	/// <summary>
+	/// Prompt depends on parser state.
+	/// </summary>
+	private string Prompt => _interpreter.NeedMoreInput()
+		? PROMPT_CONTINUATION
+		: PROMPT_PRIMARY;
+
+	#endregion
+
 	#region Methods
 
 	protected override void OnLoad(IAssetService assets)
 	{
-		_cts = new CancellationTokenSource();
-
 		var world = GetWorld();
 		if (world == null) _logger.LogWarning("World is undefined.");
 		_interpreter.hostData = world?.ScriptContext;
-		_ = RunAsync(_cts.Token);
 
 		_console.CaptureKeyboard();
 		Position = new Point(20, Position.Y);
@@ -89,68 +105,91 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 	protected override void OnUnload()
 	{
-		_cts?.Cancel();
 	}
 
-	private async Task RunAsync(CancellationToken ct)
+	public override void Update(double deltaTime)
 	{
-		// Wait until the console is layout-stable
-		await _console.Ready;
+		base.Update(deltaTime);
 
-		var world = GetWorld();
-		if (world == null) _logger.LogWarning("World is undefined.");
-
-		_console.WriteLine("MiniScript REPL");
-		_console.WriteLine("Type MiniScript expressions or statements.");
-		_console.WriteLine();
-
-		while (!ct.IsCancellationRequested)
+		if (_state == ReplState.Initializing)
 		{
-			if (world == null) world = GetWorld();
+			_console.WriteLine("MiniScript REPL");
+			_console.WriteLine("Type MiniScript expressions or statements.");
+			_console.WriteLine();
+			SwitchState(ReplState.Reading);
+		}
+		else if (_state == ReplState.Reading)
+		{
+			if (_readTask == null) return;
+			if (!_readTask.IsCompleted) return;
+			var line = _readTask.GetAwaiter().GetResult();
 
-			// Prompt depends on parser state
-			var prompt = _interpreter.NeedMoreInput()
-				? PROMPT_CONTINUATION
-				: PROMPT_PRIMARY;
-
-			_console.Write(prompt);
-
-			string line;
-			try
-			{
-				line = await _console.ReadLineAsync();
-			}
-			catch
-			{
-				break;
-			}
-
-			// Feed line into MiniScript REPL
+			// Feed line into MiniScript REPL.
 			_interpreter.REPL(line);
-
-			if (world?.ScriptContext.PendingRunSource != null)
+			if (_interpreter.NeedMoreInput())
 			{
-				var source = world.ScriptContext.PendingRunSource;
-				world.ScriptContext.PendingRunSource = null;
-
-				_interpreter.Stop();        // ensure clean state
-				_interpreter.Reset(source);
-				_interpreter.RunUntilDone(); // THIS is where compile & runtime errors appear
+				// _console.WriteLine();
+				_console.Write(Prompt);
+				_readTask = _console.ReadLineAsync();
 			}
-
-			// Pump async intrinsics
-			while (_interpreter.Running() && !_interpreter.NeedMoreInput())
+			else
 			{
-				// Allow the VM to consume completed async intrinsics
-				_interpreter.RunUntilDone(returnEarly: false);
-				await Task.Yield();
+				SwitchState(ReplState.Running);
 			}
+		}
+		else if (_state == ReplState.Running)
+		{
+			if (_interpreter.Running())
+			{
+				_interpreter.RunUntilDone(0.03f);
 
-			world?.ApplyScriptEdits();
+				var world = GetWorld();
+				world?.ApplyScriptEdits();
+			}
+			else
+			{
+				SwitchState(ReplState.Reading);
+			}
+		}
+	}
 
-			// After execution, ensure we're on a fresh line
-			if (!_interpreter.NeedMoreInput())
-				_console.WriteLine();
+	private void SwitchState(ReplState newState)
+	{
+		if (_state == newState) return;
+		_state = newState;
+
+		switch (_state)
+		{
+			case ReplState.Reading:
+				_console.Write(Prompt);
+				_readTask = _console.ReadLineAsync();
+				break;
+
+			case ReplState.Running:
+				var world = GetWorld();
+				if (world == null) return;
+
+				if (world?.ScriptContext.PendingRunSource != null)
+				{
+					var source = world.ScriptContext.PendingRunSource;
+					Console.WriteLine($"Source: {source}");
+					world.ScriptContext.PendingRunSource = null;
+
+					_interpreter.Stop();        // ensure clean state
+					_interpreter.Reset(source);
+					_interpreter.Compile();
+					if (_interpreter.NeedMoreInput())
+					{
+						_interpreter.errorOutput?.Invoke("Script error.", true);
+						_interpreter.Stop();
+					}
+					else
+					{
+						// _interpreter.REPL("");
+					}
+					// _interpreter.RunUntilDone(0.03f); // THIS is where compile & runtime errors appear
+				}
+				break;
 		}
 	}
 
