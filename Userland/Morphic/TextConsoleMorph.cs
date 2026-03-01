@@ -182,7 +182,17 @@ public sealed class TextConsoleMorph : Morph
 		if (!_isReadingLine || _editor == null || !_selection.HasSelection)
 			return false;
 
+		// Reject cells before the input start
+		if (y < _inputStartY)
+			return false;
+
+		if (y == _inputStartY && x < _inputStartX)
+			return false;
+
 		int index = CellToEditorIndex(x, y);
+		if (index < 0 || index > _editor.Length)
+			return false;
+
 		var (start, end) = _selection.GetRange();
 		return index >= start && index < end;
 	}
@@ -348,11 +358,19 @@ public sealed class TextConsoleMorph : Morph
 
 		int absolute = _inputStartX + _editor.CursorIndex;
 
-		_cursorY = _inputStartY + (absolute / Columns);
-		_cursorX = absolute % Columns;
+		int newY = _inputStartY + (absolute / Columns);
+		int newX = absolute % Columns;
 
-		_cursorY = Math.Clamp(_cursorY, 0, Rows - 1);
-		_cursorX = Math.Clamp(_cursorX, 0, Columns - 1);
+		// Scroll if wrapped input exceeds bottom row
+		while (newY >= Rows)
+		{
+			ScrollUp();
+			newY--;
+			_inputStartY = Math.Max(0, _inputStartY - 1);
+		}
+
+		_cursorY = newY;
+		_cursorX = Math.Clamp(newX, 0, Columns - 1);
 
 		_selection.Normalize(i => i >= 0 && i <= _editor.Length);
 	}
@@ -386,8 +404,14 @@ public sealed class TextConsoleMorph : Morph
 
 	private int CellToEditorIndex(int x, int y)
 	{
+		if (y < _inputStartY)
+			return -1;
+
+		if (y == _inputStartY && x < _inputStartX)
+			return -1;
+
 		if (_editor == null)
-			return 0;
+			return -1;
 
 		int absolute =
 			(y - _inputStartY) * Columns +

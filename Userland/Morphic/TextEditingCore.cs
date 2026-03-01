@@ -195,7 +195,7 @@ public sealed class TextEditingCore
 
 	public override string ToString()
 	{
-		return _buffer.ToString();
+		return _buffer?.ToString() ?? string.Empty;
 	}
 
 	public char this[int index] => _buffer[index];

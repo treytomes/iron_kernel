@@ -286,6 +286,18 @@ public sealed class TextDocument
 		OnChanged();
 	}
 
+	public void MoveToStart()
+	{
+		CaretLine = 0;
+		MoveToLineStart();
+	}
+
+	public void MoveToEnd()
+	{
+		CaretLine = Lines.Count - 1;
+		MoveToLineEnd();
+	}
+
 	public void MoveToLineStart()
 	{
 		CurrentLine.MoveToStart();

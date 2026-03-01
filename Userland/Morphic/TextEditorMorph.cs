@@ -182,12 +182,26 @@ public sealed class TextEditorMorph : Morph
 				break;
 
 			case Key.Home:
-				_document.MoveToLineStart();
+				if (ctrl)
+				{
+					_document.MoveToStart();
+				}
+				else
+				{
+					_document.MoveToLineStart();
+				}
 				moved = true;
 				break;
 
 			case Key.End:
-				_document.MoveToLineEnd();
+				if (ctrl)
+				{
+					_document.MoveToEnd();
+				}
+				else
+				{
+					_document.MoveToLineEnd();
+				}
 				moved = true;
 				break;
 
