@@ -13,14 +13,20 @@ public sealed class TextConsoleMorph : Morph
 	#region Fields
 
 	private readonly ILogger _logger;
+	private readonly IClipboardService _clipboard;
+
 	private ConsoleCell[,] _buffer;
+
 	private int _cursorX;
 	private int _cursorY;
+
 	private int _inputStartX;
 	private int _inputStartY;
+
 	private bool _isReadingLine;
 	private TextEditingCore? _editor;
 	private TaskCompletionSource<string>? _pendingReadLine;
+
 	private Font? _font;
 	private bool _layoutInitialized;
 
@@ -30,15 +36,8 @@ public sealed class TextConsoleMorph : Morph
 	private readonly List<string> _commandHistory = new();
 	private int _historyIndex;
 
-	// Selection is expressed in editor-relative indices
-	private int? _selectionAnchor;   // index where selection started
-	private int? _selectionCaret;    // current selection end
-	private readonly IClipboardService _clipboard;
-
+	private readonly SelectionController<int> _selection = new((a, b) => a.CompareTo(b));
 	private bool _mouseSelecting;
-	private bool _hasMouseSelection;
-	private Point _mouseSelectStart; // grid coords (x,y)
-	private Point _mouseSelectEnd;   // grid coords (x,y)
 
 	#endregion
 
@@ -48,9 +47,11 @@ public sealed class TextConsoleMorph : Morph
 	{
 		_logger = logger;
 		_clipboard = clipboard;
+
 		CellSize = new Size(1, 1);
 		Columns = 1;
 		Rows = 1;
+
 		_buffer = new ConsoleCell[Rows, Columns];
 		Clear();
 	}
@@ -58,40 +59,27 @@ public sealed class TextConsoleMorph : Morph
 	#endregion
 
 	#region Properties
+
 	public Task Ready => _ready.Task;
+
 	public int Columns { get; private set; }
 	public int Rows { get; private set; }
+
 	public Size CellSize { get; private set; }
+
 	public RadialColor CurrentForegroundColor { get; set; } = RadialColor.Orange;
 	public RadialColor CurrentBackgroundColor { get; set; } = RadialColor.Black;
+
 	public override bool WantsKeyboardFocus => true;
-	private bool HasSelection => _selectionAnchor.HasValue && _selectionCaret.HasValue && _selectionAnchor.Value != _selectionCaret.Value;
-
-	private bool HasKeyboardSelection =>
-		_selectionAnchor.HasValue &&
-		_selectionCaret.HasValue &&
-		_selectionAnchor.Value != _selectionCaret.Value &&
-		_editor != null;
-
-	private bool HasMouseSelection =>
-		_hasMouseSelection &&
-		_mouseSelectStart != _mouseSelectEnd;
 
 	#endregion
 
-	#region Loading
-
-	private (int start, int end) GetSelectionRange()
-	{
-		int a = _selectionAnchor!.Value;
-		int b = _selectionCaret!.Value;
-		return a < b ? (a, b) : (b, a);
-	}
+	#region Loading / Layout
 
 	protected override async void OnLoad(IAssetService assets)
 	{
 		if (Style == null)
-			throw new Exception("Style is null.");
+			throw new InvalidOperationException("Style is null.");
 
 		_font = await assets.LoadFontAsync(
 			Style.DefaultFontStyle.Url,
@@ -103,18 +91,14 @@ public sealed class TextConsoleMorph : Morph
 		InvalidateLayout();
 	}
 
-	#endregion
-
-	#region Layout
-
 	protected override void UpdateLayout()
 	{
 		if (_font == null || Owner == null)
 			return;
 
 		var available = Owner.Size;
-		var cols = Math.Max(1, available.Width / CellSize.Width);
-		var rows = Math.Max(1, available.Height / CellSize.Height);
+		int cols = Math.Max(1, available.Width / CellSize.Width);
+		int rows = Math.Max(1, available.Height / CellSize.Height);
 
 		if (cols != Columns || rows != Rows)
 			ResizeGrid(cols, rows);
@@ -161,72 +145,25 @@ public sealed class TextConsoleMorph : Morph
 			for (int x = 0; x < Columns; x++)
 			{
 				var cell = _buffer[y, x];
-				var px = x * CellSize.Width;
-				var py = y * CellSize.Height;
-
-				bool selected =
-					(HasKeyboardSelection && IsEditorIndexSelected(x, y)) ||
-					(HasMouseSelection && IsMouseCellSelected(x, y));
+				bool selected = IsCellSelected(x, y);
 
 				var fg = selected ? cell.Background : cell.Foreground;
 				var bg = selected ? cell.Foreground : cell.Background;
+
+				var px = x * CellSize.Width;
+				var py = y * CellSize.Height;
 
 				rc.RenderFilledRect(
 					new Rectangle(px, py, CellSize.Width, CellSize.Height),
 					bg
 				);
 
-				_font?.WriteChar(
-					rc,
-					cell.Char,
-					new Point(px, py),
-					fg,
-					bg
-				);
+				_font?.WriteChar(rc, cell.Char, new Point(px, py), fg, bg);
 			}
 		}
 
 		if (TryGetWorld(out var world) && world.KeyboardFocus == this)
 			DrawCursor(rc);
-	}
-
-	private bool IsEditorIndexSelected(int x, int y)
-	{
-		if (!_isReadingLine || _editor == null || !HasKeyboardSelection)
-			return false;
-
-		if (y != _inputStartY)
-			return false;
-
-		int index = x - _inputStartX;
-		if (index < 0 || index >= _editor.Length)
-			return false;
-
-		var (start, end) = GetSelectionRange();
-		return index >= start && index < end;
-	}
-
-	private bool IsMouseCellSelected(int x, int y)
-	{
-		int minY = Math.Min(_mouseSelectStart.Y, _mouseSelectEnd.Y);
-		int maxY = Math.Max(_mouseSelectStart.Y, _mouseSelectEnd.Y);
-
-		if (y < minY || y > maxY)
-			return false;
-
-		if (_mouseSelectStart.Y == _mouseSelectEnd.Y)
-		{
-			int minX = Math.Min(_mouseSelectStart.X, _mouseSelectEnd.X);
-			int maxX = Math.Max(_mouseSelectStart.X, _mouseSelectEnd.X);
-			return x >= minX && x <= maxX;
-		}
-
-		if (y == minY)
-			return x >= _mouseSelectStart.X;
-		if (y == maxY)
-			return x <= _mouseSelectEnd.X;
-
-		return true;
 	}
 
 	private void DrawCursor(IRenderingContext rc)
@@ -240,27 +177,36 @@ public sealed class TextConsoleMorph : Morph
 		);
 	}
 
+	private bool IsCellSelected(int x, int y)
+	{
+		if (!_isReadingLine || _editor == null || !_selection.HasSelection)
+			return false;
+
+		int index = CellToEditorIndex(x, y);
+		var (start, end) = _selection.GetRange();
+		return index >= start && index < end;
+	}
+
 	#endregion
 
-	#region Input
+	#region Pointer Input (Unified Selection)
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
 		base.OnPointerDown(e);
-
-		if (e.Button != MouseButton.Left)
+		if (e.Button != MouseButton.Left || !_isReadingLine || _editor == null)
 			return;
 
 		if (TryGetWorld(out var world))
 			world.CapturePointer(this);
 
 		ClearSelection();
-		_hasMouseSelection = true;
-		_mouseSelecting = true;
 
-		var local = WorldToLocal(e.Position);
-		_mouseSelectStart = PixelToCell(local);
-		_mouseSelectEnd = _mouseSelectStart;
+		var cell = PixelToCell(WorldToLocal(e.Position));
+		int index = CellToEditorIndex(cell.X, cell.Y);
+
+		_selection.Begin(index);
+		_mouseSelecting = true;
 
 		e.MarkHandled();
 		Invalidate();
@@ -269,20 +215,19 @@ public sealed class TextConsoleMorph : Morph
 	public override void OnPointerMove(PointerMoveEvent e)
 	{
 		base.OnPointerMove(e);
-
-		if (!_mouseSelecting)
+		if (!_mouseSelecting || _editor == null)
 			return;
 
-		var local = WorldToLocal(e.Position);
-		_mouseSelectEnd = PixelToCell(local);
+		var cell = PixelToCell(WorldToLocal(e.Position));
+		int index = CellToEditorIndex(cell.X, cell.Y);
 
+		_selection.Update(index);
 		Invalidate();
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)
 	{
 		base.OnPointerUp(e);
-
 		if (e.Button != MouseButton.Left)
 			return;
 
@@ -293,22 +238,9 @@ public sealed class TextConsoleMorph : Morph
 		e.MarkHandled();
 	}
 
-	private void RedrawSelectionOverlay()
-	{
-		// Re-project input (if any) so selection swaps colors correctly
-		if (_editor != null)
-		{
-			RedrawInput();
-			ClearInputTail();
-		}
-	}
+	#endregion
 
-	private Point PixelToCell(Point p)
-	{
-		int x = Math.Clamp(p.X / CellSize.Width, 0, Columns - 1);
-		int y = Math.Clamp(p.Y / CellSize.Height, 0, Rows - 1);
-		return new Point(x, y);
-	}
+	#region Keyboard Input
 
 	public override void OnKey(KeyEvent e)
 	{
@@ -323,125 +255,50 @@ public sealed class TextConsoleMorph : Morph
 
 			case Key.C when e.Modifiers.HasFlag(KeyModifier.Control):
 				CopySelection();
-				return;
-
-			case Key.V when e.Modifiers.HasFlag(KeyModifier.Control):
-				PasteClipboard();
-				return;
+				break;
 
 			case Key.X when e.Modifiers.HasFlag(KeyModifier.Control):
 				CutSelection();
-				return;
+				break;
 
-			case Key.Tab:
-				ClearSelection();
-				InsertTabSpaces();
+			case Key.V when e.Modifiers.HasFlag(KeyModifier.Control):
+				PasteClipboard();
 				break;
 
 			case Key.Up:
 				HistoryUp();
+				e.MarkHandled();
 				break;
 
 			case Key.Down:
 				HistoryDown();
+				e.MarkHandled();
 				break;
 
 			case Key.Left:
-				if (e.Modifiers.HasFlag(KeyModifier.Control) &&
-					e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					SelectWordLeft();
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					StartOrUpdateSelection(-1);
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Control))
-				{
-					ClearSelection();
-					_editor?.MoveWordLeft();
-				}
-				else
-				{
-					ClearSelection();
-					_editor?.Move(-1);
-				}
+				HandleHorizontalMove(-1, e);
 				break;
 
 			case Key.Right:
-				if (e.Modifiers.HasFlag(KeyModifier.Control) &&
-					e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					SelectWordRight();
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					StartOrUpdateSelection(+1);
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Control))
-				{
-					ClearSelection();
-					_editor?.MoveWordRight();
-				}
-				else
-				{
-					ClearSelection();
-					_editor?.Move(+1);
-				}
-				break;
-
-			case Key.Backspace:
-				if (HasSelection)
-				{
-					DeleteSelectionIfAny();
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Control))
-				{
-					_editor?.DeleteWordLeft();
-				}
-				else
-				{
-					_editor?.Backspace();
-				}
-				break;
-
-			case Key.Delete:
-				if (HasSelection)
-				{
-					DeleteSelectionIfAny();
-				}
-				else if (e.Modifiers.HasFlag(KeyModifier.Control))
-				{
-					_editor?.DeleteWordRight();
-				}
-				else
-				{
-					_editor?.Delete();
-				}
+				HandleHorizontalMove(+1, e);
 				break;
 
 			case Key.Home:
-				if (e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					SelectToLineStart();
-				}
-				else
-				{
-					ClearSelection();
-					_editor?.MoveToStart();
-				}
+				HandleHomeEnd(start: true, e);
 				break;
 
 			case Key.End:
-				if (e.Modifiers.HasFlag(KeyModifier.Shift))
-				{
-					SelectToLineEnd();
-				}
-				else
-				{
-					ClearSelection();
-					_editor?.MoveToEnd();
-				}
+				HandleHomeEnd(start: false, e);
+				break;
+
+			case Key.Backspace:
+				if (!DeleteSelectionIfAny())
+					_editor?.Backspace();
+				break;
+
+			case Key.Delete:
+				if (!DeleteSelectionIfAny())
+					_editor?.Delete();
 				break;
 
 			case Key.Enter:
@@ -457,212 +314,52 @@ public sealed class TextConsoleMorph : Morph
 				}
 				break;
 		}
-
-		if (_isReadingLine && _editor != null)
-		{
-			SyncCursorFromEditor();
-			RedrawInput();
-			ClearInputTail();
-		}
 	}
 
-	private void SelectAll()
-	{
-		if (!_isReadingLine || _editor == null)
-			return;
+	#endregion
 
-		_selectionAnchor = 0;
-		_selectionCaret = _editor.Length;
+	#region Editor Integration
+
+	private void AttachEditor(TextEditingCore editor)
+	{
+		DetachEditor();
+		_editor = editor;
+		_editor.Changed += OnEditorChanged;
 	}
 
-	private void SelectWordLeft()
+	private void DetachEditor()
 	{
-		if (!_isReadingLine || _editor == null)
-			return;
-
-		if (!_selectionAnchor.HasValue)
-			_selectionAnchor = _editor.CursorIndex;
-
-		_editor.MoveWordLeft();
-		_selectionCaret = _editor.CursorIndex;
+		if (_editor != null)
+			_editor.Changed -= OnEditorChanged;
 	}
 
-	private void SelectWordRight()
+	private void OnEditorChanged()
 	{
-		if (!_isReadingLine || _editor == null)
-			return;
-
-		if (!_selectionAnchor.HasValue)
-			_selectionAnchor = _editor.CursorIndex;
-
-		_editor.MoveWordRight();
-		_selectionCaret = _editor.CursorIndex;
-	}
-
-	private void SelectToLineStart()
-	{
-		if (!_isReadingLine || _editor == null)
-			return;
-
-		if (!_selectionAnchor.HasValue)
-			_selectionAnchor = _editor.CursorIndex;
-
-		_editor.MoveToStart();
-		_selectionCaret = _editor.CursorIndex;
-	}
-
-	private void SelectToLineEnd()
-	{
-		if (!_isReadingLine || _editor == null)
-			return;
-
-		if (!_selectionAnchor.HasValue)
-			_selectionAnchor = _editor.CursorIndex;
-
-		_editor.MoveToEnd();
-		_selectionCaret = _editor.CursorIndex;
-	}
-
-	private void CopySelection()
-	{
-		if (HasKeyboardSelection)
-		{
-			var (start, end) = GetSelectionRange();
-			_clipboard.SetText(_editor!.Buffer.ToString(start, end - start));
-			return;
-		}
-
-		if (HasMouseSelection)
-		{
-			var sb = new StringBuilder();
-
-			int minY = Math.Min(_mouseSelectStart.Y, _mouseSelectEnd.Y);
-			int maxY = Math.Max(_mouseSelectStart.Y, _mouseSelectEnd.Y);
-
-			for (int y = minY; y <= maxY; y++)
-			{
-				int startX = (y == minY)
-					? Math.Min(_mouseSelectStart.X, _mouseSelectEnd.X)
-					: 0;
-
-				int endX = (y == maxY)
-					? Math.Max(_mouseSelectStart.X, _mouseSelectEnd.X)
-					: Columns - 1;
-
-				for (int x = startX; x <= endX; x++)
-					sb.Append(_buffer[y, x].Char);
-
-				if (y < maxY)
-					sb.Append('\n');
-			}
-
-			_clipboard.SetText(sb.ToString().TrimEnd());
-		}
-	}
-
-	private void ClearMouseSelection()
-	{
-		_mouseSelecting = false;
-	}
-
-	private void PasteClipboard()
-	{
-		if (!_isReadingLine || _editor == null)
-			return;
-		ClearSelection();
-
-		_clipboard.GetTextAsync().ContinueWith(response =>
-		{
-			var text = response.Result;
-			if (string.IsNullOrEmpty(text))
-				return;
-
-			foreach (char ch in text)
-			{
-				if (ch == '\n' || ch == '\r')
-					continue; // console input stays single-line
-				_editor.Insert(ch);
-			}
-
-			SyncCursorFromEditor();
-			RedrawInput();
-			ClearInputTail();
-		});
-	}
-
-	private void CutSelection()
-	{
-		if (!HasSelection || _editor == null)
-			return;
-
-		CopySelection();
-
-		var (start, end) = GetSelectionRange();
-		_editor.Buffer.Remove(start, end - start);
-		_editor.SetCursorIndex(start);
-
-		ClearSelection();
 		SyncCursorFromEditor();
 		RedrawInput();
 		ClearInputTail();
+		Invalidate();
 	}
 
-	private void StartOrUpdateSelection(int delta)
+	private void SyncCursorFromEditor()
 	{
-		if (!_isReadingLine || _editor == null)
+		if (_editor == null)
 			return;
 
-		if (!_selectionAnchor.HasValue)
-			_selectionAnchor = _editor.CursorIndex;
+		int absolute = _inputStartX + _editor.CursorIndex;
 
-		_editor.Move(delta);
-		_selectionCaret = _editor.CursorIndex;
+		_cursorY = _inputStartY + (absolute / Columns);
+		_cursorX = absolute % Columns;
+
+		_cursorY = Math.Clamp(_cursorY, 0, Rows - 1);
+		_cursorX = Math.Clamp(_cursorX, 0, Columns - 1);
+
+		_selection.Normalize(i => i >= 0 && i <= _editor.Length);
 	}
 
-	private void ClearSelection()
-	{
-		_selectionAnchor = null;
-		_selectionCaret = null;
-		_hasMouseSelection = false;
-	}
-
-	private void DeleteSelectionIfAny()
-	{
-		if (!HasSelection || _editor == null)
-			return;
-
-		var (start, end) = GetSelectionRange();
-		_editor.Buffer.Remove(start, end - start);
-		_editor.SetCursorIndex(start);
-		ClearSelection();
-	}
-
-	private void InsertTabSpaces()
-	{
-		if (!_isReadingLine || _editor == null)
-			return;
-
-		int tabWidth = _editor.TabWidth;
-		int column = (_inputStartX + _editor.CursorIndex) % tabWidth;
-		int spaces = tabWidth - column;
-
-		for (int i = 0; i < spaces; i++)
-			_editor.Insert(' ');
-	}
 	#endregion
 
 	#region Console API
-	public void Write(string text)
-	{
-		foreach (var ch in text)
-			PutChar(ch);
-	}
-
-	public void WriteLine(string text = "")
-	{
-		Write(text);
-		NewLine();
-	}
 
 	public Task<string> ReadLineAsync()
 	{
@@ -670,8 +367,10 @@ public sealed class TextConsoleMorph : Morph
 			throw new InvalidOperationException("ReadLine already in progress.");
 
 		CaptureKeyboard();
+
 		_isReadingLine = true;
-		_editor = new TextEditingCore(_logger);
+		AttachEditor(new TextEditingCore(_logger));
+
 		_inputStartX = _cursorX;
 		_inputStartY = _cursorY;
 
@@ -680,24 +379,171 @@ public sealed class TextConsoleMorph : Morph
 
 		return _pendingReadLine.Task;
 	}
+
 	#endregion
 
-	#region Editing Projection
-	private void SyncCursorFromEditor()
+	#region Utilities / Projection
+
+	private int CellToEditorIndex(int x, int y)
+	{
+		if (_editor == null)
+			return 0;
+
+		int absolute =
+			(y - _inputStartY) * Columns +
+			(x - _inputStartX);
+
+		return Math.Clamp(absolute, 0, _editor.Length);
+	}
+
+	private Point PixelToCell(Point p)
+	{
+		int x = Math.Clamp(p.X / CellSize.Width, 0, Columns - 1);
+		int y = Math.Clamp(p.Y / CellSize.Height, 0, Rows - 1);
+		return new Point(x, y);
+	}
+
+	#endregion
+
+	public void Clear()
+	{
+		for (int y = 0; y < Rows; y++)
+			for (int x = 0; x < Columns; x++)
+				_buffer[y, x] = ConsoleCell.Empty;
+
+		_cursorX = 0;
+		_cursorY = 0;
+	}
+
+	private void ClearSelection()
+	{
+		_selection.Clear();
+		_mouseSelecting = false;
+	}
+
+	private void SelectAll()
+	{
+		if (!_isReadingLine || _editor == null)
+			return;
+
+		_selection.Begin(0);
+		_selection.Update(_editor.Length);
+	}
+
+	private void CopySelection()
+	{
+		if (_editor == null || !_selection.HasSelection)
+			return;
+
+		var (start, end) = _selection.GetRange();
+		string text = _editor.GetSubstring(start, end - start);
+		_clipboard.SetText(text);
+	}
+
+	private void CutSelection()
+	{
+		if (_editor == null || !_selection.HasSelection)
+			return;
+
+		CopySelection();
+		DeleteSelectionIfAny();
+	}
+
+	private async void PasteClipboard()
+	{
+		if (!_isReadingLine || _editor == null)
+			return;
+
+		ClearSelection();
+
+		var text = await _clipboard.GetTextAsync();
+		if (string.IsNullOrEmpty(text))
+			return;
+
+		foreach (char ch in text)
+		{
+			if (ch == '\n' || ch == '\r')
+				continue; // console input is single-line
+			_editor.Insert(ch);
+		}
+	}
+
+	private void HandleHorizontalMove(int delta, KeyEvent e)
 	{
 		if (_editor == null)
 			return;
 
-		var absolute = _inputStartX + _editor.CursorIndex;
-		_cursorY = _inputStartY + (absolute / Columns);
-		_cursorX = absolute % Columns;
-		_cursorY = Math.Min(_cursorY, Rows - 1);
-
-		if (_selectionAnchor.HasValue &&
-			_selectionAnchor.Value > _editor.Length)
+		if (e.Modifiers.HasFlag(KeyModifier.Shift))
+		{
+			_selection.Update(_editor.CursorIndex);
+			_editor.Move(delta);
+			_selection.Update(_editor.CursorIndex);
+		}
+		else
 		{
 			ClearSelection();
+			_editor.Move(delta);
 		}
+	}
+
+	private void HandleHomeEnd(bool start, KeyEvent e)
+	{
+		if (_editor == null)
+			return;
+
+		if (e.Modifiers.HasFlag(KeyModifier.Shift))
+		{
+			_selection.Update(_editor.CursorIndex);
+			if (start)
+				_editor.MoveToStart();
+			else
+				_editor.MoveToEnd();
+			_selection.Update(_editor.CursorIndex);
+		}
+		else
+		{
+			ClearSelection();
+			if (start)
+				_editor.MoveToStart();
+			else
+				_editor.MoveToEnd();
+		}
+	}
+
+	private bool DeleteSelectionIfAny()
+	{
+		if (_editor == null || !_selection.HasSelection)
+			return false;
+
+		var (start, end) = _selection.GetRange();
+		_editor.DeleteRange(start, end - start);
+		_editor.SetCursorIndex(start);
+		_selection.Clear();
+		return true;
+	}
+
+	private void CommitLine()
+	{
+		if (!_isReadingLine || _editor == null)
+		{
+			NewLine();
+			return;
+		}
+
+		ClearSelection();
+
+		string result = _editor.ToString();
+		if (!string.IsNullOrWhiteSpace(result))
+			_commandHistory.Add(result);
+
+		_historyIndex = 0;
+		_isReadingLine = false;
+
+		_editor = null;
+		NewLine();
+
+		_pendingReadLine?.SetResult(result);
+		_pendingReadLine = null;
 	}
 
 	private void RedrawInput()
@@ -708,37 +554,23 @@ public sealed class TextConsoleMorph : Morph
 		int x = _inputStartX;
 		int y = _inputStartY;
 
-		int index = 0;
-		try
+		string text = _editor.ToString();
+
+		for (int i = 0; i < text.Length && y < Rows; i++)
 		{
-			var text = _editor.Buffer.ToString();
-			for (var n = 0; n < text.Length; n++)
+			_buffer[y, x] = new ConsoleCell
 			{
-				var ch = text[n];
+				Char = text[i],
+				Foreground = CurrentForegroundColor,
+				Background = CurrentBackgroundColor
+			};
 
-				if (y >= Rows)
-					break;
-
-				_buffer[y, x] = new ConsoleCell
-				{
-					Char = ch,
-					Foreground = CurrentForegroundColor,
-					Background = CurrentBackgroundColor
-				};
-
-				index++;
-
-				x++;
-				if (x >= Columns)
-				{
-					x = 0;
-					y++;
-				}
+			x++;
+			if (x >= Columns)
+			{
+				x = 0;
+				y++;
 			}
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Unknown error while redrawing text.");
 		}
 	}
 
@@ -747,10 +579,9 @@ public sealed class TextConsoleMorph : Morph
 		if (_editor == null)
 			return;
 
-		var index = _editor.Length;
-		var absolute = _inputStartX + index;
-		var y = _inputStartY + (absolute / Columns);
-		var x = absolute % Columns;
+		int absolute = _inputStartX + _editor.Length;
+		int y = _inputStartY + (absolute / Columns);
+		int x = absolute % Columns;
 
 		while (y < Rows)
 		{
@@ -763,15 +594,56 @@ public sealed class TextConsoleMorph : Morph
 			y++;
 		}
 	}
-	#endregion
 
-	#region History
+	private void NewLine()
+	{
+		_cursorX = 0;
+		if (_cursorY == Rows - 1)
+			ScrollUp();
+		else
+			_cursorY++;
+	}
+
+	private void ScrollUp()
+	{
+		for (int y = 1; y < Rows; y++)
+			for (int x = 0; x < Columns; x++)
+				_buffer[y - 1, x] = _buffer[y, x];
+
+		for (int x = 0; x < Columns; x++)
+			_buffer[Rows - 1, x] = ConsoleCell.Empty;
+
+		if (_isReadingLine)
+			_inputStartY = Math.Max(0, _inputStartY - 1);
+	}
+
+	private void ApplyHistory()
+	{
+		ClearSelection();
+
+		if (_editor != null)
+			_editor.Changed -= OnEditorChanged;
+
+		_editor = new TextEditingCore(
+			_logger,
+			_historyIndex == 0
+				? string.Empty
+				: _commandHistory[^_historyIndex]
+		);
+
+		_editor.Changed += OnEditorChanged;
+
+		SyncCursorFromEditor();
+		RedrawInput();
+		ClearInputTail();
+	}
+
 	private void HistoryUp()
 	{
 		if (!_isReadingLine || _commandHistory.Count == 0)
 			return;
-		ClearSelection();
 
+		// Clamp to oldest entry
 		if (_historyIndex < _commandHistory.Count)
 			_historyIndex++;
 
@@ -780,9 +652,8 @@ public sealed class TextConsoleMorph : Morph
 
 	private void HistoryDown()
 	{
-		if (!_isReadingLine)
+		if (!_isReadingLine || _commandHistory.Count == 0)
 			return;
-		ClearSelection();
 
 		if (_historyIndex > 0)
 			_historyIndex--;
@@ -790,45 +661,21 @@ public sealed class TextConsoleMorph : Morph
 		ApplyHistory();
 	}
 
-	private void ApplyHistory()
+	public void Write(string text)
 	{
-		ClearSelection();
-		_editor = new TextEditingCore(
-			_logger,
-			_historyIndex == 0
-				? string.Empty
-				: _commandHistory[^_historyIndex]
-		);
-
-		SyncCursorFromEditor();
-		RedrawInput();
-		ClearInputTail();
-	}
-	#endregion
-
-	#region Output Helpers
-	private void CommitLine()
-	{
-		if (!_isReadingLine || _editor == null)
-		{
-			NewLine();
+		if (string.IsNullOrEmpty(text))
 			return;
-		}
 
-		ClearSelection();
+		foreach (char ch in text)
+			PutChar(ch);
+	}
 
-		var result = _editor.ToString();
-
-		if (!string.IsNullOrWhiteSpace(result))
-			_commandHistory.Add(result);
-
-		_historyIndex = 0;
-		_isReadingLine = false;
-		_editor = null;
+	public void WriteLine(string text = "")
+	{
+		if (!string.IsNullOrEmpty(text))
+			Write(text);
 
 		NewLine();
-		_pendingReadLine?.SetResult(result);
-		_pendingReadLine = null;
 	}
 
 	private void PutChar(char ch)
@@ -847,45 +694,13 @@ public sealed class TextConsoleMorph : Morph
 		};
 
 		_cursorX++;
+
 		if (_cursorX >= Columns)
 			NewLine();
 	}
 
-	private void NewLine()
-	{
-		_cursorX = 0;
-
-		if (_cursorY == Rows - 1)
-			ScrollUp();
-		else
-			_cursorY++;
-	}
-
-	public void Clear()
-	{
-		for (int y = 0; y < Rows; y++)
-			for (int x = 0; x < Columns; x++)
-				_buffer[y, x] = ConsoleCell.Empty;
-
-		_cursorX = 0;
-		_cursorY = 0;
-	}
-
-	private void ScrollUp()
-	{
-		for (int y = 1; y < Rows; y++)
-			for (int x = 0; x < Columns; x++)
-				_buffer[y - 1, x] = _buffer[y, x];
-
-		for (int x = 0; x < Columns; x++)
-			_buffer[Rows - 1, x] = ConsoleCell.Empty;
-
-		if (_isReadingLine)
-			_inputStartY = Math.Max(0, _inputStartY - 1);
-	}
-	#endregion
-
 	#region ConsoleCell
+
 	private struct ConsoleCell
 	{
 		public char Char;
@@ -899,5 +714,6 @@ public sealed class TextConsoleMorph : Morph
 			Background = RadialColor.Black
 		};
 	}
+
 	#endregion
 }

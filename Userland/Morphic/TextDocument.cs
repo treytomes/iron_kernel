@@ -10,59 +10,51 @@ namespace Userland.Morphic;
 public sealed class TextDocument
 {
 	#region Events
-
 	public event Action? Changed;
-
 	#endregion
 
 	#region Fields
-
 	private readonly ILogger _logger;
 	private readonly List<TextEditingCore> _lines = new();
 	private int _desiredColumn = -1;
-
 	#endregion
 
 	#region Constructors
-
 	public TextDocument(ILogger logger, string? initialText = null)
 	{
-		_logger = logger;
+		_logger = logger ?? throw new ArgumentNullException(nameof(logger));
 		SetText(initialText);
 	}
-
 	#endregion
 
 	#region Properties
-
 	public int LineCount => _lines.Count;
-
 	public int CaretLine { get; private set; }
 
 	public int CaretColumn
 	{
 		get => _lines[CaretLine].CursorIndex;
-		set
-		{
-			var line = _lines[CaretLine];
-			line.SetCursorIndex(Math.Clamp(value, 0, line.Length));
-		}
+		private set => _lines[CaretLine].SetCursorIndex(value);
 	}
 
 	public TextEditingCore CurrentLine => _lines[CaretLine];
-
 	public IReadOnlyList<TextEditingCore> Lines => _lines;
-
 	public int TabWidth { get; set; } = 4;
-
 	#endregion
 
-	#region Methods
-
+	#region Core helpers
 	private void OnChanged() => Changed?.Invoke();
 
-	#region Text Initialization
+	private void ResetDesiredColumn() => _desiredColumn = -1;
 
+	private void EnsureDesiredColumn()
+	{
+		if (_desiredColumn < 0)
+			_desiredColumn = CaretColumn;
+	}
+	#endregion
+
+	#region Text initialization
 	public void SetText(string? text = null)
 	{
 		_lines.Clear();
@@ -70,62 +62,134 @@ public sealed class TextDocument
 		if (string.IsNullOrEmpty(text))
 		{
 			_lines.Add(new TextEditingCore(_logger));
-			CaretLine = 0;
-			CaretColumn = 0;
-			OnChanged();
-			return;
+		}
+		else
+		{
+			foreach (var line in text.Split('\n'))
+				_lines.Add(new TextEditingCore(_logger, line));
 		}
 
-		var split = text.Split('\n');
-		foreach (var line in split)
-			_lines.Add(new TextEditingCore(_logger, line));
-
-		if (_lines.Count == 0)
-			_lines.Add(new TextEditingCore(_logger));
-
 		CaretLine = _lines.Count - 1;
-		_lines[CaretLine].MoveToEnd();
+		CurrentLine.MoveToEnd();
+		ResetDesiredColumn();
 		OnChanged();
 	}
-
 	#endregion
 
 	#region Insertion
-
 	public void InsertChar(char ch)
 	{
 		if (ch == '\n')
 		{
 			SplitLine();
-			OnChanged();
 			return;
 		}
 
 		CurrentLine.Insert(ch);
-		_desiredColumn = -1;
+		ResetDesiredColumn();
 		OnChanged();
 	}
 
 	public void InsertTab()
 	{
-		int col = CurrentLine.CursorIndex;
-		int spaces = TabWidth - (col % TabWidth);
-		for (int i = 0; i < spaces; i++)
-			CurrentLine.Insert(' ');
+		CurrentLine.TabWidth = TabWidth;
+		CurrentLine.InsertTab(expandToSpaces: true);
 
-		_desiredColumn = -1;
+		ResetDesiredColumn();
 		OnChanged();
 	}
-
 	#endregion
 
 	#region Deletion
-
-	public void DeleteRange(
-		(int line, int column) start,
-		(int line, int column) end)
+	public void Backspace()
 	{
-		// Normalize
+		if (CaretColumn > 0)
+		{
+			CurrentLine.Backspace();
+			ResetDesiredColumn();
+			OnChanged();
+			return;
+		}
+
+		if (CaretLine == 0)
+			return;
+
+		var current = CurrentLine;
+		var prev = _lines[CaretLine - 1];
+
+		int prevLen = prev.Length;
+		prev.AppendText(current.ToString());
+
+		_lines.RemoveAt(CaretLine);
+		CaretLine--;
+		prev.SetCursorIndex(prevLen);
+
+		ResetDesiredColumn();
+		OnChanged();
+	}
+
+	public void Delete()
+	{
+		var line = CurrentLine;
+
+		if (CaretColumn < line.Length)
+		{
+			line.Delete();
+			ResetDesiredColumn();
+			OnChanged();
+			return;
+		}
+
+		if (CaretLine >= _lines.Count - 1)
+			return;
+
+		var next = _lines[CaretLine + 1];
+		line.AppendText(next.ToString());
+		_lines.RemoveAt(CaretLine + 1);
+
+		ResetDesiredColumn();
+		OnChanged();
+	}
+	#endregion
+
+	#region Word deletion
+	public void DeleteWordLeft()
+	{
+		if (CaretColumn > 0)
+		{
+			CurrentLine.DeleteWordLeft();
+			OnChanged();
+		}
+		else
+		{
+			Backspace();
+		}
+	}
+
+	public void DeleteWordRight()
+	{
+		if (CaretColumn < CurrentLine.Length)
+		{
+			CurrentLine.DeleteWordRight();
+			OnChanged();
+		}
+		else
+		{
+			Delete();
+		}
+	}
+
+	public void DeleteRangeAndSetCaret((int line, int column) start, (int line, int column) end)
+	{
+		DeleteRange(start, end);
+
+		CaretLine = Math.Clamp(start.line, 0, _lines.Count - 1);
+		_lines[CaretLine].SetCursorIndex(start.column);
+	}
+
+	public void DeleteRange((int line, int column) start, (int line, int column) end)
+	{
+		// Normalize order
 		if (start.line > end.line ||
 			(start.line == end.line && start.column > end.column))
 		{
@@ -144,209 +208,109 @@ public sealed class TextDocument
 		// ----- Single-line delete -----
 		if (start.line == end.line)
 		{
-			startLine.SetCursorIndex(start.column);
-			for (int i = 0; i < end.column - start.column; i++)
-				startLine.Delete();
+			startLine.DeleteRange(
+				start.column,
+				end.column - start.column);
+
+			OnChanged();
 			return;
 		}
 
 		// ----- Multi-line delete -----
 
-		// 1. Capture tail of end line
-		string endTail = endLine.Buffer
-			.ToString(end.column, endLine.Length - end.column);
+		// Capture tail of end line
+		string endTail = endLine.GetSubstring(
+			end.column,
+			endLine.Length - end.column);
 
-		// 2. Truncate start line at start.column
-		startLine.SetCursorIndex(start.column);
-		while (startLine.Length > start.column)
-			startLine.Delete();
+		// Truncate start line
+		startLine.DeleteRange(
+			start.column,
+			startLine.Length - start.column);
 
-		// 3. Remove all lines between start and end (inclusive of end)
+		// Remove intermediate lines (including end line)
 		for (int i = end.line; i > start.line; i--)
 			_lines.RemoveAt(i);
 
-		// 4. Append tail text to start line
-		foreach (char ch in endTail)
-			startLine.Insert(ch);
-	}
+		// Append tail
+		startLine.AppendText(endTail);
 
-	public void Backspace()
-	{
-		if (CurrentLine == null) return;
-		var line = CurrentLine;
-
-		if (line.CursorIndex > 0)
-		{
-			line.Backspace();
-			_desiredColumn = -1;
-			OnChanged();
-			return;
-		}
-
-		if (CaretLine == 0)
-			return;
-
-		if (CaretLine - 1 < 0 || CaretLine - 1 >= _lines.Count) return;
-
-		var prev = _lines[CaretLine - 1];
-		int prevLen = prev.Length;
-
-		prev.Buffer.Append(line.Buffer);
-		_lines.RemoveAt(CaretLine);
-		CaretLine--;
-		prev.SetCursorIndex(prevLen);
-
-		_desiredColumn = -1;
 		OnChanged();
 	}
 
-	public void Delete()
+	public void SetCaretLine(int line)
 	{
-		var line = CurrentLine;
+		CaretLine = Math.Clamp(line, 0, _lines.Count - 1);
 
-		if (line.CursorIndex < line.Length)
-		{
-			line.Delete();
-			_desiredColumn = -1;
-			OnChanged();
-			return;
-		}
+		var currentLine = _lines[CaretLine];
 
-		if (CaretLine >= _lines.Count - 1)
-			return;
-
-		var next = _lines[CaretLine + 1];
-		line.Buffer.Append(next.Buffer);
-		_lines.RemoveAt(CaretLine + 1);
-
-		CaretColumn = Math.Min(CaretColumn, line.Length);
-		_desiredColumn = -1;
-		OnChanged();
+		// Clamp existing column to new line length
+		currentLine.SetCursorIndex(
+			Math.Min(
+				currentLine.CursorIndex,
+				currentLine.Length));
 	}
 
 	#endregion
 
-	#region Word Deletion
-
-	public void DeleteWordLeft()
-	{
-		if (CurrentLine.CursorIndex > 0)
-		{
-			CurrentLine.DeleteWordLeft();
-			OnChanged();
-			return;
-		}
-
-		Backspace();
-	}
-
-	public void DeleteWordRight()
-	{
-		if (CurrentLine.CursorIndex < CurrentLine.Length)
-		{
-			CurrentLine.DeleteWordRight();
-			OnChanged();
-			return;
-		}
-
-		Delete();
-	}
-
-	#endregion
-
-	#region Cursor Movement (Horizontal)
-
+	#region Cursor movement (horizontal)
 	public void MoveLeft()
 	{
-		if (CurrentLine.CursorIndex > 0)
+		if (CaretColumn > 0)
 		{
 			CurrentLine.Move(-1);
-			_desiredColumn = -1;
-			return;
+		}
+		else if (CaretLine > 0)
+		{
+			CaretLine--;
+			_lines[CaretLine].MoveToEnd();
 		}
 
-		if (CaretLine == 0)
-			return;
-
-		CaretLine--;
-		_lines[CaretLine].MoveToEnd();
-		_desiredColumn = -1;
+		ResetDesiredColumn();
+		OnChanged();
 	}
 
 	public void MoveRight()
 	{
-		if (CurrentLine.CursorIndex < CurrentLine.Length)
+		if (CaretColumn < CurrentLine.Length)
 		{
 			CurrentLine.Move(1);
-			_desiredColumn = -1;
-			return;
 		}
-
-		if (CaretLine >= _lines.Count - 1)
-			return;
-
-		CaretLine++;
-		_lines[CaretLine].MoveToStart();
-		_desiredColumn = -1;
-	}
-
-	public void MoveWordLeft()
-	{
-		if (CurrentLine.CursorIndex > 0)
+		else if (CaretLine < _lines.Count - 1)
 		{
-			CurrentLine.MoveWordLeft();
-			_desiredColumn = -1;
-			return;
+			CaretLine++;
+			_lines[CaretLine].MoveToStart();
 		}
 
-		MoveLeft();
-	}
-
-	public void MoveWordRight()
-	{
-		if (CurrentLine.CursorIndex < CurrentLine.Length)
-		{
-			CurrentLine.MoveWordRight();
-			_desiredColumn = -1;
-			return;
-		}
-
-		MoveRight();
+		ResetDesiredColumn();
+		OnChanged();
 	}
 
 	public void MoveToLineStart()
 	{
 		CurrentLine.MoveToStart();
-		_desiredColumn = -1;
+		ResetDesiredColumn();
+		OnChanged();
 	}
 
 	public void MoveToLineEnd()
 	{
 		CurrentLine.MoveToEnd();
-		_desiredColumn = -1;
+		ResetDesiredColumn();
+		OnChanged();
 	}
-
 	#endregion
 
-	#region Cursor Movement (Vertical)
-
-	public void SetCaretLine(int line)
-	{
-		CaretLine = Math.Clamp(line, 0, LineCount - 1);
-		CaretColumn = Math.Min(CaretColumn, _lines[CaretLine].Length);
-		_desiredColumn = CaretColumn;
-	}
-
+	#region Cursor movement (vertical)
 	public void MoveUp()
 	{
 		if (CaretLine == 0)
 			return;
 
-		if (_desiredColumn < 0)
-			_desiredColumn = CaretColumn;
-
+		EnsureDesiredColumn();
 		CaretLine--;
-		CaretColumn = Math.Min(_desiredColumn, _lines[CaretLine].Length);
+		CaretColumn = Math.Min(_desiredColumn, CurrentLine.Length);
+		OnChanged();
 	}
 
 	public void MoveDown()
@@ -354,53 +318,81 @@ public sealed class TextDocument
 		if (CaretLine >= _lines.Count - 1)
 			return;
 
-		if (_desiredColumn < 0)
-			_desiredColumn = CaretColumn;
-
+		EnsureDesiredColumn();
 		CaretLine++;
-		CaretColumn = Math.Min(_desiredColumn, _lines[CaretLine].Length);
+		CaretColumn = Math.Min(_desiredColumn, CurrentLine.Length);
+		OnChanged();
 	}
-
 	#endregion
 
-	#region Line Operations
-
+	#region Line operations
 	private void SplitLine()
 	{
-		try
-		{
-			var line = CurrentLine;
-			int index = Math.Max(line.CursorIndex, 0);
+		var line = CurrentLine;
+		int index = line.CursorIndex;
 
-			var rightText = line.Buffer.ToString(index, line.Length - index);
-			line.Buffer.Remove(index, line.Length - index);
+		string right = line.SplitAt(index);
+		var newLine = new TextEditingCore(_logger, right);
 
-			var newLine = new TextEditingCore(_logger, rightText);
-			_lines.Insert(CaretLine + 1, newLine);
+		_lines.Insert(CaretLine + 1, newLine);
+		CaretLine++;
+		newLine.MoveToStart();
 
-			CaretLine++;
-			newLine.MoveToStart();
-			_desiredColumn = -1;
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Unable to split line.");
-		}
+		ResetDesiredColumn();
+		OnChanged();
 	}
-
 	#endregion
 
 	#region Utilities
-
 	public override string ToString()
 	{
-		return string.Join(
-			"\n",
-			_lines.Select(l => l.ToString())
-		);
+		return string.Join("\n", _lines.Select(l => l.ToString()));
+	}
+	#endregion
+
+	public void MoveWordLeft()
+	{
+		var line = CurrentLine;
+
+		if (line.CursorIndex > 0)
+		{
+			line.MoveWordLeft();
+			ResetDesiredColumn();
+			OnChanged();
+			return;
+		}
+
+		// At start of line: move to previous line
+		if (CaretLine == 0)
+			return;
+
+		CaretLine--;
+		_lines[CaretLine].MoveToEnd();
+
+		ResetDesiredColumn();
+		OnChanged();
 	}
 
-	#endregion
+	public void MoveWordRight()
+	{
+		var line = CurrentLine;
 
-	#endregion
+		if (line.CursorIndex < line.Length)
+		{
+			line.MoveWordRight();
+			ResetDesiredColumn();
+			OnChanged();
+			return;
+		}
+
+		// At end of line: move to next line
+		if (CaretLine >= _lines.Count - 1)
+			return;
+
+		CaretLine++;
+		_lines[CaretLine].MoveToStart();
+
+		ResetDesiredColumn();
+		OnChanged();
+	}
 }

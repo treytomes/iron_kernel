@@ -6,53 +6,52 @@ namespace Userland.Morphic;
 public sealed class TextEditingCore
 {
 	#region Fields
-
 	private readonly ILogger _logger;
-	private readonly StringBuilder _buffer = new();
+	private readonly StringBuilder _buffer;
+	#endregion
 
+	#region Events
+	/// <summary>
+	/// Fired after any mutation to the buffer or cursor.
+	/// </summary>
+	public event Action? Changed;
 	#endregion
 
 	#region Constructors
-
 	public TextEditingCore(ILogger logger, string? initialText = null)
 	{
-		_logger = logger;
-		if (!string.IsNullOrEmpty(initialText))
-		{
-			_buffer.Append(initialText);
-			CursorIndex = _buffer.Length;
-		}
+		_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+		_buffer = new StringBuilder(initialText ?? string.Empty);
+		CursorIndex = _buffer.Length;
 	}
-
 	#endregion
 
 	#region Properties
-
-	public StringBuilder Buffer => _buffer;
 	public int CursorIndex { get; private set; }
 	public int Length => _buffer.Length;
 	public bool IsEmpty => _buffer.Length == 0;
-	public int TabWidth { get; set; } = 4;
 
+	/// <summary>
+	/// Defines how many spaces a tab represents if expanded.
+	/// This class inserts '\t' by default; expansion is optional.
+	/// </summary>
+	public int TabWidth { get; set; } = 4;
 	#endregion
 
-	#region Methods
-
-	/* ---------------- Cursor movement ---------------- */
-
+	#region Cursor movement
 	public void Move(int delta)
 	{
-		CursorIndex = Math.Clamp(CursorIndex + delta, 0, _buffer.Length);
+		SetCursorIndex(CursorIndex + delta);
 	}
 
 	public void MoveToStart()
 	{
-		CursorIndex = 0;
+		SetCursorIndex(0);
 	}
 
 	public void MoveToEnd()
 	{
-		CursorIndex = _buffer.Length;
+		SetCursorIndex(_buffer.Length);
 	}
 
 	public void MoveWordLeft()
@@ -61,16 +60,12 @@ public sealed class TextEditingCore
 			return;
 
 		int i = CursorIndex;
-
-		// Skip separators
 		while (i > 0 && !IsWordChar(_buffer[i - 1]))
 			i--;
-
-		// Skip word chars
 		while (i > 0 && IsWordChar(_buffer[i - 1]))
 			i--;
 
-		CursorIndex = i;
+		SetCursorIndex(i);
 	}
 
 	public void MoveWordRight()
@@ -81,32 +76,40 @@ public sealed class TextEditingCore
 		if (i >= len)
 			return;
 
-		// Skip separators
 		while (i < len && !IsWordChar(_buffer[i]))
 			i++;
-
-		// Skip word chars
 		while (i < len && IsWordChar(_buffer[i]))
 			i++;
 
-		CursorIndex = i;
+		SetCursorIndex(i);
 	}
+	#endregion
 
-	/* ---------------- Editing ---------------- */
-
+	#region Editing
 	public void Insert(char ch)
 	{
-		if (CursorIndex < 0) CursorIndex = 0;
-		if (CursorIndex < _buffer.Length)
-			_buffer.Insert(CursorIndex, ch);
-		else
-			_buffer.Append(ch);
+		NormalizeCursor();
+
+		_buffer.Insert(CursorIndex, ch);
 		CursorIndex++;
+
+		OnChanged();
 	}
 
-	public void InsertTab()
+	// TODO: This method is suspiciously unused.
+	public void InsertTab(bool expandToSpaces = false)
 	{
-		Insert('\t');
+		if (!expandToSpaces)
+		{
+			Insert('\t');
+			return;
+		}
+
+		int spaces = Math.Max(1, TabWidth);
+		_buffer.Insert(CursorIndex, new string(' ', spaces));
+		CursorIndex += spaces;
+
+		OnChanged();
 	}
 
 	public void Backspace()
@@ -114,15 +117,12 @@ public sealed class TextEditingCore
 		if (CursorIndex == 0)
 			return;
 
-		try
-		{
-			_buffer.Remove(CursorIndex - 1, 1);
-			CursorIndex--;
-		}
-		catch (Exception ex)
-		{
-			_logger.LogError(ex, "Failed to backspace from {CursorIndex} with length {Length}.", CursorIndex, _buffer.Length);
-		}
+		NormalizeCursor();
+
+		_buffer.Remove(CursorIndex - 1, 1);
+		CursorIndex--;
+
+		OnChanged();
 	}
 
 	public void Delete()
@@ -130,7 +130,11 @@ public sealed class TextEditingCore
 		if (CursorIndex >= _buffer.Length)
 			return;
 
+		NormalizeCursor();
+
 		_buffer.Remove(CursorIndex, 1);
+
+		OnChanged();
 	}
 
 	public void DeleteWordLeft()
@@ -139,10 +143,8 @@ public sealed class TextEditingCore
 			return;
 
 		int start = CursorIndex;
-
 		while (start > 0 && !IsWordChar(_buffer[start - 1]))
 			start--;
-
 		while (start > 0 && IsWordChar(_buffer[start - 1]))
 			start--;
 
@@ -152,6 +154,8 @@ public sealed class TextEditingCore
 
 		_buffer.Remove(start, length);
 		CursorIndex = start;
+
+		OnChanged();
 	}
 
 	public void DeleteWordRight()
@@ -164,7 +168,6 @@ public sealed class TextEditingCore
 
 		while (end < len && !IsWordChar(_buffer[end]))
 			end++;
-
 		while (end < len && IsWordChar(_buffer[end]))
 			end++;
 
@@ -173,23 +176,123 @@ public sealed class TextEditingCore
 			return;
 
 		_buffer.Remove(CursorIndex, length);
+
+		OnChanged();
 	}
+	#endregion
+
+	#region Utilities
 
 	public void SetCursorIndex(int index)
 	{
-		CursorIndex = Math.Clamp(index, 0, _buffer.Length);
-	}
+		int clamped = Math.Clamp(index, 0, _buffer.Length);
+		if (clamped == CursorIndex)
+			return;
 
-	/* ---------------- Utilities ---------------- */
+		CursorIndex = clamped;
+		OnChanged();
+	}
 
 	public override string ToString()
 	{
 		return _buffer.ToString();
 	}
 
+	public char this[int index] => _buffer[index];
+
+	private void NormalizeCursor()
+	{
+		if (CursorIndex < 0 || CursorIndex > _buffer.Length)
+		{
+			// _logger.LogWarning(
+			// 	"CursorIndex {CursorIndex} out of range for buffer length {Length}. Normalizing.",
+			// 	CursorIndex,
+			// 	_buffer.Length);
+
+			CursorIndex = Math.Clamp(CursorIndex, 0, _buffer.Length);
+		}
+	}
+
+	private void OnChanged()
+	{
+		NormalizeCursor();
+		Changed?.Invoke();
+	}
+
 	private static bool IsWordChar(char ch)
 	{
+		// Identifier-style word definition by design
 		return char.IsLetterOrDigit(ch) || ch == '_';
+	}
+
+	public void InsertText(string text)
+	{
+		if (string.IsNullOrEmpty(text))
+			return;
+
+		NormalizeCursor();
+
+		_buffer.Insert(CursorIndex, text);
+		CursorIndex += text.Length;
+
+		OnChanged();
+	}
+
+	/// <summary>
+	/// Appends text to the end of the buffer and moves the cursor to the end.
+	/// Intended for line-merge operations.
+	/// </summary>
+	public void AppendText(string text)
+	{
+		if (string.IsNullOrEmpty(text))
+			return;
+
+		_buffer.Append(text);
+		CursorIndex = _buffer.Length;
+
+		OnChanged();
+	}
+
+	public string GetSubstring(int start, int length)
+	{
+		if (length <= 0 || start >= _buffer.Length)
+			return string.Empty;
+
+		start = Math.Clamp(start, 0, _buffer.Length);
+		length = Math.Clamp(length, 0, _buffer.Length - start);
+
+		return _buffer.ToString(start, length);
+	}
+
+	public void DeleteRange(int start, int length)
+	{
+		if (length <= 0)
+			return;
+
+		start = Math.Clamp(start, 0, _buffer.Length);
+		length = Math.Clamp(length, 0, _buffer.Length - start);
+
+		_buffer.Remove(start, length);
+
+		if (CursorIndex > start)
+		{
+			CursorIndex = Math.Max(start, CursorIndex - length);
+		}
+
+		OnChanged();
+	}
+
+	public string SplitAt(int index)
+	{
+		index = Math.Clamp(index, 0, _buffer.Length);
+
+		string right = _buffer.ToString(index, _buffer.Length - index);
+		_buffer.Remove(index, _buffer.Length - index);
+
+		CursorIndex = Math.Min(CursorIndex, _buffer.Length);
+
+		OnChanged();
+		return right;
 	}
 
 	#endregion
