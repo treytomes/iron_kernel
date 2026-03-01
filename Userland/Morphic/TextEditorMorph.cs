@@ -52,6 +52,7 @@ public sealed class TextEditorMorph : Morph
 	public bool ShowLineNumbers { get; set; } = true;
 	public int TabWidth { get; set; } = 4;
 	public override bool WantsKeyboardFocus => true;
+	public ISyntaxHighlighter? SyntaxHighlighter { get; set; }
 
 	#endregion
 
@@ -481,9 +482,28 @@ public sealed class TextEditorMorph : Morph
 						(line, i),
 						selEnd) < 0;
 
-				var fg = selected
-					? Style!.Semantic.Background
-					: Style!.Semantic.Text;
+				// var fg = selected
+				// 	? Style!.Semantic.Background
+				// 	: Style!.Semantic.Text;
+				RadialColor fg;
+
+				if (selected)
+				{
+					fg = Style!.Semantic.Background;
+				}
+				else if (SyntaxHighlighter != null)
+				{
+					fg = SyntaxHighlighter.GetForeground(
+						_document,
+						line,
+						i
+					) ?? Style!.Semantic.Text;
+				}
+				else
+				{
+					fg = Style!.Semantic.Text;
+				}
+
 				var bg = selected
 					? Style!.Semantic.Text
 					: Style!.Semantic.Background;

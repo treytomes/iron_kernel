@@ -121,6 +121,8 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			_filename = filename;
 			_dirty = false;
 			UpdateTitle();
+			if (_filename.EndsWith(".ms"))
+				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
 		}
 		catch
 		{
@@ -143,6 +145,8 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			_filename = filename;
 			_dirty = false;
 			UpdateTitle();
+			if (_filename.EndsWith(".ms"))
+				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
 		}
 		catch
 		{
@@ -181,6 +185,8 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			_filename = filename;
 			_dirty = false;
 			UpdateTitle();
+			if (_filename.EndsWith(".ms"))
+				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
 			await _windowService.AlertAsync($"Saved {filename}");
 		}
 		catch (Exception ex)
