@@ -14,6 +14,12 @@ pip install zensical
 zensical new .
 ```
 
+# Updating feeds
+
+```bash
+python scripts/fetch_devto.py
+```
+
 # Local Test
 
 ```bash
