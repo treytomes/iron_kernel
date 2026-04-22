@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronKernel.Common", "IronKe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronKernel.Tests", "IronKernel.Tests\IronKernel.Tests.csproj", "{9EDC3AFA-7B98-440D-8BE5-B05174958915}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptConsole", "ScriptConsole\ScriptConsole.csproj", "{0E81237B-F0CA-4293-A596-EFB857C0E0E6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -36,5 +38,9 @@ Global
 		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0E81237B-F0CA-4293-A596-EFB857C0E0E6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0E81237B-F0CA-4293-A596-EFB857C0E0E6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0E81237B-F0CA-4293-A596-EFB857C0E0E6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0E81237B-F0CA-4293-A596-EFB857C0E0E6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

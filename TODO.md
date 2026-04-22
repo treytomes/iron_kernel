@@ -19,9 +19,9 @@
 
 ## REPL / Console
 
-- [ ] `dir` intrinsic to list directory contents
-- [ ] `mkdir` intrinsic to create directories
-- [ ] `del` intrinsic to delete files or directories
+- [x] `dir` intrinsic to list directory contents
+- [x] `mkdir` intrinsic to create directories
+- [x] `del` intrinsic to delete files or directories
 - [ ] `input` intrinsic to gather input in the REPL
 - [ ] Per-interpreter current-directory tracking (ties into Interpreter Process concept)
 

@@ -9,7 +9,7 @@ using Miniscript;
 
 namespace Userland.Scripting;
 
-public sealed class WorldScriptContext
+public sealed class WorldScriptContext : IScriptHost
 {
 	#region Fields
 

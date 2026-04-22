@@ -24,7 +24,7 @@ public static class FileSystemIntrinsics
 
 	private static string ResolvePath(
 		TAC.Context ctx,
-		WorldScriptContext world,
+		IScriptHost world,
 		string path)
 	{
 		world.EnsureEnv(ctx);
@@ -84,7 +84,7 @@ public static class FileSystemIntrinsics
 
 	private static string ResolveScriptPath(
 		TAC.Context ctx,
-		WorldScriptContext world,
+		IScriptHost world,
 		string name)
 	{
 		var path = ResolvePath(ctx, world, name);
@@ -111,7 +111,7 @@ public static class FileSystemIntrinsics
 				return Intrinsic.Result.Null;
 			}
 
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var name = ctx.GetVar("name")?.ToString();
@@ -157,7 +157,7 @@ public static class FileSystemIntrinsics
 
 		run.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var name = ctx.GetVar("filename")?.ToString();
@@ -192,7 +192,7 @@ public static class FileSystemIntrinsics
 
 		edit.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var name = ctx.GetVar("filename")?.ToString();
@@ -225,7 +225,7 @@ public static class FileSystemIntrinsics
 
 		dir.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			string path;
@@ -286,7 +286,7 @@ public static class FileSystemIntrinsics
 
 		mkdir.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var path = ResolvePath(ctx, world, ctx.GetVar("path")?.ToString() ?? "");
@@ -309,7 +309,7 @@ public static class FileSystemIntrinsics
 
 		del.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var path = ResolvePath(ctx, world, ctx.GetVar("path")?.ToString() ?? "");
@@ -333,7 +333,7 @@ public static class FileSystemIntrinsics
 
 		copy.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var from = ResolvePath(ctx, world, ctx.GetVar("from")?.ToString() ?? "");
@@ -363,7 +363,7 @@ public static class FileSystemIntrinsics
 
 		move.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			var from = ResolvePath(ctx, world, ctx.GetVar("from")?.ToString() ?? "");
@@ -387,7 +387,7 @@ public static class FileSystemIntrinsics
 		var pwd = Intrinsic.Create("pwd");
 		pwd.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			world.EnsureEnv(ctx);
@@ -409,7 +409,7 @@ public static class FileSystemIntrinsics
 
 		cd.code = (ctx, _) =>
 		{
-			if (ctx.interpreter.hostData is not WorldScriptContext world)
+			if (ctx.interpreter.hostData is not IScriptHost world)
 				return Intrinsic.Result.Null;
 
 			world.EnsureEnv(ctx);
