@@ -22,6 +22,8 @@
 		"appsettings",
 		"Bresenham's",
 		"curdir",
+		"devto",
+		"feedparser",
 		"finalizer",
 		"glsl",
 		"Grabbable",
@@ -43,11 +45,13 @@
 		"syscalls",
 		"tilemap",
 		"tileset",
+		"treytomes",
 		"undoable",
 		"Unshifted",
 		"userland",
 		"venv",
 		"vsync",
-		"waitables"
+		"waitables",
+		"zensical"
 	]
 }

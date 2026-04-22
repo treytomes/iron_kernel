@@ -1,4 +1,4 @@
-name: Documentation
+name: IronKernel Documentation
 
 on:
   push:
@@ -31,8 +31,27 @@ jobs:
         with:
           python-version: 3.x
 
-      - run: pip install zensical
+      # Install all Python tooling
+      - run: |
+          pip install zensical
+          pip install requests feedparser
 
+      # Generate feeds (override working directory)
+      - name: Generate dev.to feed
+        run: python ../scripts/fetch_devto.py
+
+      - name: Generate YouTube feed
+        run: python ../scripts/fetch_youtube_playlist.py
+
+      - name: Generate GitHub activity feed
+        run: python ../scripts/fetch_github_activity.py
+        # env:
+        #   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Recent Activity page
+        run: python ../scripts/update_recent_activity.py
+
+      # Build site
       - run: zensical build --clean
 
       - uses: actions/upload-pages-artifact@v4
