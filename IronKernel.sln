@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Userland", "Userland\Userla
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronKernel.Common", "IronKernel.Common\IronKernel.Common.csproj", "{135EEEFF-51C5-4A44-92B3-6023816DFEBE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronKernel.Tests", "IronKernel.Tests\IronKernel.Tests.csproj", "{9EDC3AFA-7B98-440D-8BE5-B05174958915}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{135EEEFF-51C5-4A44-92B3-6023816DFEBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{135EEEFF-51C5-4A44-92B3-6023816DFEBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{135EEEFF-51C5-4A44-92B3-6023816DFEBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9EDC3AFA-7B98-440D-8BE5-B05174958915}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

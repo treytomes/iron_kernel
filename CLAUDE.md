@@ -16,9 +16,8 @@ The display is a fixed **960x480 framebuffer** with a 256-color palette (6 discr
 ./build.sh       # dotnet build IronKernel.sln -c Release
 ./publish.sh     # publishes kernel + userland to /publish (Debug config)
 ./run.sh         # dotnet publish/IronKernel.dll
+dotnet test IronKernel.Tests/IronKernel.Tests.csproj   # run unit tests
 ```
-
-There is no test suite. All verification is exploratory through the running application.
 
 ---
 
