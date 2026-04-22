@@ -366,7 +366,6 @@ public sealed class TextConsoleMorph : Morph
 		{
 			ScrollUp();
 			newY--;
-			_inputStartY = Math.Max(0, _inputStartY - 1);
 		}
 
 		_cursorY = newY;
