@@ -550,12 +550,7 @@ public sealed class TextEditorMorph : Morph
 			else
 				visualCol++;
 		}
-		var rows = Math.Max(1, (visualCol + visualCols - 1) / visualCols);
-		if (rows != 1)
-		{
-			Console.WriteLine($"Rows: {rows}, {visualCols}, {text}");
-		}
-		return rows;
+		return Math.Max(1, (visualCol + visualCols - 1) / visualCols);
 	}
 
 	private int LineNumberDigits =>

@@ -1,5 +1,6 @@
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.Shaders;
+using Microsoft.Extensions.Logging;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
@@ -28,6 +29,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		2, 3, 0
 	};
 
+	private readonly ILogger<VirtualDisplay> _logger;
 	private readonly AppSettings.VirtualDisplaySettings _settings;
 	private int _vao;
 	private int _vbo;
@@ -60,8 +62,9 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="settings">The settings for the virtual display.</param>  
 	/// <exception cref="ArgumentNullException">Thrown if settings is null.</exception>  
 	/// <exception cref="Exception">Thrown if any OpenGL resource creation fails.</exception>  
-	public VirtualDisplay(Vector2i windowSize, AppSettings.VirtualDisplaySettings settings)
+	public VirtualDisplay(ILogger<VirtualDisplay> logger, Vector2i windowSize, AppSettings.VirtualDisplaySettings settings)
 	{
+		_logger = logger;
 		_settings = settings ?? throw new ArgumentNullException(nameof(settings));
 		_lastWindowSize = windowSize;
 		_pixelData = new RadialColor[_settings.Width * _settings.Height];
@@ -106,7 +109,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	public void Initialize()
 	{
 		// Compile shaders  
-		_shaderProgram = ShaderProgram.ForGraphics(_settings.VertexShaderPath, _settings.FragmentShaderPath);
+		_shaderProgram = ShaderProgram.ForGraphics(_logger, _settings.VertexShaderPath, _settings.FragmentShaderPath);
 
 		// Generate texture  
 		_texture = new Texture(_settings.Width, _settings.Height, true);

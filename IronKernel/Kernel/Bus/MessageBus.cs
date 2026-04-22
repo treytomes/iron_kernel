@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using IronKernel.Kernel.Messages;
+using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Kernel.Bus;
 
@@ -8,8 +9,14 @@ public sealed class MessageBus : IKernelMessageBus
 	private const int FloodThreshold = 100_000;
 	private static readonly TimeSpan FloodWindow = TimeSpan.FromSeconds(1);
 
+	private readonly ILogger<MessageBus> _logger;
 	private readonly ConcurrentDictionary<Type, List<ISubscription>> _handlers = new();
 	private readonly ConcurrentDictionary<(Type module, Type message), FloodCounter> _floodCounters = new();
+
+	public MessageBus(ILogger<MessageBus> logger)
+	{
+		_logger = logger;
+	}
 
 	public void Publish<T>(T message)
 		where T : notnull
@@ -50,8 +57,7 @@ public sealed class MessageBus : IKernelMessageBus
 			catch (Exception ex)
 			{
 				// Dispatch must never crash the kernel
-				Console.Error.WriteLine(
-					$"MessageBus dispatch failure for {messageType.Name}: {ex}");
+				_logger.LogError(ex, "MessageBus dispatch failure for {MessageType}", messageType.Name);
 			}
 		}
 	}
@@ -265,8 +271,7 @@ public sealed class MessageBus : IKernelMessageBus
 			}
 			catch (Exception ex)
 			{
-				Console.Error.WriteLine(
-					$"Kernel message handler faulted: {ex}");
+				_bus._logger.LogError(ex, "Kernel message handler faulted");
 			}
 		}
 
@@ -312,8 +317,7 @@ public sealed class MessageBus : IKernelMessageBus
 			}
 			catch (Exception ex)
 			{
-				Console.Error.WriteLine(
-					$"Application handler '{_handlerName}' faulted: {ex}");
+				_bus._logger.LogError(ex, "Application handler '{HandlerName}' faulted", _handlerName);
 			}
 		}
 

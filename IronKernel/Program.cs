@@ -163,7 +163,8 @@ internal sealed class Program
 			};
 
 			// Create and return the virtual display.
-			return new VirtualDisplay(windowSize, virtualDisplaySettings);
+			var displayLogger = serviceProvider.GetRequiredService<ILogger<VirtualDisplay>>();
+			return new VirtualDisplay(displayLogger, windowSize, virtualDisplaySettings);
 		});
 
 		services.AddSingleton<IResourceManager, ResourceManager>();

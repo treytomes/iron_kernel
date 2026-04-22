@@ -48,9 +48,8 @@ public sealed class WorldCommandManager
 	/// </summary>
 	public void BeginTransaction()
 	{
+		// Nested transactions are ignored: the outer transaction absorbs all commands.
 		if (_activeTransaction != null)
-			// throw new InvalidOperationException("Transaction already active.");
-			// TODO: Keep adding to the existing transaction?  Is this a good idea?
 			return;
 
 		_activeTransaction = new CommandTransaction();

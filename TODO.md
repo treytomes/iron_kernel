@@ -35,7 +35,7 @@
 - [ ] An exception in a single morph should log an error and pause that morph, not crash all of userland
 - [ ] `FileSystemIntrinsics.cs` handles `..` path traversal in userland — clarify whether this duplicates or bypasses the kernel's own enforcement (per `FILE_SYSTEM.md`)
 - [ ] `PendingRunSource` pattern in `WorldScriptContext` is fragile shared mutable state between frames — replace with a command or bus message
-- [ ] `MessageBus.cs` uses `Console.Error.WriteLine` (lines 53, 268, 315) — should use `ILogger`
+- [x] `MessageBus.cs` uses `Console.Error.WriteLine` (lines 53, 268, 315) — should use `ILogger`
 - [ ] Flood detection threshold (100,000 msg/s) is hardcoded in `MessageBus.cs` — make configurable
 
 ## Morphic
@@ -44,12 +44,12 @@
 
 ## Code Cleanup
 
-- [ ] Remove debug `Console.WriteLine` in `TextEditorMorph.cs:556` (fires in rendering path for every wrapped line)
-- [ ] Remove debug `Console.WriteLine` in `MiniScriptReplMorph.cs:175`
-- [ ] Move shader uniform-not-found warnings in `ShaderProgram.cs` from `Console.WriteLine` to `ILogger`
-- [ ] Delete or implement the unused method flagged in `TextEditingCore.cs:99`
-- [ ] Clean up the large commented-out block in `MorphIntrinsics.cs` (lines 33–84)
-- [ ] Resolve `WorldCommandManager.cs:53` TODO about transaction stacking behavior
+- [x] Remove debug `Console.WriteLine` in `TextEditorMorph.cs:556` (fires in rendering path for every wrapped line)
+- [x] Remove debug `Console.WriteLine` in `MiniScriptReplMorph.cs:175`
+- [x] Move shader uniform-not-found warnings in `ShaderProgram.cs` from `Console.WriteLine` to `ILogger`
+- [x] Delete or implement the unused method flagged in `TextEditingCore.cs:99`
+- [x] Clean up the large commented-out block in `MorphIntrinsics.cs` (lines 33–84)
+- [x] Resolve `WorldCommandManager.cs:53` TODO about transaction stacking behavior
 
 ## Documentation
 

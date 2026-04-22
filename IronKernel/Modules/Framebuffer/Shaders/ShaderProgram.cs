@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using OpenTK.Graphics.OpenGL4;
 
 namespace IronKernel.Modules.Framebuffer.Shaders;
@@ -10,6 +11,7 @@ public class ShaderProgram : IDisposable
 	#region Fields  
 
 	private readonly int _id;
+	private readonly ILogger _logger;
 	private bool _disposedValue;
 
 	#endregion
@@ -23,8 +25,9 @@ public class ShaderProgram : IDisposable
 	/// <exception cref="ArgumentNullException">Thrown when shaders array is null.</exception>  
 	/// <exception cref="ArgumentException">Thrown when no shaders are provided.</exception>  
 	/// <exception cref="Exception">Thrown when program creation or linking fails.</exception>  
-	private ShaderProgram(params Shader[] shaders)
+	private ShaderProgram(ILogger logger, params Shader[] shaders)
 	{
+		_logger = logger;
 		if (shaders == null)
 			throw new ArgumentNullException(nameof(shaders));
 
@@ -86,7 +89,7 @@ public class ShaderProgram : IDisposable
 	/// <exception cref="ArgumentNullException">Thrown when either path is null.</exception>  
 	/// <exception cref="FileNotFoundException">Thrown when shader files cannot be found.</exception>  
 	/// <exception cref="Exception">Thrown when shader compilation or program linking fails.</exception>  
-	public static ShaderProgram ForGraphics(string vertexShaderPath, string fragmentShaderPath)
+	public static ShaderProgram ForGraphics(ILogger logger, string vertexShaderPath, string fragmentShaderPath)
 	{
 		if (string.IsNullOrEmpty(vertexShaderPath))
 			throw new ArgumentNullException(nameof(vertexShaderPath));
@@ -96,7 +99,7 @@ public class ShaderProgram : IDisposable
 
 		using var vertexShader = Shader.FromFile(ShaderType.VertexShader, vertexShaderPath);
 		using var fragmentShader = Shader.FromFile(ShaderType.FragmentShader, fragmentShaderPath);
-		return new ShaderProgram(vertexShader, fragmentShader);
+		return new ShaderProgram(logger, vertexShader, fragmentShader);
 	}
 
 	/// <summary>  
@@ -107,12 +110,12 @@ public class ShaderProgram : IDisposable
 	/// <exception cref="ArgumentNullException">Thrown when the source is null.</exception>  
 	/// <exception cref="NotSupportedException">Thrown when compute shaders are not supported.</exception>  
 	/// <exception cref="Exception">Thrown when shader compilation or program linking fails.</exception>  
-	public static ShaderProgram ForCompute(string computeShaderSource)
+	public static ShaderProgram ForCompute(ILogger logger, string computeShaderSource)
 	{
 		if (string.IsNullOrEmpty(computeShaderSource))
 			throw new ArgumentNullException(nameof(computeShaderSource));
 
-		// Check if compute shaders are supported  
+		// Check if compute shaders are supported
 		int majorVersion = GL.GetInteger(GetPName.MajorVersion);
 		int minorVersion = GL.GetInteger(GetPName.MinorVersion);
 
@@ -120,7 +123,7 @@ public class ShaderProgram : IDisposable
 			throw new NotSupportedException("Compute shaders require OpenGL 4.3 or higher.");
 
 		using var computeShader = new Shader(ShaderType.ComputeShader, computeShaderSource);
-		return new ShaderProgram(computeShader);
+		return new ShaderProgram(logger, computeShader);
 	}
 
 	/// <summary>  
@@ -161,7 +164,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		return new ShaderUniform1(location);
 	}
@@ -175,7 +178,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		return new ShaderUniform2(location);
 	}
@@ -189,7 +192,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		return new ShaderUniform3(location);
 	}
@@ -203,7 +206,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		return new ShaderUniform4(location);
 	}
@@ -217,7 +220,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		return new ShaderUniformMatrix(location);
 	}
@@ -233,7 +236,7 @@ public class ShaderProgram : IDisposable
 	{
 		int location = GetUniformLocation(name);
 		if (location == -1)
-			Console.WriteLine($"Warning: Uniform '{name}' not found in shader program {_id}.");
+			_logger.LogWarning("Uniform '{Name}' not found in shader program {Id}", name, _id);
 
 		// Use pattern matching to create the correct type  
 		if (typeof(T) == typeof(ShaderUniform1))

@@ -9,80 +9,14 @@ public static class MorphIntrinsics
 	public static void Register()
 	{
 		CreateMorphIntrinsics();
-		// CreateMorphNamespace();
-
 		CreateLabelIntrinsics();
 		CreateLabelNamespace();
 	}
 
 	#region Morph intrinsics
 
-	// private static void CreateMorphNamespace()
-	// {
-	// 	var morphNs = Intrinsic.Create("Morph");
-	// 	morphNs.code = (ctx, _) =>
-	// 	{
-	// 		var map = new ValMap
-	// 		{
-	// 			["create"] = Intrinsic.GetByName("morph_create")!.GetFunc()
-	// 		};
-	// 		return new Intrinsic.Result(map);
-	// 	};
-	// }
-
 	private static void CreateMorphIntrinsics()
 	{
-		// // morph_create([x,y], [w,h]) OR morph_create([w,h])
-		// var create = Intrinsic.Create("morph_create");
-		// create.AddParam("arg1", ValNull.instance);
-		// create.AddParam("arg2", ValNull.instance);
-		// create.code = (ctx, _) =>
-		// {
-		// 	try
-		// 	{
-		// 		if (ctx.interpreter.hostData is not WorldScriptContext world)
-		// 			return Intrinsic.Result.Null;
-
-		// 		Point position = Point.Empty;
-		// 		Size size = new Size(16, 16);
-
-		// 		var a1 = ctx.GetVar("arg1");
-		// 		var a2 = ctx.GetVar("arg2");
-
-		// 		if (a2 == ValNull.instance)
-		// 		{
-		// 			if (!TryReadPair(a1, out var w, out var h))
-		// 				return Error(ctx, "Morph.create expects [w,h] or [x,y],[w,h]");
-		// 			size = new Size(w, h);
-		// 		}
-		// 		else
-		// 		{
-		// 			if (!TryReadPair(a1, out var x, out var y) ||
-		// 				!TryReadPair(a2, out var w, out var h))
-		// 				return Error(ctx, "Morph.create expects [x,y],[w,h]");
-		// 			position = new Point(x, y);
-		// 			size = new Size(w, h);
-		// 		}
-
-		// 		var morph = new Morph
-		// 		{
-		// 			Position = position,
-		// 			Size = size
-		// 		};
-
-		// 		world.World.AddMorph(morph);
-
-		// 		var handle = world.Handles.Register(morph);
-		// 		handle["props"] = morph.ScriptObject;
-
-		// 		return new Intrinsic.Result(handle);
-		// 	}
-		// 	catch (Exception ex)
-		// 	{
-		// 		return Error(ctx, $"Morph.create error: {ex.Message}");
-		// 	}
-		// };
-
 		// morph_destroy()
 		var destroy = Intrinsic.Create("morph_destroy");
 		destroy.code = (ctx, _) =>

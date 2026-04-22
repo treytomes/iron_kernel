@@ -96,7 +96,6 @@ public sealed class TextEditingCore
 		OnChanged();
 	}
 
-	// TODO: This method is suspiciously unused.
 	public void InsertTab(bool expandToSpaces = false)
 	{
 		if (!expandToSpaces)

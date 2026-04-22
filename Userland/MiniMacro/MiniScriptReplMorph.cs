@@ -172,7 +172,6 @@ public sealed class MiniScriptReplMorph : WindowMorph
 				if (world?.ScriptContext.PendingRunSource != null)
 				{
 					var source = world.ScriptContext.PendingRunSource;
-					Console.WriteLine($"Source: {source}");
 					world.ScriptContext.PendingRunSource = null;
 
 					_interpreter.Stop();        // ensure clean state
