@@ -16,13 +16,13 @@ public sealed class InspectHandleMorph(Morph target) : HandleMorph(target)
 
 	public override void OnPointerUp(PointerUpEvent e)
 	{
+		base.OnPointerUp(e);
 		if (TryGetWorld(out var world))
 		{
 			world.ClearSelection();
 			var inspector = new InspectorMorph(Target);
 			world.AddMorph(inspector);
 			inspector.CenterOnOwner();
-			e.MarkHandled();
 		}
 	}
 

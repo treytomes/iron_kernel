@@ -19,6 +19,12 @@ public sealed class ConsoleScriptHost : IScriptHost
         FileSystem = fileSystem;
     }
 
+    public Task<string?> ReadLineAsync(string prompt)
+    {
+        Console.Write(prompt);
+        return Task.FromResult<string?>(Console.ReadLine());
+    }
+
     public void EnsureEnv(TAC.Context ctx)
     {
         if (ctx.interpreter.GetGlobalValue("env") is not ValMap env)

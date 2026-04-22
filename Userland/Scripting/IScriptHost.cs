@@ -14,4 +14,5 @@ public interface IScriptHost
 	IWindowService WindowService { get; }
 	string? PendingRunSource { get; set; }
 	void EnsureEnv(TAC.Context ctx);
+	Task<string?> ReadLineAsync(string prompt);
 }

@@ -52,6 +52,13 @@ public sealed class WorldScriptContext : IScriptHost
 
 	#region Methods
 
+	public Func<string, Task<string?>>? ReadLineOverride { get; set; }
+
+	public Task<string?> ReadLineAsync(string prompt) =>
+		ReadLineOverride != null
+			? ReadLineOverride(prompt)
+			: WindowService.PromptAsync(prompt);
+
 	public void StopWorldScript() => _world.Interpreter.Stop();
 	public void ResetWorldScript() => _world.Interpreter.Reset();
 

@@ -1,5 +1,4 @@
 using Miniscript;
-using Userland.Services;
 
 namespace Userland.Scripting;
 
@@ -212,7 +211,7 @@ public static class DialogIntrinsics
 					["value"] = ValNull.instance
 				};
 
-				host.WindowService.PromptAsync(prompt, null)
+				host.ReadLineAsync(prompt)
 					.ContinueWith(t =>
 					{
 						state["value"] = t.Result == null

@@ -257,16 +257,17 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 
 	public override void OnPointerWheel(PointerWheelEvent e)
 	{
-		if (MaxScrollY > 0)
-		{
-			ScrollBy(0, -e.Delta.Y * ScrollStep);
+		ScrollByWheel(e.Delta);
+		if (e.Delta.Y != 0 || e.Delta.X != 0)
 			e.MarkHandled();
-		}
-		else if (MaxScrollX > 0)
-		{
-			ScrollBy(-e.Delta.X * ScrollStep, 0);
-			e.MarkHandled();
-		}
+	}
+
+	public void ScrollByWheel(Point delta)
+	{
+		if (MaxScrollY > 0 && delta.Y != 0)
+			ScrollBy(0, -delta.Y * ScrollStep);
+		else if (MaxScrollX > 0 && delta.X != 0)
+			ScrollBy(-delta.X * ScrollStep, 0);
 	}
 
 	private void ScrollBy(int dx, int dy)

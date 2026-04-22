@@ -283,6 +283,12 @@ public abstract class Morph : ICommandTarget
 			worldPoint.X - Position.X,
 			worldPoint.Y - Position.Y);
 
+		var bounds = new Rectangle(Point.Empty, Size);
+
+		// If clipping is on, don't hit-test children outside our own bounds
+		if (ShouldClipToBounds && !bounds.Contains(localPoint))
+			return null;
+
 		// Traverse top-down so last added is "on top"
 		for (int i = Submorphs.Count - 1; i >= 0; i--)
 		{
@@ -295,7 +301,7 @@ public abstract class Morph : ICommandTarget
 				return found;
 		}
 
-		return new Rectangle(Point.Empty, Size).Contains(localPoint)
+		return bounds.Contains(localPoint)
 			? this
 			: null;
 	}
@@ -444,6 +450,17 @@ public abstract class Morph : ICommandTarget
 
 		world = null!;
 		return false;
+	}
+
+	protected T? FindDescendant<T>() where T : Morph
+	{
+		foreach (var child in _submorphs)
+		{
+			if (child is T match) return match;
+			var found = child.FindDescendant<T>();
+			if (found != null) return found;
+		}
+		return null;
 	}
 
 	protected WorldMorph? GetWorld()

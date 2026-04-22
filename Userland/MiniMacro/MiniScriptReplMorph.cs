@@ -97,7 +97,16 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	{
 		var world = GetWorld();
 		if (world == null) _logger.LogWarning("World is undefined.");
-		_interpreter.hostData = world?.ScriptContext;
+
+		if (world?.ScriptContext is { } ctx)
+		{
+			ctx.ReadLineOverride = prompt =>
+			{
+				_console.Write(prompt);
+				return _console.ReadLineAsync();
+			};
+			_interpreter.hostData = ctx;
+		}
 
 		_console.CaptureKeyboard();
 		Position = new Point(20, Position.Y);
