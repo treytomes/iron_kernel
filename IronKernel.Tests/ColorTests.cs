@@ -65,12 +65,11 @@ public class ColorTests
     }
 
     [Fact]
-    public void FromHSL_White_NearMax()
+    public void FromHSL_White_AllMax()
     {
-        // The implementation scales by 255/256 due to float division, so max is 254.
         var c = Color.FromHSL(0, 0, 255);
-        Assert.True(c.Red >= 254, $"Red={c.Red}");
-        Assert.Equal(c.Red, c.Green);
-        Assert.Equal(c.Green, c.Blue);
+        Assert.Equal(255, c.Red);
+        Assert.Equal(255, c.Green);
+        Assert.Equal(255, c.Blue);
     }
 }

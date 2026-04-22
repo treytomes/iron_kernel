@@ -30,9 +30,9 @@ public sealed record Color : IEquatable<Color>
 	{
 		float r, g, b; //this function works with floats between 0 and 1
 		float temp1, temp2, tempR, tempG, tempB;
-		h = h / 256.0f;
-		s = s / 256.0f;
-		l = l / 256.0f;
+		h = h / 255.0f;
+		s = s / 255.0f;
+		l = l / 255.0f;
 
 
 		//If saturation is 0, the color is a shade of gray
