@@ -18,7 +18,7 @@ public sealed class TextEditorMorph : Morph
 	private Size _cellSize;
 
 	private int _firstVisibleLine;
-	private int _visibleLineCount;
+	private int _visibleRowCount;
 	private bool _layoutInitialized;
 
 	private readonly SelectionController<(int line, int column)> _selection =
@@ -33,15 +33,13 @@ public sealed class TextEditorMorph : Morph
 
 	#endregion
 
-	#region Constructor
+	#region Constructors
 
 	public TextEditorMorph(TextDocument document, IClipboardService clipboard)
 	{
 		_document = document;
 		_clipboard = clipboard;
-
 		IsSelectable = true;
-
 		_document.Changed += OnDocumentChanged;
 	}
 
@@ -51,12 +49,12 @@ public sealed class TextEditorMorph : Morph
 
 	public bool ShowLineNumbers { get; set; } = true;
 	public int TabWidth { get; set; } = 4;
-	public override bool WantsKeyboardFocus => true;
 	public ISyntaxHighlighter? SyntaxHighlighter { get; set; }
+	public override bool WantsKeyboardFocus => true;
 
 	#endregion
 
-	#region Loading / Layout
+	#region Methods
 
 	protected override async void OnLoad(IAssetService assets)
 	{
@@ -66,8 +64,7 @@ public sealed class TextEditorMorph : Morph
 		_font = await assets.LoadFontAsync(
 			Style.DefaultFontStyle.Url,
 			Style.DefaultFontStyle.TileSize,
-			Style.DefaultFontStyle.GlyphOffset
-		);
+			Style.DefaultFontStyle.GlyphOffset);
 
 		_cellSize = _font.TileSize;
 		InvalidateLayout();
@@ -79,17 +76,9 @@ public sealed class TextEditorMorph : Morph
 			return;
 
 		Size = Owner.Size;
-		_visibleLineCount = Math.Max(
-			1,
-			Size.Height / _cellSize.Height
-		);
-
+		_visibleRowCount = Math.Max(1, Size.Height / _cellSize.Height);
 		_layoutInitialized = true;
 	}
-
-	#endregion
-
-	#region Document integration
 
 	private void OnDocumentChanged()
 	{
@@ -103,10 +92,6 @@ public sealed class TextEditorMorph : Morph
 		Invalidate();
 	}
 
-	#endregion
-
-	#region Keyboard Input
-
 	public override void OnKey(KeyEvent e)
 	{
 		if (e.Action != InputAction.Press)
@@ -118,7 +103,7 @@ public sealed class TextEditorMorph : Morph
 		switch (e.Key)
 		{
 			case Key.A when ctrl:
-				_selection.SelectAll(_document);
+				SelectAll();
 				e.MarkHandled();
 				return;
 
@@ -139,18 +124,13 @@ public sealed class TextEditorMorph : Morph
 		}
 
 		if (_selection.HasSelection &&
-			(e.Key == Key.Backspace ||
-			 e.Key == Key.Delete ||
-			 e.ToText().HasValue))
+			(e.Key == Key.Backspace || e.Key == Key.Delete || e.ToText().HasValue))
 		{
 			DeleteSelection();
 		}
 
-		_selection.BeginIfShift(
-			shift,
-			_document.CaretLine,
-			_document.CaretColumn
-		);
+		if (shift)
+			_selection.BeginIfNeeded((_document.CaretLine, _document.CaretColumn));
 
 		bool moved = false;
 
@@ -158,17 +138,25 @@ public sealed class TextEditorMorph : Morph
 		{
 			case Key.Left:
 				if (ctrl)
+				{
 					_document.MoveWordLeft();
+				}
 				else
+				{
 					_document.MoveLeft();
+				}
 				moved = true;
 				break;
 
 			case Key.Right:
 				if (ctrl)
+				{
 					_document.MoveWordRight();
+				}
 				else
+				{
 					_document.MoveRight();
+				}
 				moved = true;
 				break;
 
@@ -184,25 +172,17 @@ public sealed class TextEditorMorph : Morph
 
 			case Key.Home:
 				if (ctrl)
-				{
 					_document.MoveToStart();
-				}
 				else
-				{
 					_document.MoveToLineStart();
-				}
 				moved = true;
 				break;
 
 			case Key.End:
 				if (ctrl)
-				{
 					_document.MoveToEnd();
-				}
 				else
-				{
 					_document.MoveToLineEnd();
-				}
 				moved = true;
 				break;
 
@@ -257,7 +237,6 @@ public sealed class TextEditorMorph : Morph
 
 		_mouseSelecting = true;
 		SetCaretFromPointer(e.Position);
-
 		_selection.Begin((_document.CaretLine, _document.CaretColumn));
 
 		e.MarkHandled();
@@ -269,72 +248,8 @@ public sealed class TextEditorMorph : Morph
 			return;
 
 		SetCaretFromPointer(e.Position);
-
-		_selection.Update((
-			_document.CaretLine,
-			_document.CaretColumn));
-
+		_selection.Update((_document.CaretLine, _document.CaretColumn));
 		Invalidate();
-	}
-
-	private void SetCaretFromPointer(Point worldPosition)
-	{
-		if (_font == null)
-			return;
-
-		var local = WorldToLocal(worldPosition);
-
-		if (local.Y < 0)
-			return;
-
-		// ----- Determine target line -----
-		int visualRow = local.Y / _cellSize.Height;
-		int lineIndex = _firstVisibleLine + visualRow;
-
-		lineIndex = Math.Clamp(
-			lineIndex,
-			0,
-			_document.LineCount - 1);
-
-		// ----- Determine target visual column -----
-		int localX = local.X - TextOriginX;
-		if (localX < 0)
-			localX = 0;
-
-		int visualCol = localX / _cellSize.Width;
-
-		// ----- Convert visual column to caret column -----
-		string lineText = _document.Lines[lineIndex].ToString();
-		int caretColumn =
-			VisualColumnToCaretIndex(lineText, visualCol);
-
-		// ----- Apply caret -----
-		_document.SetCaretLine(lineIndex);
-		_document.CurrentLine.SetCursorIndex(caretColumn);
-
-		EnsureCaretVisible();
-	}
-
-	private int VisualColumnToCaretIndex(string line, int targetCol)
-	{
-		int col = 0;
-
-		for (int i = 0; i < line.Length; i++)
-		{
-			int nextCol;
-
-			if (line[i] == '\t')
-				nextCol = col + (TabWidth - (col % TabWidth));
-			else
-				nextCol = col + 1;
-
-			if (targetCol < nextCol)
-				return i;
-
-			col = nextCol;
-		}
-
-		return line.Length;
 	}
 
 	public override void OnPointerUp(PointerUpEvent e)
@@ -351,7 +266,210 @@ public sealed class TextEditorMorph : Morph
 
 	#endregion
 
-	#region Clipboard
+	#region Rendering
+
+	protected override void DrawSelf(IRenderingContext rc)
+	{
+		if (!_layoutInitialized || _font == null || Style == null)
+			return;
+
+		rc.RenderFilledRect(
+			new Rectangle(Point.Empty, Size),
+			Style.Semantic.Background);
+
+		DrawTextAndSelection(rc);
+		DrawCaret(rc);
+	}
+
+	private void DrawTextAndSelection(IRenderingContext rc)
+	{
+		int visualCols = Math.Max(
+			1,
+			(Size.Width - TextOriginX) / _cellSize.Width);
+
+		bool hasSelection = _selection.HasSelection;
+		(int line, int column) selStart = default;
+		(int line, int column) selEnd = default;
+
+		if (hasSelection)
+		{
+			var range = _selection.GetRange();
+			selStart = range.start;
+			selEnd = range.end;
+		}
+
+		int row = 0;
+
+		for (int line = _firstVisibleLine;
+			 line < _document.LineCount && row < _visibleRowCount;
+			 line++)
+		{
+			string text = _document.Lines[line].ToString();
+			int baseY = row * _cellSize.Height;
+
+			DrawLineNumber(rc, line, baseY);
+
+			int visualCol = 0;
+
+			for (int i = 0; i < text.Length; i++)
+			{
+				char ch = text[i];
+
+				int width;
+				if (ch == '\t')
+					width = TabWidth - (visualCol % TabWidth);
+				else
+					width = 1;
+
+				int drawX =
+					TextOriginX +
+					(visualCol % visualCols) * _cellSize.Width;
+
+				int drawY =
+					baseY +
+					(visualCol / visualCols) * _cellSize.Height;
+
+				bool selected = false;
+				if (hasSelection)
+				{
+					if (Compare((line, i), selStart) >= 0 &&
+						Compare((line, i), selEnd) < 0)
+					{
+						selected = true;
+					}
+				}
+
+				RadialColor fg;
+				if (selected)
+					fg = Style!.Semantic.Background;
+				else if (SyntaxHighlighter != null)
+					fg = SyntaxHighlighter.GetForeground(_document, line, i)
+						?? Style!.Semantic.Text;
+				else
+					fg = Style!.Semantic.Text;
+
+				RadialColor bg;
+				if (selected)
+					bg = Style!.Semantic.Text;
+				else
+					bg = Style!.Semantic.Background;
+
+				if (ch != '\t')
+				{
+					_font!.WriteChar(
+						rc,
+						ch,
+						new Point(drawX, drawY),
+						fg,
+						bg);
+				}
+
+				visualCol += width;
+			}
+
+			row += GetVisualRowCount(text, visualCols);
+		}
+	}
+
+	private void DrawLineNumber(IRenderingContext rc, int line, int baseY)
+	{
+		if (!ShowLineNumbers || _font == null || Style == null)
+			return;
+
+		string ln = (line + 1).ToString();
+		int x = LineNumberGutterWidth - ln.Length * _cellSize.Width;
+
+		if (line == _document.CaretLine)
+		{
+			rc.RenderFilledRect(
+				new Rectangle(
+					0,
+					baseY,
+					LineNumberGutterWidth,
+					_cellSize.Height),
+				Style.Semantic.Primary.Lerp(
+					Style.Semantic.Background,
+					0.15f));
+		}
+
+		_font.WriteString(
+			rc,
+			ln,
+			new Point(x, baseY),
+			line == _document.CaretLine
+				? Style.Semantic.Primary
+				: Style.Semantic.SecondaryText,
+			Style.Semantic.Background);
+	}
+
+	private void DrawCaret(IRenderingContext rc)
+	{
+		if (!HasKeyboardFocus())
+			return;
+
+		int visualCols = Math.Max(
+			1,
+			(Size.Width - TextOriginX) / _cellSize.Width);
+
+		int caretLine = _document.CaretLine;
+		if (caretLine < _firstVisibleLine)
+			return;
+
+		int rowOffset = 0;
+		for (int l = _firstVisibleLine; l < caretLine; l++)
+		{
+			rowOffset += GetVisualRowCount(
+				_document.Lines[l].ToString(),
+				visualCols);
+		}
+
+		string text = _document.Lines[caretLine].ToString();
+		int visualCol = ComputeVisualColumn(text, _document.CaretColumn);
+
+		int caretRow = rowOffset + (visualCol / visualCols);
+		if (caretRow >= _visibleRowCount)
+			return;
+
+		int x =
+			TextOriginX +
+			(visualCol % visualCols) * _cellSize.Width;
+
+		int y = caretRow * _cellSize.Height;
+
+		rc.RenderFilledRect(
+			new Rectangle(
+				x,
+				y + _cellSize.Height - 2,
+				_cellSize.Width,
+				2),
+			Style!.Semantic.Text);
+	}
+
+	#endregion
+
+	#region Helpers
+
+	private void SelectAll()
+	{
+		if (_document.LineCount == 0)
+			return;
+
+		int lastLine = _document.LineCount - 1;
+		int lastCol = _document.Lines[lastLine].Length;
+
+		_selection.Begin((0, 0));
+		_selection.Update((lastLine, lastCol));
+	}
+
+	private void DeleteSelection()
+	{
+		if (!_selection.HasSelection)
+			return;
+
+		var (start, end) = _selection.GetRange();
+		_document.DeleteRangeAndSetCaret(start, end);
+		_selection.Clear();
+	}
 
 	private void CopySelection()
 	{
@@ -359,8 +477,8 @@ public sealed class TextEditorMorph : Morph
 			return;
 
 		var (start, end) = _selection.GetRange();
-
 		var sb = new StringBuilder();
+
 		for (int l = start.line; l <= end.line; l++)
 		{
 			string text = _document.Lines[l].ToString();
@@ -394,211 +512,11 @@ public sealed class TextEditorMorph : Morph
 			_document.InsertChar(ch);
 	}
 
-	#endregion
-
-	#region Selection deletion
-
-	private void DeleteSelection()
-	{
-		if (!_selection.HasSelection)
-			return;
-
-		var (start, end) = _selection.GetRange();
-		_document.DeleteRangeAndSetCaret(start, end);
-		_selection.Clear();
-	}
-
-	#endregion
-
-	#region Scrolling
-
 	private void EnsureCaretVisible()
 	{
 		if (_document.CaretLine < _firstVisibleLine)
 			_firstVisibleLine = _document.CaretLine;
-		else if (_document.CaretLine >=
-				 _firstVisibleLine + _visibleLineCount)
-			_firstVisibleLine =
-				_document.CaretLine - _visibleLineCount + 1;
-
-		_firstVisibleLine = Math.Max(0, _firstVisibleLine);
 	}
-
-	#endregion
-
-	#region Rendering
-
-	protected override void DrawSelf(IRenderingContext rc)
-	{
-		if (!_layoutInitialized || _font == null || Style == null)
-			return;
-
-		rc.RenderFilledRect(
-			new Rectangle(Point.Empty, Size),
-			Style.Semantic.Background);
-
-		DrawTextAndSelection(rc);
-		DrawCaret(rc);
-	}
-
-	private void DrawTextAndSelection(IRenderingContext rc)
-	{
-		int visualCols =
-			Math.Max(1,
-				(Size.Width - TextOriginX) /
-				_cellSize.Width);
-
-		bool hasSelection = _selection.HasSelection;
-		var (selStart, selEnd) = hasSelection
-			? _selection.GetRange()
-			: default;
-
-		int yIndex = 0;
-
-		for (int line = _firstVisibleLine;
-			 line < _document.LineCount &&
-			 yIndex < _visibleLineCount;
-			 line++, yIndex++)
-		{
-			int baseY = yIndex * _cellSize.Height;
-			string text = _document.Lines[line].ToString();
-
-			DrawLineNumber(rc, line, baseY);
-
-			int visualCol = 0;
-
-			for (int i = 0; i < text.Length; i++)
-			{
-				char ch = text[i];
-				int width = ch == '\t'
-					? TabWidth - (visualCol % TabWidth)
-					: 1;
-
-				bool selected = hasSelection &&
-					Compare(
-						(line, i),
-						selStart) >= 0 &&
-					Compare(
-						(line, i),
-						selEnd) < 0;
-
-				// var fg = selected
-				// 	? Style!.Semantic.Background
-				// 	: Style!.Semantic.Text;
-				RadialColor fg;
-
-				if (selected)
-				{
-					fg = Style!.Semantic.Background;
-				}
-				else if (SyntaxHighlighter != null)
-				{
-					fg = SyntaxHighlighter.GetForeground(
-						_document,
-						line,
-						i
-					) ?? Style!.Semantic.Text;
-				}
-				else
-				{
-					fg = Style!.Semantic.Text;
-				}
-
-				var bg = selected
-					? Style!.Semantic.Text
-					: Style!.Semantic.Background;
-
-				if (ch != '\t')
-				{
-					int x = TextOriginX +
-							(visualCol % visualCols) *
-							_cellSize.Width;
-					int y = baseY +
-							(visualCol / visualCols) *
-							_cellSize.Height;
-
-					_font!.WriteChar(
-						rc,
-						ch,
-						new Point(x, y),
-						fg,
-						bg);
-				}
-
-				visualCol += width;
-			}
-		}
-	}
-
-	private void DrawLineNumber(
-		IRenderingContext rc,
-		int line,
-		int y)
-	{
-		if (!ShowLineNumbers)
-			return;
-
-		string ln = (line + 1).ToString();
-		int x = LineNumberGutterWidth -
-				ln.Length * _cellSize.Width;
-
-		if (line == _document.CaretLine)
-		{
-			rc.RenderFilledRect(
-				new Rectangle(
-					0,
-					y,
-					LineNumberGutterWidth,
-					_cellSize.Height),
-				Style!.Semantic.Primary.Lerp(
-					Style.Semantic.Background,
-					0.15f));
-		}
-
-		_font!.WriteString(
-			rc,
-			ln,
-			new Point(x, y),
-			line == _document.CaretLine
-				? Style!.Semantic.Primary
-				: Style!.Semantic.SecondaryText,
-			Style.Semantic.Background);
-	}
-
-	private void DrawCaret(IRenderingContext rc)
-	{
-		if (!HasKeyboardFocus())
-			return;
-
-		int line = _document.CaretLine;
-		if (line < _firstVisibleLine ||
-			line >= _firstVisibleLine + _visibleLineCount)
-			return;
-
-		string text = _document.Lines[line].ToString();
-		int visualCol =
-			ComputeVisualColumn(
-				text,
-				_document.CaretColumn);
-
-		int x = TextOriginX +
-				visualCol * _cellSize.Width;
-		int y =
-			(line - _firstVisibleLine) *
-			_cellSize.Height;
-
-		rc.RenderFilledRect(
-			new Rectangle(
-				x,
-				y + _cellSize.Height - 2,
-				_cellSize.Width,
-				2),
-			Style!.Semantic.Text);
-	}
-
-	#endregion
-
-	#region Helpers
 
 	private static int Compare(
 		(int line, int col) a,
@@ -609,35 +527,98 @@ public sealed class TextEditorMorph : Morph
 		return a.col.CompareTo(b.col);
 	}
 
-	private int ComputeVisualColumn(
-		string line,
-		int caretIndex)
+	private int ComputeVisualColumn(string line, int caretIndex)
 	{
 		int col = 0;
-		for (int i = 0;
-			 i < caretIndex && i < line.Length;
-			 i++)
+		for (int i = 0; i < caretIndex && i < line.Length; i++)
 		{
-			col += line[i] == '\t'
-				? TabWidth - (col % TabWidth)
-				: 1;
+			if (line[i] == '\t')
+				col += TabWidth - (col % TabWidth);
+			else
+				col++;
 		}
 		return col;
 	}
 
+	private int GetVisualRowCount(string text, int visualCols)
+	{
+		int visualCol = 0;
+		foreach (char ch in text)
+		{
+			if (ch == '\t')
+				visualCol += TabWidth - (visualCol % TabWidth);
+			else
+				visualCol++;
+		}
+		var rows = Math.Max(1, (visualCol + visualCols - 1) / visualCols);
+		if (rows != 1)
+		{
+			Console.WriteLine($"Rows: {rows}, {visualCols}, {text}");
+		}
+		return rows;
+	}
+
 	private int LineNumberDigits =>
-		Math.Max(
-			1,
-			_document.LineCount.ToString().Length);
+		Math.Max(1, _document.LineCount.ToString().Length);
 
 	private int LineNumberGutterWidth =>
 		ShowLineNumbers
-			? (LineNumberDigits + 1) *
-			  _cellSize.Width
+			? (LineNumberDigits + 1) * _cellSize.Width
 			: 0;
 
-	private int TextOriginX =>
-		LineNumberGutterWidth;
+	private int TextOriginX => LineNumberGutterWidth;
+
+	private void SetCaretFromPointer(Point worldPosition)
+	{
+		if (_font == null)
+			return;
+
+		var local = WorldToLocal(worldPosition);
+		int visualRow = local.Y / _cellSize.Height;
+
+		int row = 0;
+		for (int line = _firstVisibleLine; line < _document.LineCount; line++)
+		{
+			int rows = GetVisualRowCount(
+				_document.Lines[line].ToString(),
+				Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width));
+
+			if (row + rows > visualRow)
+			{
+				int localRow = visualRow - row;
+				int visualCol = (local.X - TextOriginX) / _cellSize.Width;
+				int absoluteCol = localRow *
+					Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width)
+					+ visualCol;
+
+				string text = _document.Lines[line].ToString();
+				int caretCol = VisualColumnToCaretIndex(text, absoluteCol);
+
+				_document.SetCaretLine(line);
+				_document.CurrentLine.SetCursorIndex(caretCol);
+				return;
+			}
+
+			row += rows;
+		}
+	}
+
+	private int VisualColumnToCaretIndex(string line, int targetCol)
+	{
+		int col = 0;
+		for (int i = 0; i < line.Length; i++)
+		{
+			int nextCol = line[i] == '\t'
+				? col + (TabWidth - (col % TabWidth))
+				: col + 1;
+
+			if (targetCol < nextCol)
+				return i;
+
+			col = nextCol;
+		}
+		return line.Length;
+	}
 
 	#endregion
 }
