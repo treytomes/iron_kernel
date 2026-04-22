@@ -581,7 +581,7 @@ public sealed class TextEditorMorph : Morph
 			if (row + rows > visualRow)
 			{
 				int localRow = visualRow - row;
-				int visualCol = (local.X - TextOriginX) / _cellSize.Width;
+				int visualCol = Math.Max(0, (local.X - TextOriginX) / _cellSize.Width);
 				int absoluteCol = localRow *
 					Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width)
 					+ visualCol;

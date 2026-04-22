@@ -203,10 +203,10 @@ public sealed class TextEditingCore
 	{
 		if (CursorIndex < 0 || CursorIndex > _buffer.Length)
 		{
-			// _logger.LogWarning(
-			// 	"CursorIndex {CursorIndex} out of range for buffer length {Length}. Normalizing.",
-			// 	CursorIndex,
-			// 	_buffer.Length);
+			_logger.LogWarning(
+				"CursorIndex {CursorIndex} out of range for buffer length {Length}. Normalizing.",
+				CursorIndex,
+				_buffer.Length);
 
 			CursorIndex = Math.Clamp(CursorIndex, 0, _buffer.Length);
 		}

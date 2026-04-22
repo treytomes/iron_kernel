@@ -65,7 +65,7 @@ public sealed class TextDocument
 		}
 		else
 		{
-			foreach (var line in text.Split('\n'))
+			foreach (var line in text.TrimEnd('\n').Split('\n'))
 				_lines.Add(new TextEditingCore(_logger, line));
 		}
 

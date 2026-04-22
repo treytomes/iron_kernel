@@ -43,6 +43,22 @@ public class TextDocumentTests
         Assert.Equal("new\nlines", doc.ToString());
     }
 
+    [Fact]
+    public void SetText_TrailingNewline_DoesNotCreatePhantomLine()
+    {
+        var doc = Make("hello\n");
+        Assert.Equal(1, doc.LineCount);
+        Assert.Equal("hello", doc.ToString());
+    }
+
+    [Fact]
+    public void Constructor_TrailingNewline_DoesNotCreatePhantomLine()
+    {
+        var doc = new TextDocument(NullLogger.Instance, "foo\nbar\n");
+        Assert.Equal(2, doc.LineCount);
+        Assert.Equal("foo\nbar", doc.ToString());
+    }
+
     // ── Insertion ─────────────────────────────────────────────────────────────
 
     [Fact]

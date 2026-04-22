@@ -2,7 +2,7 @@
 
 ## Bugs
 
-- [ ] String slicing instabilities across `TextEditorMorph`, `TextEditingCore`, and `TextConsoleMorph` — can silently corrupt user data
+- [x] String slicing instabilities across `TextEditorMorph`, `TextEditingCore`, and `TextConsoleMorph` — can silently corrupt user data
 - [ ] Cursor falls out of view when typing on the last row of the text editor
 - [ ] Console doesn't scroll when typing on the bottom row causes a wrap
 - [ ] Mouse wheel should engage the vertical scrollbar
