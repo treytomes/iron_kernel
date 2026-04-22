@@ -1,4 +1,5 @@
 using Miniscript;
+using Userland.Services;
 
 namespace Userland.Scripting;
 
@@ -10,6 +11,7 @@ public static class DialogIntrinsics
 		CreateAlertIntrinsic();
 		CreatePromptIntrinsic();
 		CreateConfirmIntrinsic();
+		CreateInputIntrinsic();
 	}
 
 	// TODO: We could stuff these calls into a namespace, but I'm not sure that I want to.
@@ -187,6 +189,46 @@ public static class DialogIntrinsics
 			return map["result"].BoolValue()
 				? Intrinsic.Result.True
 				: Intrinsic.Result.False;
+		};
+	}
+
+	private static void CreateInputIntrinsic()
+	{
+		var input = Intrinsic.Create("input");
+		input.AddParam("prompt", new ValString(""));
+
+		input.code = (ctx, partialResult) =>
+		{
+			if (partialResult == null)
+			{
+				if (ctx.interpreter.hostData is not IScriptHost host)
+					return Intrinsic.Result.Null;
+
+				var prompt = ctx.GetVar("prompt").ToString();
+
+				var state = new ValMap
+				{
+					["done"] = ValNumber.zero,
+					["value"] = ValNull.instance
+				};
+
+				host.WindowService.PromptAsync(prompt, null)
+					.ContinueWith(t =>
+					{
+						state["value"] = t.Result == null
+							? ValNull.instance
+							: new ValString(t.Result);
+						state["done"] = ValNumber.one;
+					});
+
+				return new Intrinsic.Result(state, done: false);
+			}
+
+			var map = (ValMap)partialResult.result;
+			if (!map["done"].BoolValue())
+				return partialResult;
+
+			return new Intrinsic.Result(map["value"]);
 		};
 	}
 }

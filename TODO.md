@@ -5,7 +5,7 @@
 - [x] String slicing instabilities across `TextEditorMorph`, `TextEditingCore`, and `TextConsoleMorph` — can silently corrupt user data
 - [ ] Cursor falls out of view when typing on the last row of the text editor
 - [ ] Console doesn't scroll when typing on the bottom row causes a wrap
-- [ ] Mouse wheel should engage the vertical scrollbar
+- [x] Mouse wheel should engage the vertical scrollbar
 
 ## Text Editor
 
@@ -22,7 +22,7 @@
 - [x] `dir` intrinsic to list directory contents
 - [x] `mkdir` intrinsic to create directories
 - [x] `del` intrinsic to delete files or directories
-- [ ] `input` intrinsic to gather input in the REPL
+- [x] `input` intrinsic to gather input in the REPL
 - [ ] Per-interpreter current-directory tracking (ties into Interpreter Process concept)
 
 ## Inspector
@@ -40,7 +40,7 @@
 
 ## Morphic
 
-- [ ] Null-submorph `Debug.Assert` calls are commented out in `Morph.cs` (lines 185, 190, 365) — re-enable in Debug builds to determine if the tree is ever actually corrupted
+- [x] Null-submorph `Debug.Assert` calls are commented out in `Morph.cs` (lines 185, 190, 365) — re-enable in Debug builds to determine if the tree is ever actually corrupted
 
 ## Code Cleanup
 

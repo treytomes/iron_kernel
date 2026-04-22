@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Miniscript;
@@ -182,12 +183,12 @@ public abstract class Morph : ICommandTarget
 		if (TryGetWorld(out var world))
 			morph.NotifyAddedToWorld(world);
 
-		// Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
+		Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
 	}
 
 	public bool RemoveMorph(Morph morph)
 	{
-		// Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
+		Debug.Assert(!_submorphs.Any(m => m == null), $"Null sub-morph in {GetType().Name}");
 
 		// If we're already in a world, load immediately.
 		if (TryGetWorld(out var world))
@@ -362,7 +363,7 @@ public abstract class Morph : ICommandTarget
 
 	public void DispatchPointerDown(PointerDownEvent e)
 	{
-		// Debug.Assert(!_submorphs.Contains(null!), $"Null sub-morph in {GetType().Name}");
+		Debug.Assert(!_submorphs.Contains(null!), $"Null sub-morph in {GetType().Name}");
 		OnPointerDown(e);
 		if (!e.Handled && Owner != null)
 			Owner.DispatchPointerDown(e);

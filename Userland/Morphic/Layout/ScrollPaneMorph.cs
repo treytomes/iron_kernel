@@ -1,5 +1,6 @@
 using System.Drawing;
 using Userland.Morphic.Commands;
+using Userland.Morphic.Events;
 using Userland.Morphic.ValueObjects;
 
 namespace Userland.Morphic.Layout;
@@ -253,6 +254,20 @@ public sealed class ScrollPaneMorph : DockPanelMorph
 	#endregion
 
 	#region Scrolling helpers
+
+	public override void OnPointerWheel(PointerWheelEvent e)
+	{
+		if (MaxScrollY > 0)
+		{
+			ScrollBy(0, -e.Delta.Y * ScrollStep);
+			e.MarkHandled();
+		}
+		else if (MaxScrollX > 0)
+		{
+			ScrollBy(-e.Delta.X * ScrollStep, 0);
+			e.MarkHandled();
+		}
+	}
 
 	private void ScrollBy(int dx, int dy)
 	{
