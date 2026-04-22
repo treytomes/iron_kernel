@@ -9,7 +9,7 @@
 
 ## Text Editor
 
-- [ ] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
+- [x] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
 - [ ] Source lines should not wrap — wrapping looks wrong in a code editor
 - [ ] Page Up / Page Down
 - [ ] Ctrl+A then Up arrow should move cursor to selection start
