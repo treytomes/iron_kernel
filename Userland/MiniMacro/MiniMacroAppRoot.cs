@@ -131,8 +131,8 @@ public sealed class MiniMacroRoot
 			"MouseWheel",
 			(e, _) =>
 			{
-				world.PointerWheel(
-					new Point(e.OffsetX, e.OffsetY));
+				lock (_updateLock)
+					world.PointerWheel(new Point(e.OffsetX, e.OffsetY));
 				return Task.CompletedTask;
 			});
 
@@ -140,8 +140,8 @@ public sealed class MiniMacroRoot
 			"MouseMove",
 			(e, _) =>
 			{
-				world.PointerMove(
-					new Point(e.X, e.Y));
+				lock (_updateLock)
+					world.PointerMove(new Point(e.X, e.Y));
 				return Task.CompletedTask;
 			});
 
@@ -149,8 +149,8 @@ public sealed class MiniMacroRoot
 			"MouseButton",
 			(e, _) =>
 			{
-				world.PointerButton(
-					e.Button, e.Action, e.Modifiers);
+				lock (_updateLock)
+					world.PointerButton(e.Button, e.Action, e.Modifiers);
 				return Task.CompletedTask;
 			});
 
@@ -158,8 +158,8 @@ public sealed class MiniMacroRoot
 			"Keyboard",
 			(e, _) =>
 			{
-				world.KeyPress(
-					e.Action, e.Modifiers, e.Key);
+				lock (_updateLock)
+					world.KeyPress(e.Action, e.Modifiers, e.Key);
 				return Task.CompletedTask;
 			});
 
@@ -167,11 +167,8 @@ public sealed class MiniMacroRoot
 			"Update",
 			(e, _) =>
 			{
-				if (Monitor.TryEnter(_updateLock))
-				{
-					try { world.Update(e.ElapsedTime); }
-					finally { Monitor.Exit(_updateLock); }
-				}
+				lock (_updateLock)
+					world.Update(e.ElapsedTime);
 				return Task.CompletedTask;
 			});
 

@@ -75,7 +75,6 @@ public sealed class TextEditorMorph : Morph
 		if (_font == null || Owner == null)
 			return;
 
-		Size = Owner.Size;
 		_visibleRowCount = Math.Max(1, Size.Height / _cellSize.Height);
 		_layoutInitialized = true;
 	}
@@ -514,8 +513,37 @@ public sealed class TextEditorMorph : Morph
 
 	private void EnsureCaretVisible()
 	{
-		if (_document.CaretLine < _firstVisibleLine)
-			_firstVisibleLine = _document.CaretLine;
+		if (!_layoutInitialized)
+			return;
+
+		int caretLine = _document.CaretLine;
+
+		// Scroll up if caret is above the visible window
+		if (caretLine < _firstVisibleLine)
+		{
+			_firstVisibleLine = caretLine;
+			return;
+		}
+
+		// Scroll down if caret's visual row is below the visible window
+		int visualCols = Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width);
+
+		// Advance _firstVisibleLine until the caret row fits
+		while (_firstVisibleLine < caretLine)
+		{
+			int rowOffset = 0;
+			for (int l = _firstVisibleLine; l < caretLine; l++)
+				rowOffset += GetVisualRowCount(_document.Lines[l].ToString(), visualCols);
+
+			string caretText = _document.Lines[caretLine].ToString();
+			int visualCol = ComputeVisualColumn(caretText, _document.CaretColumn);
+			int caretRow = rowOffset + (visualCol / visualCols);
+
+			if (caretRow < _visibleRowCount)
+				break;
+
+			_firstVisibleLine++;
+		}
 	}
 
 	private static int Compare(

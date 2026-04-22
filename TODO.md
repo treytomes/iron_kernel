@@ -3,12 +3,13 @@
 ## Bugs
 
 - [x] String slicing instabilities across `TextEditorMorph`, `TextEditingCore`, and `TextConsoleMorph` — can silently corrupt user data
-- [ ] Cursor falls out of view when typing on the last row of the text editor
-- [ ] Console doesn't scroll when typing on the bottom row causes a wrap
+- [x] Cursor falls out of view when typing on the last row of the text editor
+- [x] Console doesn't scroll when typing on the bottom row causes a wrap
 - [x] Mouse wheel should engage the vertical scrollbar
 
 ## Text Editor
 
+- [ ] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
 - [ ] Source lines should not wrap — wrapping looks wrong in a code editor
 - [ ] Page Up / Page Down
 - [ ] Ctrl+A then Up arrow should move cursor to selection start
@@ -23,11 +24,15 @@
 - [x] `mkdir` intrinsic to create directories
 - [x] `del` intrinsic to delete files or directories
 - [x] `input` intrinsic to gather input in the REPL
-- [ ] Per-interpreter current-directory tracking (ties into Interpreter Process concept)
+- [x] Per-interpreter current-directory tracking — `env.curdir` is stored as a global on each `Interpreter` instance via `EnsureEnv`; each REPL window already has independent state
 
 ## Inspector
 
 - [ ] Inline editors for `Point` and `Size` types
+
+## Dialog Service
+
+- [ ] File picker dialog — `IWindowService.PromptAsync` currently shows a plain text input; open/save operations in the text editor need a proper file browser dialog that shows `dir()` output and lets the user navigate and select
 
 ## Kernel / Architecture
 
