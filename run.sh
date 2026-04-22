@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-KERNEL_DLL="publish/IronKernel.dll"
+PUBLISH_DIR="publish"
+KERNEL_DLL="$PUBLISH_DIR/IronKernel.dll"
 
 if [[ ! -f "$KERNEL_DLL" ]]; then
   echo "Kernel not published. Run ./publish.sh first."
@@ -9,4 +10,5 @@ if [[ ! -f "$KERNEL_DLL" ]]; then
 fi
 
 echo "==> Running IronKernel"
-dotnet "$KERNEL_DLL"
+cd "$PUBLISH_DIR"
+dotnet IronKernel.dll
