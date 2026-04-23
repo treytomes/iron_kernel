@@ -35,7 +35,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		_fileSystem = fileSystem;
 
 		_doc = new(_logger, string.Empty);
-		_doc.Changed += () =>
+		_doc.TextMutated += () =>
 		{
 			if (!_dirty)
 			{
@@ -62,6 +62,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 	protected override void OnLoad(IAssetService assetService)
 	{
 		base.OnLoad(assetService);
+		_editor.SaveRequested += async () => await SaveFileAsync(silent: true);
 		_editor.CaptureKeyboard();
 	}
 
@@ -123,6 +124,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			UpdateTitle();
 			if (_filename.EndsWith(".ms"))
 				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
+			_editor.CaptureKeyboard();
 		}
 		catch
 		{
@@ -147,6 +149,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			UpdateTitle();
 			if (_filename.EndsWith(".ms"))
 				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
+			_editor.CaptureKeyboard();
 		}
 		catch
 		{
@@ -154,7 +157,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		}
 	}
 
-	private async Task SaveFileAsync()
+	private async Task SaveFileAsync(bool silent = false)
 	{
 		if (string.IsNullOrWhiteSpace(_filename))
 		{
@@ -162,7 +165,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			return;
 		}
 
-		await SaveToFilenameAsync(_filename);
+		await SaveToFilenameAsync(_filename, silent);
 	}
 
 	private async Task SaveFileAsAsync()
@@ -177,7 +180,7 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		await SaveToFilenameAsync(filename);
 	}
 
-	private async Task SaveToFilenameAsync(string filename)
+	private async Task SaveToFilenameAsync(string filename, bool silent = false)
 	{
 		try
 		{
@@ -187,7 +190,8 @@ public sealed class TextEditorWindowMorph : WindowMorph
 			UpdateTitle();
 			if (_filename.EndsWith(".ms"))
 				_editor.SyntaxHighlighter = new MiniScriptHighlighter();
-			await _windowService.AlertAsync($"Saved {filename}");
+			if (!silent)
+				await _windowService.AlertAsync($"Saved {filename}");
 		}
 		catch (Exception ex)
 		{

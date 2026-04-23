@@ -2,12 +2,12 @@
 
 ## Text Editor (keyboard shortcuts)
 
-- [ ] Ctrl+S to save (without the alert dialog)
-- [ ] Ctrl+X on a row should cut the entire row into the clipboard
-- [ ] Page Up / Page Down
-- [ ] Shift+Tab should reverse-indent
-- [ ] Ctrl+A then Up arrow should move cursor to selection start
-- [ ] Ctrl+A then Down arrow should move cursor to selection end
+- [x] Ctrl+S to save (without the alert dialog)
+- [x] Ctrl+X on a row should cut the entire row into the clipboard
+- [x] Page Up / Page Down
+- [x] Shift+Tab should reverse-indent
+- [x] Ctrl+A then Up arrow should move cursor to selection start
+- [x] Ctrl+A then Down arrow should move cursor to selection end
 
 ## Bugs
 

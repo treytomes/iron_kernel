@@ -33,6 +33,12 @@ public sealed class TextEditorMorph : Morph
 
 	#endregion
 
+	#region Events
+
+	public event Action? SaveRequested;
+
+	#endregion
+
 	#region Constructors
 
 	public TextEditorMorph(TextDocument document, IClipboardService clipboard)
@@ -112,12 +118,20 @@ public sealed class TextEditorMorph : Morph
 				return;
 
 			case Key.X when ctrl:
-				CutSelection();
+				if (_selection.HasSelection)
+					CutSelection();
+				else
+					CutCurrentLine();
 				e.MarkHandled();
 				return;
 
 			case Key.V when ctrl:
 				PasteClipboard();
+				e.MarkHandled();
+				return;
+
+			case Key.S when ctrl:
+				SaveRequested?.Invoke();
 				e.MarkHandled();
 				return;
 		}
@@ -160,14 +174,53 @@ public sealed class TextEditorMorph : Morph
 				break;
 
 			case Key.Up:
+				if (!shift && _selection.HasSelection)
+				{
+					var (start, _) = _selection.GetRange();
+					_document.SetCaretLine(start.line);
+					_document.Lines[start.line].SetCursorIndex(start.column);
+					_selection.Clear();
+					EnsureCaretVisible();
+					Invalidate();
+					e.MarkHandled();
+					return;
+				}
 				_document.MoveUp();
 				moved = true;
 				break;
 
 			case Key.Down:
+				if (!shift && _selection.HasSelection)
+				{
+					var (_, end) = _selection.GetRange();
+					_document.SetCaretLine(end.line);
+					_document.Lines[end.line].SetCursorIndex(end.column);
+					_selection.Clear();
+					EnsureCaretVisible();
+					Invalidate();
+					e.MarkHandled();
+					return;
+				}
 				_document.MoveDown();
 				moved = true;
 				break;
+
+			case Key.PageUp:
+				_document.SetCaretLine(Math.Max(0, _document.CaretLine - _visibleRowCount));
+				_firstVisibleLine = Math.Max(0, _firstVisibleLine - _visibleRowCount);
+				moved = true;
+				break;
+
+			case Key.PageDown:
+				_document.SetCaretLine(Math.Min(_document.LineCount - 1, _document.CaretLine + _visibleRowCount));
+				_firstVisibleLine = Math.Min(_document.LineCount - 1, _firstVisibleLine + _visibleRowCount);
+				moved = true;
+				break;
+
+			case Key.Tab when shift:
+				UnindentCurrentLine();
+				e.MarkHandled();
+				return;
 
 			case Key.Home:
 				if (ctrl)
@@ -225,6 +278,21 @@ public sealed class TextEditorMorph : Morph
 	#endregion
 
 	#region Mouse Input
+
+	public override void OnPointerWheel(PointerWheelEvent e)
+	{
+		if (e.Delta.Y == 0)
+			return;
+
+		const int ScrollStep = 3;
+		_firstVisibleLine = Math.Clamp(
+			_firstVisibleLine - e.Delta.Y * ScrollStep,
+			0,
+			Math.Max(0, _document.LineCount - 1));
+
+		Invalidate();
+		e.MarkHandled();
+	}
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
@@ -496,6 +564,61 @@ public sealed class TextEditorMorph : Morph
 	{
 		CopySelection();
 		DeleteSelection();
+	}
+
+	private void CutCurrentLine()
+	{
+		int line = _document.CaretLine;
+		string text = _document.Lines[line].ToString();
+		_clipboard.SetText(text + "\n");
+
+		if (_document.LineCount == 1)
+		{
+			_document.DeleteRangeAndSetCaret((0, 0), (0, text.Length));
+		}
+		else if (line < _document.LineCount - 1)
+		{
+			_document.DeleteRangeAndSetCaret((line, 0), (line + 1, 0));
+		}
+		else
+		{
+			// Last line — remove newline before it and the line itself
+			int prevLen = _document.Lines[line - 1].Length;
+			_document.DeleteRangeAndSetCaret((line - 1, prevLen), (line, text.Length));
+		}
+	}
+
+	private void UnindentCurrentLine()
+	{
+		int line = _document.CaretLine;
+		string text = _document.Lines[line].ToString();
+
+		if (text.Length == 0)
+			return;
+
+		int removed = 0;
+		if (text[0] == '\t')
+		{
+			removed = 1;
+		}
+		else
+		{
+			int spaces = Math.Min(_document.TabWidth, text.Length);
+			for (int i = 0; i < spaces; i++)
+			{
+				if (text[i] != ' ')
+					break;
+				removed++;
+			}
+		}
+
+		if (removed == 0)
+			return;
+
+		int col = _document.CaretColumn;
+		_document.DeleteRangeAndSetCaret((line, 0), (line, removed));
+		// Restore caret column past the removed indent, clamped to line length
+		_document.Lines[line].SetCursorIndex(Math.Max(0, col - removed));
 	}
 
 	private async void PasteClipboard()

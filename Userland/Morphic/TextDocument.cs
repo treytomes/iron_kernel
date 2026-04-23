@@ -11,6 +11,7 @@ public sealed class TextDocument
 {
 	#region Events
 	public event Action? Changed;
+	public event Action? TextMutated;
 	#endregion
 
 	#region Fields
@@ -44,6 +45,7 @@ public sealed class TextDocument
 
 	#region Core helpers
 	private void OnChanged() => Changed?.Invoke();
+	private void OnTextMutated() { TextMutated?.Invoke(); Changed?.Invoke(); }
 
 	private void ResetDesiredColumn() => _desiredColumn = -1;
 
@@ -72,7 +74,7 @@ public sealed class TextDocument
 		CaretLine = _lines.Count - 1;
 		CurrentLine.MoveToEnd();
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 	#endregion
 
@@ -87,7 +89,7 @@ public sealed class TextDocument
 
 		CurrentLine.Insert(ch);
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 
 	public void InsertTab()
@@ -96,7 +98,7 @@ public sealed class TextDocument
 		CurrentLine.InsertTab(expandToSpaces: true);
 
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 	#endregion
 
@@ -107,7 +109,7 @@ public sealed class TextDocument
 		{
 			CurrentLine.Backspace();
 			ResetDesiredColumn();
-			OnChanged();
+			OnTextMutated();
 			return;
 		}
 
@@ -125,7 +127,7 @@ public sealed class TextDocument
 		prev.SetCursorIndex(prevLen);
 
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 
 	public void Delete()
@@ -136,7 +138,7 @@ public sealed class TextDocument
 		{
 			line.Delete();
 			ResetDesiredColumn();
-			OnChanged();
+			OnTextMutated();
 			return;
 		}
 
@@ -148,7 +150,7 @@ public sealed class TextDocument
 		_lines.RemoveAt(CaretLine + 1);
 
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 	#endregion
 
@@ -158,7 +160,7 @@ public sealed class TextDocument
 		if (CaretColumn > 0)
 		{
 			CurrentLine.DeleteWordLeft();
-			OnChanged();
+			OnTextMutated();
 		}
 		else
 		{
@@ -171,7 +173,7 @@ public sealed class TextDocument
 		if (CaretColumn < CurrentLine.Length)
 		{
 			CurrentLine.DeleteWordRight();
-			OnChanged();
+			OnTextMutated();
 		}
 		else
 		{
@@ -212,7 +214,7 @@ public sealed class TextDocument
 				start.column,
 				end.column - start.column);
 
-			OnChanged();
+			OnTextMutated();
 			return;
 		}
 
@@ -235,7 +237,7 @@ public sealed class TextDocument
 		// Append tail
 		startLine.AppendText(endTail);
 
-		OnChanged();
+		OnTextMutated();
 	}
 
 	public void SetCaretLine(int line)
@@ -351,7 +353,7 @@ public sealed class TextDocument
 		newLine.MoveToStart();
 
 		ResetDesiredColumn();
-		OnChanged();
+		OnTextMutated();
 	}
 	#endregion
 

@@ -105,7 +105,7 @@ public sealed class MiniScriptHighlighter : ISyntaxHighlighter
 		inString = false;
 		inComment = false;
 
-		for (int i = 0; i < targetColumn && i < text.Length; i++)
+		for (int i = 0; i <= targetColumn && i < text.Length; i++)
 		{
 			if (inComment)
 				return;
@@ -119,7 +119,8 @@ public sealed class MiniScriptHighlighter : ISyntaxHighlighter
 				return;
 			}
 
-			if (text[i] == '"' &&
+			if (i < targetColumn &&
+				text[i] == '"' &&
 				(i == 0 || text[i - 1] != '\\'))
 			{
 				inString = !inString;
