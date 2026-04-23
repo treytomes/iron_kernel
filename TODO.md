@@ -1,5 +1,14 @@
 # TODO
 
+## Text Editor (keyboard shortcuts)
+
+- [ ] Ctrl+S to save (without the alert dialog)
+- [ ] Ctrl+X on a row should cut the entire row into the clipboard
+- [ ] Page Up / Page Down
+- [ ] Shift+Tab should reverse-indent
+- [ ] Ctrl+A then Up arrow should move cursor to selection start
+- [ ] Ctrl+A then Down arrow should move cursor to selection end
+
 ## Bugs
 
 - [x] String slicing instabilities across `TextEditorMorph`, `TextEditingCore`, and `TextConsoleMorph` — can silently corrupt user data
@@ -11,12 +20,7 @@
 
 - [x] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
 - [ ] Source lines should not wrap — wrapping looks wrong in a code editor
-- [ ] Page Up / Page Down
-- [ ] Ctrl+A then Up arrow should move cursor to selection start
-- [ ] Ctrl+A then Down arrow should move cursor to selection end
-- [ ] Shift+Tab should reverse-indent
-- [ ] Ctrl+X on a row should cut the entire row into the clipboard
-- [ ] Ctrl+S to save (without the alert dialog)
+- [ ] Research consolidating text editing features — `TextEditorMorph`, `TextConsoleMorph`, and `TextEditMorph` each implement overlapping editing behaviors (cursor movement, selection, clipboard); investigate whether a shared editing layer would reduce duplication and bring feature parity across all three
 
 ## REPL / Console
 
