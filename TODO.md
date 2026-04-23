@@ -20,7 +20,7 @@
 
 - [x] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
 - [x] Source lines should not wrap — `WordWrap` property on `TextEditorMorph` and `TextEditorWindowMorph`, default `false`
-- [ ] Research consolidating text editing features — `TextEditorMorph`, `TextConsoleMorph`, and `TextEditMorph` each implement overlapping editing behaviors (cursor movement, selection, clipboard); investigate whether a shared editing layer would reduce duplication and bring feature parity across all three
+- [x] Research consolidating text editing features — see `TEXT_EDITING_CONSOLIDATION.md` for full analysis and phased plan; `TextEditorMorph` stays separate (multi-line, different display model); key work: switch `TextEditMorph` to `TextEditingCore`, add selection/clipboard to it, extract `LineEditingBehavior` shared by `TextEditMorph` and `TextConsoleMorph`
 
 ## REPL / Console
 
