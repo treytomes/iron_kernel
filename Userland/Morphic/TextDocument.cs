@@ -183,10 +183,19 @@ public sealed class TextDocument
 
 	public void DeleteRangeAndSetCaret((int line, int column) start, (int line, int column) end)
 	{
+		// Clamp caret line before deletion so OnTextMutated fires with a valid CaretLine.
+		// After a multi-line delete the caret always lands at start.line, which is safe
+		// because start.line is clamped inside DeleteRange as well.
+		int targetLine = Math.Clamp(
+			start.line <= end.line ? start.line : end.line,
+			0, _lines.Count - 1);
+		CaretLine = targetLine;
+
 		DeleteRange(start, end);
 
-		CaretLine = Math.Clamp(start.line, 0, _lines.Count - 1);
-		_lines[CaretLine].SetCursorIndex(start.column);
+		CaretLine = Math.Clamp(targetLine, 0, _lines.Count - 1);
+		_lines[CaretLine].SetCursorIndex(
+			Math.Clamp(start.line <= end.line ? start.column : end.column, 0, _lines[CaretLine].Length));
 	}
 
 	public void DeleteRange((int line, int column) start, (int line, int column) end)

@@ -13,7 +13,6 @@ public sealed class TextConsoleMorph : Morph
 	#region Fields
 
 	private readonly ILogger _logger;
-	private readonly IClipboardService _clipboard;
 
 	private ConsoleCell[,] _buffer;
 
@@ -36,7 +35,7 @@ public sealed class TextConsoleMorph : Morph
 	private readonly List<string> _commandHistory = new();
 	private int _historyIndex;
 
-	private readonly SelectionController<int> _selection = new((a, b) => a.CompareTo(b));
+	private readonly LineEditingBehavior _line;
 	private bool _mouseSelecting;
 
 	#endregion
@@ -46,7 +45,7 @@ public sealed class TextConsoleMorph : Morph
 	public TextConsoleMorph(ILogger logger, IClipboardService clipboard)
 	{
 		_logger = logger;
-		_clipboard = clipboard;
+		_line = new LineEditingBehavior(clipboard);
 
 		CellSize = new Size(1, 1);
 		Columns = 1;
@@ -179,7 +178,7 @@ public sealed class TextConsoleMorph : Morph
 
 	private bool IsCellSelected(int x, int y)
 	{
-		if (!_isReadingLine || _editor == null || !_selection.HasSelection)
+		if (!_isReadingLine || _editor == null || !_line.HasSelection)
 			return false;
 
 		// Reject cells before the input start
@@ -193,7 +192,7 @@ public sealed class TextConsoleMorph : Morph
 		if (index < 0 || index > _editor.Length)
 			return false;
 
-		var (start, end) = _selection.GetRange();
+		var (start, end) = _line.GetSelectionRange()!.Value;
 		return index >= start && index < end;
 	}
 
@@ -215,7 +214,7 @@ public sealed class TextConsoleMorph : Morph
 		var cell = PixelToCell(WorldToLocal(e.Position));
 		int index = CellToEditorIndex(cell.X, cell.Y);
 
-		_selection.Begin(index);
+		_line.Begin(index);
 		_mouseSelecting = true;
 
 		e.MarkHandled();
@@ -231,7 +230,7 @@ public sealed class TextConsoleMorph : Morph
 		var cell = PixelToCell(WorldToLocal(e.Position));
 		int index = CellToEditorIndex(cell.X, cell.Y);
 
-		_selection.Update(index);
+		_line.Update(index);
 		Invalidate();
 	}
 
@@ -303,12 +302,22 @@ public sealed class TextConsoleMorph : Morph
 
 			case Key.Backspace:
 				if (!DeleteSelectionIfAny())
-					_editor?.Backspace();
+				{
+					if (e.Modifiers.HasFlag(KeyModifier.Control))
+						_editor?.DeleteWordLeft();
+					else
+						_editor?.Backspace();
+				}
 				break;
 
 			case Key.Delete:
 				if (!DeleteSelectionIfAny())
-					_editor?.Delete();
+				{
+					if (e.Modifiers.HasFlag(KeyModifier.Control))
+						_editor?.DeleteWordRight();
+					else
+						_editor?.Delete();
+				}
 				break;
 
 			case Key.Enter:
@@ -371,7 +380,7 @@ public sealed class TextConsoleMorph : Morph
 		_cursorY = newY;
 		_cursorX = Math.Clamp(newX, 0, Columns - 1);
 
-		_selection.Normalize(i => i >= 0 && i <= _editor.Length);
+		_line.Normalize(_editor);
 	}
 
 	#endregion
@@ -440,7 +449,7 @@ public sealed class TextConsoleMorph : Morph
 
 	private void ClearSelection()
 	{
-		_selection.Clear();
+		_line.Clear();
 		_mouseSelecting = false;
 	}
 
@@ -449,46 +458,28 @@ public sealed class TextConsoleMorph : Morph
 		if (!_isReadingLine || _editor == null)
 			return;
 
-		_selection.Begin(0);
-		_selection.Update(_editor.Length);
+		_line.SelectAll(_editor);
 	}
 
 	private void CopySelection()
 	{
-		if (_editor == null || !_selection.HasSelection)
-			return;
-
-		var (start, end) = _selection.GetRange();
-		string text = _editor.GetSubstring(start, end - start);
-		_clipboard.SetText(text);
+		if (_editor == null) return;
+		_line.CopySelection(_editor);
 	}
 
 	private void CutSelection()
 	{
-		if (_editor == null || !_selection.HasSelection)
-			return;
-
-		CopySelection();
-		DeleteSelectionIfAny();
+		if (_editor == null) return;
+		_line.CutSelection(_editor);
 	}
 
-	private async void PasteClipboard()
+	private void PasteClipboard()
 	{
 		if (!_isReadingLine || _editor == null)
 			return;
 
 		ClearSelection();
-
-		var text = await _clipboard.GetTextAsync();
-		if (string.IsNullOrEmpty(text))
-			return;
-
-		foreach (char ch in text)
-		{
-			if (ch == '\n' || ch == '\r')
-				continue; // console input is single-line
-			_editor.Insert(ch);
-		}
+		_line.PasteClipboard(_editor);
 	}
 
 	private void HandleHorizontalMove(int delta, KeyEvent e)
@@ -496,17 +487,26 @@ public sealed class TextConsoleMorph : Morph
 		if (_editor == null)
 			return;
 
-		if (e.Modifiers.HasFlag(KeyModifier.Shift))
+		bool shift = e.Modifiers.HasFlag(KeyModifier.Shift);
+		bool ctrl  = e.Modifiers.HasFlag(KeyModifier.Control);
+
+		if (shift)
+			_line.BeginIfNeeded(_editor.CursorIndex);
+		else
+			ClearSelection();
+
+		if (ctrl)
 		{
-			_selection.Update(_editor.CursorIndex);
-			_editor.Move(delta);
-			_selection.Update(_editor.CursorIndex);
+			if (delta < 0) _editor.MoveWordLeft();
+			else           _editor.MoveWordRight();
 		}
 		else
 		{
-			ClearSelection();
 			_editor.Move(delta);
 		}
+
+		if (shift)
+			_line.Update(_editor.CursorIndex);
 	}
 
 	private void HandleHomeEnd(bool start, KeyEvent e)
@@ -514,35 +514,25 @@ public sealed class TextConsoleMorph : Morph
 		if (_editor == null)
 			return;
 
-		if (e.Modifiers.HasFlag(KeyModifier.Shift))
-		{
-			_selection.Update(_editor.CursorIndex);
-			if (start)
-				_editor.MoveToStart();
-			else
-				_editor.MoveToEnd();
-			_selection.Update(_editor.CursorIndex);
-		}
+		bool shift = e.Modifiers.HasFlag(KeyModifier.Shift);
+		if (shift)
+			_line.BeginIfNeeded(_editor.CursorIndex);
 		else
-		{
 			ClearSelection();
-			if (start)
-				_editor.MoveToStart();
-			else
-				_editor.MoveToEnd();
-		}
+
+		if (start)
+			_editor.MoveToStart();
+		else
+			_editor.MoveToEnd();
+
+		if (shift)
+			_line.Update(_editor.CursorIndex);
 	}
 
 	private bool DeleteSelectionIfAny()
 	{
-		if (_editor == null || !_selection.HasSelection)
-			return false;
-
-		var (start, end) = _selection.GetRange();
-		_editor.DeleteRange(start, end - start);
-		_editor.SetCursorIndex(start);
-		_selection.Clear();
-		return true;
+		if (_editor == null) return false;
+		return _line.DeleteSelection(_editor);
 	}
 
 	private void CommitLine()

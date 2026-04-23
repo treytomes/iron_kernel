@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Morphic.Inspector;
+using Userland.Services;
 
 namespace Userland.Morphic;
 
@@ -24,6 +25,8 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 	private readonly Action<string>? _setter;
 	private readonly Func<string, bool>? _validator;
 
+	private readonly LineEditingBehavior _line;
+
 	private readonly LabelMorph _label;
 
 	private double _caretBlinkTime;
@@ -34,7 +37,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 	#region Constructors
 
 	public TextEditMorph(string initialText, Action<string>? setter)
-		: this(Point.Empty, initialText, setter, null)
+		: this(Point.Empty, initialText, setter, null, null)
 	{
 	}
 
@@ -42,7 +45,8 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		Point position,
 		string initialText,
 		Action<string>? setter,
-		Func<string, bool>? validator = null)
+		Func<string, bool>? validator = null,
+		IClipboardService? clipboard = null)
 	{
 		Position = position;
 
@@ -51,6 +55,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		_setter = setter;
 		_validator = validator;
+		_line = new LineEditingBehavior(clipboard);
 
 		IsSelectable = true;
 
@@ -97,6 +102,48 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		if (e.Action != InputAction.Press)
 			return;
 
+		bool shift = e.Modifiers.HasFlag(KeyModifier.Shift);
+		bool ctrl  = e.Modifiers.HasFlag(KeyModifier.Control);
+
+		// Ctrl shortcuts
+		if (ctrl)
+		{
+			switch (e.Key)
+			{
+				case Key.A:
+					_line.SelectAll(_editor);
+					Invalidate();
+					e.MarkHandled();
+					return;
+
+				case Key.C:
+					_line.CopySelection(_editor);
+					e.MarkHandled();
+					return;
+
+				case Key.X:
+					_line.CutSelection(_editor);
+					OnTextChanged();
+					e.MarkHandled();
+					return;
+
+				case Key.V:
+					_line.PasteClipboard(_editor, () => { OnTextChanged(); Invalidate(); });
+					e.MarkHandled();
+					return;
+			}
+		}
+
+		// Delete selection on printable input or destructive keys
+		if (_line.HasSelection &&
+			(e.Key == Key.Backspace || e.Key == Key.Delete || e.ToText().HasValue))
+		{
+			_line.DeleteSelection(_editor);
+			OnTextChanged();
+		}
+
+		bool moved = false;
+
 		switch (e.Key)
 		{
 			case Key.Enter:
@@ -112,28 +159,40 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 				break;
 
 			case Key.Left:
-				_editor.Move(-1);
+				if (shift) _line.BeginIfNeeded(_editor.CursorIndex);
+				if (ctrl) _editor.MoveWordLeft();
+				else _editor.Move(-1);
+				moved = true;
 				break;
 
 			case Key.Right:
-				_editor.Move(1);
+				if (shift) _line.BeginIfNeeded(_editor.CursorIndex);
+				if (ctrl) _editor.MoveWordRight();
+				else _editor.Move(1);
+				moved = true;
 				break;
 
 			case Key.Home:
+				if (shift) _line.BeginIfNeeded(_editor.CursorIndex);
 				_editor.MoveToStart();
+				moved = true;
 				break;
 
 			case Key.End:
+				if (shift) _line.BeginIfNeeded(_editor.CursorIndex);
 				_editor.MoveToEnd();
+				moved = true;
 				break;
 
 			case Key.Backspace:
-				_editor.Backspace();
+				if (ctrl) _editor.DeleteWordLeft();
+				else _editor.Backspace();
 				OnTextChanged();
 				break;
 
 			case Key.Delete:
-				_editor.Delete();
+				if (ctrl) _editor.DeleteWordRight();
+				else _editor.Delete();
 				OnTextChanged();
 				break;
 
@@ -145,6 +204,14 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 					OnTextChanged();
 				}
 				break;
+		}
+
+		if (moved)
+		{
+			if (shift)
+				_line.Update(_editor.CursorIndex);
+			else
+				_line.Clear();
 		}
 
 		Invalidate();
@@ -195,21 +262,32 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 			return;
 
 		var s = Style.Semantic;
+		int tileW = _label.TileSize.Width;
+		int tileH = _label.TileSize.Height;
 
-		rc.RenderFilledRect(
-			new Rectangle(Point.Empty, Size),
-			s.Surface);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), s.Surface);
+		rc.RenderRect(new Rectangle(Point.Empty, Size), HasKeyboardFocus() ? s.Primary : s.Border);
 
-		rc.RenderRect(
-			new Rectangle(Point.Empty, Size),
-			HasKeyboardFocus() ? s.Primary : s.Border);
+		// Selection highlight
+		if (_line.HasSelection && HasKeyboardFocus())
+		{
+			var (selStart, selEnd) = _line.GetSelectionRange()!.Value;
+			rc.RenderFilledRect(
+				new Rectangle(
+					Padding + selStart * tileW,
+					Padding,
+					(selEnd - selStart) * tileW,
+					tileH),
+				s.Primary);
+		}
 
+		// Caret
 		if (HasKeyboardFocus() && _caretVisible)
 		{
-			var caretX = Padding + _editor.CursorIndex * _label.TileSize.Width;
+			var caretX = Padding + _editor.CursorIndex * tileW;
 			rc.RenderLine(
 				new Point(caretX, Padding),
-				new Point(caretX, Padding + _label.Size.Height),
+				new Point(caretX, Padding + tileH),
 				s.Text);
 		}
 	}
@@ -226,6 +304,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		_editor.SetText(newText);
 		_originalText = newText;
+		_line.Clear();
 
 		_label.Text = newText;
 		_caretVisible = true;
@@ -242,6 +321,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 	private void OnTextChanged()
 	{
 		_label.Text = _editor.ToString();
+		_line.Normalize(_editor);
 		_caretVisible = true;
 		_caretBlinkTime = 0;
 		InvalidateLayout();
@@ -259,6 +339,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 	private void CancelEdit()
 	{
 		_editor.SetText(_originalText);
+		_line.Clear();
 		_label.Text = _originalText;
 		InvalidateLayout();
 		Invalidate();

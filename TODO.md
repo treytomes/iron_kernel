@@ -29,14 +29,14 @@
 
 ### Phase 2 — Selection and clipboard parity
 
-- [ ] Add selection and clipboard to `TextEditMorph` — add `SelectionController<int>` and `IClipboardService`; wire Shift+Left/Right/Home/End and Ctrl+A/C/X/V using `BeginIfNeeded`/`Update` pattern; makes inspector fields and dialogs selectable
-- [ ] Align `TextConsoleMorph` shift+movement to `BeginIfNeeded`/`Update` pattern — currently duplicates update-before/move/update-after in both `HandleHorizontalMove` and `HandleHomeEnd`; no behaviour change, removes inconsistency
-- [ ] Extract `LineEditingBehavior` — once `TextEditMorph` and `TextConsoleMorph` share the same selection+clipboard+key handling, extract into a reusable helper owned by each morph; both become thin rendering wrappers
+- [x] Add selection and clipboard to `TextEditMorph` — add `SelectionController<int>` and `IClipboardService`; wire Shift+Left/Right/Home/End and Ctrl+A/C/X/V using `BeginIfNeeded`/`Update` pattern; makes inspector fields and dialogs selectable
+- [x] Align `TextConsoleMorph` shift+movement to `BeginIfNeeded`/`Update` pattern — currently duplicates update-before/move/update-after in both `HandleHorizontalMove` and `HandleHomeEnd`; no behaviour change, removes inconsistency
+- [x] Extract `LineEditingBehavior` — once `TextEditMorph` and `TextConsoleMorph` share the same selection+clipboard+key handling, extract into a reusable helper owned by each morph; both become thin rendering wrappers
 
 ### Phase 3 — Console feature parity (low priority)
 
-- [ ] Add Ctrl+Left/Right word movement to `TextConsoleMorph` — `TextEditingCore.MoveWordLeft/Right` already exist; just need to be wired
-- [ ] Add Ctrl+Backspace/Delete word deletion to `TextConsoleMorph` — `TextEditingCore.DeleteWordLeft/Right` already exist; just need to be wired
+- [x] Add Ctrl+Left/Right word movement to `TextConsoleMorph` — `TextEditingCore.MoveWordLeft/Right` already exist; just need to be wired
+- [x] Add Ctrl+Backspace/Delete word deletion to `TextConsoleMorph` — `TextEditingCore.DeleteWordLeft/Right` already exist; just need to be wired
 
 ## REPL / Console
 
@@ -84,6 +84,10 @@
 ## Rendering / Color
 
 - [ ] Abstract color representation out of userland — currently `RadialColor` is a fixed 3-channel / 6-level value tied to the framebuffer palette; userland colors could be 3 floating-point channels clamped at render time, so changing the framebuffer color depth wouldn't require a userland rewrite
+
+## Testing
+
+- [ ] Improve unit test coverage — identify untested areas and add tests; priority: `TextEditingCore`, `TextDocument`, `SelectionController`, and `LineEditingBehavior`
 
 ## Documentation
 
