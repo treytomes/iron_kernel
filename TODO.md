@@ -50,7 +50,7 @@
 
 ## Windows
 
-- [ ] Drag `WindowMorph` by its title bar — pointer down on the header begins a move gesture; drag updates `Position` relative to owner; pointer up commits
+- [x] Drag `WindowMorph` by its title bar — pointer down on the header begins a move gesture; drag updates `Position` relative to owner; pointer up commits
 
 ## Morphic
 

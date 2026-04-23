@@ -16,7 +16,7 @@ public class WindowMorph : Morph
 	#region Fields
 
 	private readonly DockPanelMorph _rootLayout;
-	private readonly DockPanelMorph _header;
+	private readonly WindowTitleBarMorph _header;
 	private Morph _content;
 
 	private readonly LabelMorph _titleLabel;
@@ -43,10 +43,8 @@ public class WindowMorph : Morph
 		AddMorph(_rootLayout);
 
 		// Header layout: title (Fill) + close button (Right)
-		_header = new DockPanelMorph
+		_header = new WindowTitleBarMorph(this)
 		{
-			IsSelectable = false,
-			ShouldClipToBounds = true,
 			Size = new Size(size.Width, HeaderHeight) // semantic invariant
 		};
 
