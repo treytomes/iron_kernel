@@ -43,10 +43,10 @@
 
 - [ ] Remove `WorldMorph`'s own `Interpreter` once the Process Manager is in place (see also: circular reference in `WorldScriptContext.cs:30`)
 - [ ] An exception in a single morph should log an error and pause that morph, not crash all of userland
-- [ ] `FileSystemIntrinsics.cs` handles `..` path traversal in userland — clarify whether this duplicates or bypasses the kernel's own enforcement (per `FILE_SYSTEM.md`)
+- [x] `FileSystemIntrinsics.cs` handles `..` path traversal in userland — userland `ResolvePath` collapses `.` and `..` segments so that `cd ..` works correctly; the kernel's `TryResolvePath` independently rejects any surviving `..` as a hard sandbox backstop; the two layers are complementary, not redundant
 - [ ] `PendingRunSource` pattern in `WorldScriptContext` is fragile shared mutable state between frames — replace with a command or bus message
 - [x] `MessageBus.cs` uses `Console.Error.WriteLine` (lines 53, 268, 315) — should use `ILogger`
-- [ ] Flood detection threshold (100,000 msg/s) is hardcoded in `MessageBus.cs` — make configurable
+- [x] Flood detection threshold (100,000 msg/s) is hardcoded in `MessageBus.cs` — make configurable
 
 ## Windows
 

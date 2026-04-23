@@ -6,16 +6,17 @@ namespace IronKernel.Kernel.Bus;
 
 public sealed class MessageBus : IKernelMessageBus
 {
-	private const int FloodThreshold = 100_000;
 	private static readonly TimeSpan FloodWindow = TimeSpan.FromSeconds(1);
 
 	private readonly ILogger<MessageBus> _logger;
+	private readonly int _floodThreshold;
 	private readonly ConcurrentDictionary<Type, List<ISubscription>> _handlers = new();
 	private readonly ConcurrentDictionary<(Type module, Type message), FloodCounter> _floodCounters = new();
 
-	public MessageBus(ILogger<MessageBus> logger)
+	public MessageBus(ILogger<MessageBus> logger, int floodThreshold = 100_000)
 	{
 		_logger = logger;
+		_floodThreshold = floodThreshold;
 	}
 
 	public void Publish<T>(T message)
@@ -84,7 +85,7 @@ public sealed class MessageBus : IKernelMessageBus
 
 			counter.Count++;
 
-			if (counter.Count > FloodThreshold)
+			if (counter.Count > _floodThreshold)
 			{
 				PublishKernel(new ModuleMessageFlooded(
 					moduleType,

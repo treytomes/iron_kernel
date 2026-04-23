@@ -48,4 +48,11 @@ internal sealed class AppSettings
 		public bool Fullscreen { get; init; }
 		public bool Maximize { get; init; }
 	}
+
+	public class MessageBusSettings
+	{
+		public int FloodThreshold { get; init; } = 100_000;
+	}
+
+	public MessageBusSettings MessageBus { get; init; } = new();
 }

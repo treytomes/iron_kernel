@@ -138,7 +138,12 @@ internal sealed class Program
 		services.AddSingleton<IKernelState, KernelStateStore>();
 		services.AddSingleton<KernelService>();
 
-		services.AddSingleton<IKernelMessageBus, MessageBus>();
+		services.AddSingleton<IKernelMessageBus>(sp =>
+		{
+			var logger = sp.GetRequiredService<ILogger<MessageBus>>();
+			var settings = sp.GetRequiredService<AppSettings>();
+			return new MessageBus(logger, settings.MessageBus.FloodThreshold);
+		});
 		services.AddSingleton<IMessageBus>(sp => sp.GetRequiredService<IKernelMessageBus>());
 
 		// Register IVirtualDisplay as a factory.
