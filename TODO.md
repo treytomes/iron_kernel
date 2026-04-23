@@ -60,7 +60,11 @@
 - [x] Clean up the large commented-out block in `MorphIntrinsics.cs` (lines 33–84)
 - [x] Resolve `WorldCommandManager.cs:53` TODO about transaction stacking behavior
 
+## Rendering / Color
+
+- [ ] Abstract color representation out of userland — currently `RadialColor` is a fixed 3-channel / 6-level value tied to the framebuffer palette; userland colors could be 3 floating-point channels clamped at render time, so changing the framebuffer color depth wouldn't require a userland rewrite
+
 ## Documentation
 
-- [ ] Expand or resolve `CONSIDERATIONS.md` — the color abstraction idea is worth either a proper design doc or a decision to close it
-- [ ] `getting-started.md` intentionally omits build instructions; consider linking to `CLAUDE.md` or `build.sh` now that those exist
+- [x] Write `GETTING-STARTED.md` at the repo root with build and run instructions
+- [x] Remove `CONSIDERATIONS.md` — content moved to TODO
