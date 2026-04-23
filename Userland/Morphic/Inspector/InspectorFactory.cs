@@ -92,6 +92,17 @@ public class InspectorFactory : IInspectorFactory
 			);
 		}
 
+		// --- Point / Size inline editors ---
+		if (declaredType == typeof(Point))
+		{
+			return new PointValueMorph(valueProvider, setter);
+		}
+
+		if (declaredType == typeof(Size))
+		{
+			return new SizeValueMorph(valueProvider, setter);
+		}
+
 		// --- Drill-down ---
 		if (_navigate != null && IsNavigableType(declaredType))
 		{

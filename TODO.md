@@ -19,7 +19,7 @@
 ## Text Editor
 
 - [x] Syntax highlighter colors closing string quotes as plain text — `GetLineState` in `MiniScriptHighlighter.cs` loops `i <= targetColumn`, so the closing `"` toggles `inString` back to false before the caller checks it; loop bound should be `i < targetColumn`
-- [ ] Source lines should not wrap — wrapping looks wrong in a code editor
+- [x] Source lines should not wrap — `WordWrap` property on `TextEditorMorph` and `TextEditorWindowMorph`, default `false`
 - [ ] Research consolidating text editing features — `TextEditorMorph`, `TextConsoleMorph`, and `TextEditMorph` each implement overlapping editing behaviors (cursor movement, selection, clipboard); investigate whether a shared editing layer would reduce duplication and bring feature parity across all three
 
 ## REPL / Console
@@ -32,8 +32,8 @@
 
 ## Inspector
 
-- [ ] Sort properties alphabetically — `BuildStandardPropertyList` in `InspectorMorph.cs` uses `GetProperties()` which returns properties in declaration order
-- [ ] Inline editors for `Point` and `Size` types
+- [x] Sort properties alphabetically — `BuildStandardPropertyList` in `InspectorMorph.cs` uses `GetProperties()` which returns properties in declaration order
+- [x] Inline editors for `Point` and `Size` types
 
 ## Dialog Service
 
@@ -47,6 +47,10 @@
 - [ ] `PendingRunSource` pattern in `WorldScriptContext` is fragile shared mutable state between frames — replace with a command or bus message
 - [x] `MessageBus.cs` uses `Console.Error.WriteLine` (lines 53, 268, 315) — should use `ILogger`
 - [ ] Flood detection threshold (100,000 msg/s) is hardcoded in `MessageBus.cs` — make configurable
+
+## Windows
+
+- [ ] Drag `WindowMorph` by its title bar — pointer down on the header begins a move gesture; drag updates `Position` relative to owner; pointer up commits
 
 ## Morphic
 

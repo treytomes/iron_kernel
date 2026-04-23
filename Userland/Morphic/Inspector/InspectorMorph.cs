@@ -173,7 +173,8 @@ public sealed class InspectorMorph : WindowMorph
 
 		var props = target.GetType()
 			.GetProperties(BindingFlags.Instance | BindingFlags.Public)
-			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0);
+			.Where(p => p.CanRead && p.GetIndexParameters().Length == 0)
+			.OrderBy(p => p.Name);
 
 		var list = new PropertyListMorph();
 
