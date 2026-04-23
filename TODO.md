@@ -32,6 +32,7 @@
 
 ## Inspector
 
+- [ ] Sort properties alphabetically — `BuildStandardPropertyList` in `InspectorMorph.cs` uses `GetProperties()` which returns properties in declaration order
 - [ ] Inline editors for `Point` and `Size` types
 
 ## Dialog Service

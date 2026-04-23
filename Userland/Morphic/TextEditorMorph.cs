@@ -46,6 +46,7 @@ public sealed class TextEditorMorph : Morph
 		_document = document;
 		_clipboard = clipboard;
 		IsSelectable = true;
+		ShouldClipToBounds = true;
 		_document.Changed += OnDocumentChanged;
 	}
 
@@ -54,6 +55,7 @@ public sealed class TextEditorMorph : Morph
 	#region Properties
 
 	public bool ShowLineNumbers { get; set; } = true;
+	public bool WordWrap { get; set; } = false;
 	public int TabWidth { get; set; } = 4;
 	public ISyntaxHighlighter? SyntaxHighlighter { get; set; }
 	public override bool WantsKeyboardFocus => true;
@@ -350,9 +352,7 @@ public sealed class TextEditorMorph : Morph
 
 	private void DrawTextAndSelection(IRenderingContext rc)
 	{
-		int visualCols = Math.Max(
-			1,
-			(Size.Width - TextOriginX) / _cellSize.Width);
+		int visualCols = VisualCols;
 
 		bool hasSelection = _selection.HasSelection;
 		(int line, int column) selStart = default;
@@ -474,9 +474,7 @@ public sealed class TextEditorMorph : Morph
 		if (!HasKeyboardFocus())
 			return;
 
-		int visualCols = Math.Max(
-			1,
-			(Size.Width - TextOriginX) / _cellSize.Width);
+		int visualCols = VisualCols;
 
 		int caretLine = _document.CaretLine;
 		if (caretLine < _firstVisibleLine)
@@ -649,7 +647,7 @@ public sealed class TextEditorMorph : Morph
 		}
 
 		// Scroll down if caret's visual row is below the visible window
-		int visualCols = Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width);
+		int visualCols = VisualCols;
 
 		// Advance _firstVisibleLine until the caret row fits
 		while (_firstVisibleLine < caretLine)
@@ -714,6 +712,10 @@ public sealed class TextEditorMorph : Morph
 
 	private int TextOriginX => LineNumberGutterWidth;
 
+	private int VisualCols => WordWrap
+		? Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width)
+		: int.MaxValue / 2;
+
 	private void SetCaretFromPointer(Point worldPosition)
 	{
 		if (_font == null)
@@ -722,20 +724,19 @@ public sealed class TextEditorMorph : Morph
 		var local = WorldToLocal(worldPosition);
 		int visualRow = local.Y / _cellSize.Height;
 
+		int visualCols = VisualCols;
 		int row = 0;
 		for (int line = _firstVisibleLine; line < _document.LineCount; line++)
 		{
 			int rows = GetVisualRowCount(
 				_document.Lines[line].ToString(),
-				Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width));
+				visualCols);
 
 			if (row + rows > visualRow)
 			{
 				int localRow = visualRow - row;
 				int visualCol = Math.Max(0, (local.X - TextOriginX) / _cellSize.Width);
-				int absoluteCol = localRow *
-					Math.Max(1, (Size.Width - TextOriginX) / _cellSize.Width)
-					+ visualCol;
+				int absoluteCol = localRow * visualCols + visualCol;
 
 				string text = _document.Lines[line].ToString();
 				int caretCol = VisualColumnToCaretIndex(text, absoluteCol);

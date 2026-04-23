@@ -59,6 +59,12 @@ public sealed class TextEditorWindowMorph : WindowMorph
 		UpdateTitle();
 	}
 
+	public bool WordWrap
+	{
+		get => _editor.WordWrap;
+		set => _editor.WordWrap = value;
+	}
+
 	protected override void OnLoad(IAssetService assetService)
 	{
 		base.OnLoad(assetService);
