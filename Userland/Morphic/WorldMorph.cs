@@ -25,6 +25,8 @@ public sealed class WorldMorph : Morph
 	private readonly ConcurrentQueue<Action> _actionQueue = new();
 	private bool _scriptBusy = false;
 	private readonly WorldScriptContext _scriptContext;
+	private readonly ILogger<WorldMorph> _logger;
+	private readonly ToastLayerMorph _toastLayer;
 
 	#endregion
 
@@ -32,6 +34,7 @@ public sealed class WorldMorph : Morph
 
 	public WorldMorph(Size screenSize, IAssetService assets, IServiceProvider services)
 	{
+		_logger = services.GetRequiredService<ILogger<WorldMorph>>();
 		_scriptContext = new WorldScriptContext(services.GetRequiredService<ILogger<WorldScriptContext>>(), this, services);
 		_interpreter.hostData = _scriptContext;
 		_scriptOutput.Attach(_interpreter);
@@ -42,6 +45,9 @@ public sealed class WorldMorph : Morph
 
 		Hand = new HandMorph();
 		AddMorph(Hand);
+
+		_toastLayer = new ToastLayerMorph { Size = screenSize };
+		AddMorph(_toastLayer);
 	}
 
 	#endregion
@@ -105,6 +111,8 @@ public sealed class WorldMorph : Morph
 
 	public override void Update(double deltaTime)
 	{
+		_toastLayer.Size = Size;
+
 		// Advance MiniScript VM
 		_interpreter.RunUntilDone(deltaTime);
 
@@ -138,13 +146,36 @@ public sealed class WorldMorph : Morph
 
 	private void EnsureHandOnTop()
 	{
-		if (Submorphs == null || Submorphs.Count == 0) return;
-
 		var count = Submorphs.Count;
-		if (count == 0 || Submorphs[count - 1] != Hand)
+		if (count < 2) return;
+
+		// Toast layer stays above everything; hand cursor stays above toast layer
+		if (Submorphs[count - 1] != Hand || Submorphs[count - 2] != _toastLayer)
 		{
+			RemoveMorph(_toastLayer);
 			RemoveMorph(Hand);
+			AddMorph(_toastLayer);
 			AddMorph(Hand);
+		}
+	}
+
+	public void ShowToast(string message, ToastSeverity severity = ToastSeverity.Info)
+	{
+		_toastLayer.Show(message, severity);
+	}
+
+	protected override void ReportChildFault(Morph child, Exception ex)
+	{
+		if (child.ConsecutiveFaults == 1)
+		{
+			_logger.LogWarning(ex, "Morph {Type} faulted", child.GetType().Name);
+			ShowToast($"{child.GetType().Name} error: {ex.Message}", ToastSeverity.Warning);
+		}
+		else if (child.ConsecutiveFaults >= FaultThreshold)
+		{
+			child.IsFaulted = true;
+			_logger.LogError(ex, "Morph {Type} disabled after {Count} consecutive faults", child.GetType().Name, child.ConsecutiveFaults);
+			ShowToast($"{child.GetType().Name} disabled after repeated errors", ToastSeverity.Error);
 		}
 	}
 

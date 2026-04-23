@@ -23,6 +23,9 @@ public abstract class Morph : ICommandTarget
 	private bool _isHovered = false;
 	private ValMap? _scriptObject;
 
+	internal int ConsecutiveFaults;
+	internal const int FaultThreshold = 3;
+
 	#endregion
 
 	#region Properties
@@ -133,6 +136,7 @@ public abstract class Morph : ICommandTarget
 	public bool IsSelectable { get; set; } = true;
 	public virtual bool IsGrabbable => false;
 	public bool IsMarkedForDeletion { get; private set; } = false;
+	public bool IsFaulted { get; internal set; } = false;
 	public bool ShouldClipToBounds { get; set; } = false;
 
 	protected MorphicStyle? Style
@@ -222,7 +226,14 @@ public abstract class Morph : ICommandTarget
 				if (shouldClipToBounds) rc.PushClip(new Rectangle(Point.Empty, Size));
 			}
 
-			DrawSelf(rc);
+			if (IsFaulted)
+			{
+				DrawFaultOverlay(rc);
+			}
+			else
+			{
+				DrawSelf(rc);
+			}
 
 			foreach (var child in _submorphs.ToArray())
 			{
@@ -248,6 +259,13 @@ public abstract class Morph : ICommandTarget
 		}
 	}
 
+	private void DrawFaultOverlay(IRenderingContext rc)
+	{
+		if (Style == null) return;
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), Style.Semantic.DangerMuted);
+		rc.RenderRect(new Rectangle(Point.Empty, Size), Style.Semantic.Danger);
+	}
+
 	protected virtual void DrawSelf(IRenderingContext rc) { }
 
 	public virtual void Update(double deltaTime)
@@ -261,8 +279,24 @@ public abstract class Morph : ICommandTarget
 		foreach (var child in _submorphs.ToArray())
 		{
 			if (child == null) continue;
-			child.Update(deltaTime);
+			if (child.IsFaulted) continue;
+
+			try
+			{
+				child.Update(deltaTime);
+				child.ConsecutiveFaults = 0;
+			}
+			catch (Exception ex)
+			{
+				child.ConsecutiveFaults++;
+				ReportChildFault(child, ex);
+			}
 		}
+	}
+
+	protected virtual void ReportChildFault(Morph child, Exception ex)
+	{
+		Owner?.ReportChildFault(child, ex);
 	}
 
 	/// <summary>

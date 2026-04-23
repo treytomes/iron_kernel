@@ -42,7 +42,7 @@
 ## Kernel / Architecture
 
 - [ ] Remove `WorldMorph`'s own `Interpreter` once the Process Manager is in place (see also: circular reference in `WorldScriptContext.cs:30`)
-- [ ] An exception in a single morph should log an error and pause that morph, not crash all of userland
+- [x] An exception in a single morph should log an error and pause that morph, not crash all of userland — `Morph.Update` guards each child in try/catch; first fault shows a warning toast; third consecutive fault sets `IsFaulted = true`, disables the morph, and shows an error toast; faulted morphs render a red overlay; `WorldMorph` owns the `ToastLayerMorph` and handles fault reporting via `ReportChildFault`
 - [x] `FileSystemIntrinsics.cs` handles `..` path traversal in userland — userland `ResolvePath` collapses `.` and `..` segments so that `cd ..` works correctly; the kernel's `TryResolvePath` independently rejects any surviving `..` as a hard sandbox backstop; the two layers are complementary, not redundant
 - [ ] `PendingRunSource` pattern in `WorldScriptContext` is fragile shared mutable state between frames — replace with a command or bus message
 - [x] `MessageBus.cs` uses `Console.Error.WriteLine` (lines 53, 268, 315) — should use `ILogger`
