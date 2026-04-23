@@ -68,4 +68,12 @@ public sealed class LauncherMorph : WindowMorph
 
 		_stack.AddMorph(button);
 	}
+
+	public void AddAction(string displayName, Action action)
+	{
+		_stack.AddMorph(new ButtonMorph(Point.Empty, new Size(120, 12), displayName)
+		{
+			Command = new ActionCommand(action)
+		});
+	}
 }

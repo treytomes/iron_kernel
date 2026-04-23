@@ -12,6 +12,21 @@ public sealed class ToastLayerMorph : Morph
         IsSelectable = false;
     }
 
+    public override Morph? FindMorphAt(Point worldPoint)
+    {
+        // Only hit-test the toast children themselves — the transparent
+        // background must not consume clicks that belong to morphs below.
+        var local = new Point(worldPoint.X - Position.X, worldPoint.Y - Position.Y);
+        for (int i = Submorphs.Count - 1; i >= 0; i--)
+        {
+            var child = Submorphs[i];
+            if (child == null || !child.Visible) continue;
+            var found = child.FindMorphAt(local);
+            if (found != null) return found;
+        }
+        return null;
+    }
+
     public void Show(string message, ToastSeverity severity = ToastSeverity.Info)
     {
         AddMorph(new ToastMorph(message, severity));

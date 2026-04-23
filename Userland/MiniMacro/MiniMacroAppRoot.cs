@@ -91,6 +91,17 @@ public sealed class MiniMacroRoot
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
 				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
 				launcher.AddApp<FireDemoMorph>("Fire Demo");
+				launcher.AddAction("Toast Test", () =>
+				{
+					world.ShowToast("This is an info toast", ToastSeverity.Info);
+					world.ShowToast("This is a warning toast", ToastSeverity.Warning);
+					world.ShowToast("This is an error toast", ToastSeverity.Error);
+				});
+				launcher.AddAction("Fault Test", () =>
+				{
+					var morph = new FaultTestMorph { Position = new Point(200, 100) };
+					world.AddMorph(morph);
+				});
 
 				world.AddMorph(launcher);
 			}));
