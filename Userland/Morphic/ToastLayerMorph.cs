@@ -27,9 +27,9 @@ public sealed class ToastLayerMorph : Morph
         return null;
     }
 
-    public void Show(string message, ToastSeverity severity = ToastSeverity.Info)
+    public void Show(string message, ToastSeverity severity = ToastSeverity.Info, double lifetimeSeconds = 4.0)
     {
-        AddMorph(new ToastMorph(message, severity));
+        AddMorph(new ToastMorph(message, severity, lifetimeSeconds));
         InvalidateLayout();
     }
 

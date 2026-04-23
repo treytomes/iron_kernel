@@ -159,9 +159,9 @@ public sealed class WorldMorph : Morph
 		}
 	}
 
-	public void ShowToast(string message, ToastSeverity severity = ToastSeverity.Info)
+	public void ShowToast(string message, ToastSeverity severity = ToastSeverity.Info, double lifetimeSeconds = 4.0)
 	{
-		_toastLayer.Show(message, severity);
+		_toastLayer.Show(message, severity, lifetimeSeconds);
 	}
 
 	protected override void ReportChildFault(Morph child, Exception ex)

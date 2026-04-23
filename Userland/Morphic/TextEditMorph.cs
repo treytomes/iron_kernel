@@ -72,7 +72,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	public override bool WantsKeyboardFocus => true;
 	public int Padding { get; set; } = 2;
-	public double CaretBlinkMs { get; set; } = 500;
+	public double CaretBlinkInterval { get; set; } = 0.5;
 
 	#endregion
 
@@ -105,7 +105,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		}
 
 		_caretBlinkTime += deltaMs;
-		if (_caretBlinkTime >= CaretBlinkMs)
+		if (_caretBlinkTime >= CaretBlinkInterval)
 		{
 			_caretBlinkTime = 0;
 			_caretVisible = !_caretVisible;

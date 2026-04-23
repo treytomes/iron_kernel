@@ -1,5 +1,6 @@
 using System.Drawing;
 using Userland.Gfx;
+using Userland.Morphic.Events;
 
 namespace Userland.Morphic;
 
@@ -8,18 +9,17 @@ public enum ToastSeverity { Info, Warning, Error }
 public sealed class ToastMorph : Morph
 {
     private const int Padding = 6;
-    private const double LifetimeMs = 4000;
-    private const double FadeMs = 400;
 
     private readonly LabelMorph _label;
     private double _elapsed;
 
-    public ToastMorph(string message, ToastSeverity severity)
+    public ToastMorph(string message, ToastSeverity severity, double lifetimeSeconds = 4.0)
     {
-        IsSelectable = false;
+        IsSelectable = true;
         ShouldClipToBounds = true;
 
         Severity = severity;
+        LifetimeSeconds = lifetimeSeconds;
 
         _label = new LabelMorph
         {
@@ -32,14 +32,21 @@ public sealed class ToastMorph : Morph
     }
 
     public ToastSeverity Severity { get; }
+    public double LifetimeSeconds { get; }
 
-    public override void Update(double deltaMs)
+    public override void Update(double deltaTime)
     {
-        base.Update(deltaMs);
+        base.Update(deltaTime);
 
-        _elapsed += deltaMs;
-        if (_elapsed >= LifetimeMs)
+        _elapsed += deltaTime;
+        if (_elapsed >= LifetimeSeconds)
             MarkForDeletion();
+    }
+
+    public override void OnPointerDown(PointerDownEvent e)
+    {
+        MarkForDeletion();
+        e.MarkHandled();
     }
 
     protected override void UpdateLayout()
