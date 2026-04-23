@@ -676,31 +676,11 @@ public sealed class TextEditorMorph : Morph
 		return a.col.CompareTo(b.col);
 	}
 
-	private int ComputeVisualColumn(string line, int caretIndex)
-	{
-		int col = 0;
-		for (int i = 0; i < caretIndex && i < line.Length; i++)
-		{
-			if (line[i] == '\t')
-				col += TabWidth - (col % TabWidth);
-			else
-				col++;
-		}
-		return col;
-	}
+	private int ComputeVisualColumn(string line, int caretIndex) =>
+		TextEditingCore.ComputeVisualColumn(line, caretIndex, TabWidth);
 
-	private int GetVisualRowCount(string text, int visualCols)
-	{
-		int visualCol = 0;
-		foreach (char ch in text)
-		{
-			if (ch == '\t')
-				visualCol += TabWidth - (visualCol % TabWidth);
-			else
-				visualCol++;
-		}
-		return Math.Max(1, (visualCol + visualCols - 1) / visualCols);
-	}
+	private int GetVisualRowCount(string text, int visualCols) =>
+		TextEditingCore.GetVisualRowCount(text, visualCols, TabWidth);
 
 	private int LineNumberDigits =>
 		Math.Max(1, _document.LineCount.ToString().Length);
@@ -750,22 +730,8 @@ public sealed class TextEditorMorph : Morph
 		}
 	}
 
-	private int VisualColumnToCaretIndex(string line, int targetCol)
-	{
-		int col = 0;
-		for (int i = 0; i < line.Length; i++)
-		{
-			int nextCol = line[i] == '\t'
-				? col + (TabWidth - (col % TabWidth))
-				: col + 1;
-
-			if (targetCol < nextCol)
-				return i;
-
-			col = nextCol;
-		}
-		return line.Length;
-	}
+	private int VisualColumnToCaretIndex(string line, int targetCol) =>
+		TextEditingCore.VisualColumnToCharIndex(line, targetCol, TabWidth);
 
 	#endregion
 }

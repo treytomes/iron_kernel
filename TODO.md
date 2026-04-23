@@ -22,6 +22,22 @@
 - [x] Source lines should not wrap — `WordWrap` property on `TextEditorMorph` and `TextEditorWindowMorph`, default `false`
 - [x] Research consolidating text editing features — see `TEXT_EDITING_CONSOLIDATION.md` for full analysis and phased plan; `TextEditorMorph` stays separate (multi-line, different display model); key work: switch `TextEditMorph` to `TextEditingCore`, add selection/clipboard to it, extract `LineEditingBehavior` shared by `TextEditMorph` and `TextConsoleMorph`
 
+### Phase 1 — Low risk refactors
+
+- [x] Extract tab-width arithmetic from `TextEditorMorph` — added `ComputeVisualColumn`, `VisualColumnToCharIndex`, `GetVisualRowCount` static helpers to `TextEditingCore`; `TextEditorMorph` private methods now delegate to them
+- [x] Switch `TextEditMorph` from raw `string` to `TextEditingCore` — drops `_text`/`_originalText`/`_caretIndex` fields; uses `_editor.Insert`, `Backspace`, `Delete`, `Move`, `MoveToStart`, `MoveToEnd`; same behaviour, better allocation; prerequisite for Phase 2
+
+### Phase 2 — Selection and clipboard parity
+
+- [ ] Add selection and clipboard to `TextEditMorph` — add `SelectionController<int>` and `IClipboardService`; wire Shift+Left/Right/Home/End and Ctrl+A/C/X/V using `BeginIfNeeded`/`Update` pattern; makes inspector fields and dialogs selectable
+- [ ] Align `TextConsoleMorph` shift+movement to `BeginIfNeeded`/`Update` pattern — currently duplicates update-before/move/update-after in both `HandleHorizontalMove` and `HandleHomeEnd`; no behaviour change, removes inconsistency
+- [ ] Extract `LineEditingBehavior` — once `TextEditMorph` and `TextConsoleMorph` share the same selection+clipboard+key handling, extract into a reusable helper owned by each morph; both become thin rendering wrappers
+
+### Phase 3 — Console feature parity (low priority)
+
+- [ ] Add Ctrl+Left/Right word movement to `TextConsoleMorph` — `TextEditingCore.MoveWordLeft/Right` already exist; just need to be wired
+- [ ] Add Ctrl+Backspace/Delete word deletion to `TextConsoleMorph` — `TextEditingCore.DeleteWordLeft/Right` already exist; just need to be wired
+
 ## REPL / Console
 
 - [x] `dir` intrinsic to list directory contents

@@ -224,6 +224,62 @@ public sealed class TextEditingCore
 		return char.IsLetterOrDigit(ch) || ch == '_';
 	}
 
+	#region Tab layout helpers
+
+	/// <summary>
+	/// Returns the visual column index of a logical character index,
+	/// expanding tabs using the given tab width.
+	/// </summary>
+	public static int ComputeVisualColumn(string line, int charIndex, int tabWidth)
+	{
+		int col = 0;
+		for (int i = 0; i < charIndex && i < line.Length; i++)
+		{
+			col += line[i] == '\t'
+				? tabWidth - (col % tabWidth)
+				: 1;
+		}
+		return col;
+	}
+
+	/// <summary>
+	/// Returns the logical character index for a target visual column,
+	/// expanding tabs using the given tab width.
+	/// </summary>
+	public static int VisualColumnToCharIndex(string line, int targetCol, int tabWidth)
+	{
+		int col = 0;
+		for (int i = 0; i < line.Length; i++)
+		{
+			int nextCol = line[i] == '\t'
+				? col + (tabWidth - (col % tabWidth))
+				: col + 1;
+
+			if (targetCol < nextCol)
+				return i;
+
+			col = nextCol;
+		}
+		return line.Length;
+	}
+
+	/// <summary>
+	/// Returns how many visual rows a line occupies given a viewport width in columns.
+	/// </summary>
+	public static int GetVisualRowCount(string text, int visualCols, int tabWidth)
+	{
+		int visualCol = 0;
+		foreach (char ch in text)
+		{
+			visualCol += ch == '\t'
+				? tabWidth - (visualCol % tabWidth)
+				: 1;
+		}
+		return Math.Max(1, (visualCol + visualCols - 1) / visualCols);
+	}
+
+	#endregion
+
 	public void InsertText(string text)
 	{
 		if (string.IsNullOrEmpty(text))
@@ -261,6 +317,14 @@ public sealed class TextEditingCore
 		length = Math.Clamp(length, 0, _buffer.Length - start);
 
 		return _buffer.ToString(start, length);
+	}
+
+	public void SetText(string text)
+	{
+		_buffer.Clear();
+		_buffer.Append(text ?? string.Empty);
+		CursorIndex = _buffer.Length;
+		OnChanged();
 	}
 
 	public void DeleteRange(int start, int length)

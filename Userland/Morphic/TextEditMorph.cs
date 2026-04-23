@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Microsoft.Extensions.Logging.Abstractions;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Morphic.Inspector;
@@ -17,9 +18,8 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	#region Fields
 
-	private string _text;
+	private readonly TextEditingCore _editor;
 	private string _originalText;
-	private int _caretIndex;
 
 	private readonly Action<string>? _setter;
 	private readonly Func<string, bool>? _validator;
@@ -46,9 +46,8 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 	{
 		Position = position;
 
-		_text = initialText ?? string.Empty;
-		_originalText = _text;
-		_caretIndex = _text.Length;
+		_editor = new TextEditingCore(NullLogger.Instance, initialText);
+		_originalText = initialText ?? string.Empty;
 
 		_setter = setter;
 		_validator = validator;
@@ -58,7 +57,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		_label = new LabelMorph(Point.Empty)
 		{
 			IsSelectable = false,
-			Text = _text,
+			Text = _editor.ToString(),
 			BackgroundColor = null
 		};
 
@@ -76,7 +75,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	#endregion
 
-	#region Methods
+	#region Input
 
 	public override void OnPointerDown(PointerDownEvent e)
 	{
@@ -84,33 +83,13 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		if (HasKeyboardFocus())
 		{
-			_originalText = _text;
+			_originalText = _editor.ToString();
 			_caretVisible = true;
 			_caretBlinkTime = 0;
 			Invalidate();
 		}
 
 		e.MarkHandled();
-	}
-
-	public override void Update(double deltaMs)
-	{
-		base.Update(deltaMs);
-
-		if (!HasKeyboardFocus())
-		{
-			_caretVisible = false;
-			_caretBlinkTime = 0;
-			return;
-		}
-
-		_caretBlinkTime += deltaMs;
-		if (_caretBlinkTime >= CaretBlinkInterval)
-		{
-			_caretBlinkTime = 0;
-			_caretVisible = !_caretVisible;
-			Invalidate();
-		}
 	}
 
 	public override void OnKey(KeyEvent e)
@@ -133,53 +112,72 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 				break;
 
 			case Key.Left:
-				if (_caretIndex > 0) _caretIndex--;
+				_editor.Move(-1);
 				break;
 
 			case Key.Right:
-				if (_caretIndex < _text.Length) _caretIndex++;
+				_editor.Move(1);
 				break;
 
 			case Key.Home:
-				_caretIndex = 0;
+				_editor.MoveToStart();
 				break;
 
 			case Key.End:
-				_caretIndex = _text.Length;
+				_editor.MoveToEnd();
 				break;
 
 			case Key.Backspace:
-				if (_caretIndex > 0)
-				{
-					_text = _text.Remove(_caretIndex - 1, 1);
-					_caretIndex--;
-					OnTextChanged();
-				}
+				_editor.Backspace();
+				OnTextChanged();
 				break;
 
 			case Key.Delete:
-				if (_caretIndex < _text.Length)
-				{
-					_text = _text.Remove(_caretIndex, 1);
-					OnTextChanged();
-				}
+				_editor.Delete();
+				OnTextChanged();
 				break;
 
 			default:
 				var ch = e.ToText();
 				if (ch.HasValue)
 				{
-					_text = (_text ?? string.Empty).Insert(_caretIndex, ch.Value.ToString());
-					_caretIndex++;
+					_editor.Insert(ch.Value);
 					OnTextChanged();
 				}
 				break;
 		}
 
-		_caretIndex = Math.Clamp(_caretIndex, 0, _text.Length);
 		Invalidate();
 		e.MarkHandled();
 	}
+
+	#endregion
+
+	#region Update
+
+	public override void Update(double deltaTime)
+	{
+		base.Update(deltaTime);
+
+		if (!HasKeyboardFocus())
+		{
+			_caretVisible = false;
+			_caretBlinkTime = 0;
+			return;
+		}
+
+		_caretBlinkTime += deltaTime;
+		if (_caretBlinkTime >= CaretBlinkInterval)
+		{
+			_caretBlinkTime = 0;
+			_caretVisible = !_caretVisible;
+			Invalidate();
+		}
+	}
+
+	#endregion
+
+	#region Layout and rendering
 
 	protected override void UpdateLayout()
 	{
@@ -208,7 +206,7 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 		if (HasKeyboardFocus() && _caretVisible)
 		{
-			var caretX = Padding + MeasureCaretOffset();
+			var caretX = Padding + _editor.CursorIndex * _label.TileSize.Width;
 			rc.RenderLine(
 				new Point(caretX, Padding),
 				new Point(caretX, Padding + _label.Size.Height),
@@ -216,18 +214,20 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		}
 	}
 
+	#endregion
+
+	#region IValueContentMorph
+
 	public void Refresh(object? value)
 	{
 		var newText = value?.ToString() ?? string.Empty;
-		if (_text == newText)
+		if (_editor.ToString() == newText)
 			return;
 
-		_text = newText;
+		_editor.SetText(newText);
 		_originalText = newText;
 
-		_label.Text = _text;
-		_caretIndex = _text.Length;
-
+		_label.Text = newText;
 		_caretVisible = true;
 		_caretBlinkTime = 0;
 
@@ -235,9 +235,13 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 		Invalidate();
 	}
 
+	#endregion
+
+	#region Helpers
+
 	private void OnTextChanged()
 	{
-		_label.Text = _text;
+		_label.Text = _editor.ToString();
 		_caretVisible = true;
 		_caretBlinkTime = 0;
 		InvalidateLayout();
@@ -245,28 +249,19 @@ public sealed class TextEditMorph : Morph, IValueContentMorph
 
 	private void CommitOrCancel()
 	{
-		if (_validator == null || _validator(_text))
-		{
-			_setter?.Invoke(_text);
-		}
+		var text = _editor.ToString();
+		if (_validator == null || _validator(text))
+			_setter?.Invoke(text);
 		else
-		{
 			CancelEdit();
-		}
 	}
 
 	private void CancelEdit()
 	{
-		_text = _originalText;
-		_label.Text = _text;
-		_caretIndex = _text.Length;
+		_editor.SetText(_originalText);
+		_label.Text = _originalText;
 		InvalidateLayout();
 		Invalidate();
-	}
-
-	private int MeasureCaretOffset()
-	{
-		return _caretIndex * _label.TileSize.Width;
 	}
 
 	#endregion
