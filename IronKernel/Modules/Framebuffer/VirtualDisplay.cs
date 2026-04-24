@@ -45,9 +45,10 @@ internal class VirtualDisplay : IVirtualDisplay
 	private Vector2i _lastWindowSize;
 	private RadialPalette _palette = null!;
 
-	// Pixel data management  
+	// Pixel data management
 	private bool _textureNeedsUpdate = false;
 	private RadialColor[] _pixelData;
+	private byte[] _indexBuffer = [];
 
 	private bool _disposedValue;
 
@@ -111,8 +112,9 @@ internal class VirtualDisplay : IVirtualDisplay
 		// Compile shaders  
 		_shaderProgram = ShaderProgram.ForGraphics(_logger, _settings.VertexShaderPath, _settings.FragmentShaderPath);
 
-		// Generate texture  
+		// Generate texture
 		_texture = new Texture(_settings.Width, _settings.Height, true);
+		_indexBuffer = new byte[_settings.Width * _settings.Height];
 
 		// Create VAO, VBO, and EBO  
 		_vao = GL.GenVertexArray();
@@ -219,13 +221,13 @@ internal class VirtualDisplay : IVirtualDisplay
 			throw new ArgumentException("Data size mismatch.");
 
 		var srcOffset = 0;
-		var dstOffset = y * width + x;
+		var dstOffset = y * Width + x;
 
 		for (var row = 0; row < height; row++)
 		{
 			Array.Copy(data, srcOffset, _pixelData, dstOffset, width);
 			srcOffset += width;
-			dstOffset += width;
+			dstOffset += Width;
 		}
 
 		_textureNeedsUpdate = true;
@@ -325,10 +327,14 @@ internal class VirtualDisplay : IVirtualDisplay
 			return;
 		}
 
-		// Update texture if needed  
+		// Update texture if needed
 		if (_textureNeedsUpdate)
 		{
-			_texture.Data = _pixelData.Select(x => x.Index).ToArray();
+			var pixels = _pixelData;
+			var buf = _indexBuffer;
+			for (var i = 0; i < pixels.Length; i++)
+				buf[i] = pixels[i].Index;
+			_texture.UploadData(buf);
 			_textureNeedsUpdate = false;
 		}
 

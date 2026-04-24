@@ -38,6 +38,9 @@ public class Texture : IDisposable
 		_format = indexed ? PixelFormat.Red : PixelFormat.Rgb;
 		_bpp = indexed ? 1 : 3;
 		_data = new byte[width * height * _bpp];
+
+		// Specify texture storage once so subsequent TexSubImage2D calls are valid.
+		GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, width, height, 0, _format, PixelType.UnsignedByte, _data);
 	}
 
 	#endregion
@@ -67,6 +70,12 @@ public class Texture : IDisposable
 	public void Bind()
 	{
 		GL.BindTexture(TextureTarget.Texture2D, Id);
+	}
+
+	public void UploadData(byte[] data)
+	{
+		Bind();
+		GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, Width, Height, _format, PixelType.UnsignedByte, data);
 	}
 
 	protected virtual void Dispose(bool disposing)
