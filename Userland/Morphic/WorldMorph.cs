@@ -1,5 +1,4 @@
 using IronKernel.Common.ValueObjects;
-using Miniscript;
 using System.Collections.Concurrent;
 using System.Drawing;
 using Userland.Morphic.Commands;
@@ -19,11 +18,8 @@ public sealed class WorldMorph : Morph
 
 	private HaloMorph? _halo;
 	private readonly WorldCommandManager _commandManager = new();
-	private readonly Interpreter _interpreter = new();
 	private readonly ScriptOutputHub _scriptOutput = new();
-	private readonly ConcurrentQueue<string> _scriptQueue = new();
 	private readonly ConcurrentQueue<Action> _actionQueue = new();
-	private bool _scriptBusy = false;
 	private readonly WorldScriptContext _scriptContext;
 	private readonly ILogger<WorldMorph> _logger;
 	private readonly ToastLayerMorph _toastLayer;
@@ -36,8 +32,6 @@ public sealed class WorldMorph : Morph
 	{
 		_logger = services.GetRequiredService<ILogger<WorldMorph>>();
 		_scriptContext = new WorldScriptContext(services.GetRequiredService<ILogger<WorldScriptContext>>(), this, services);
-		_interpreter.hostData = _scriptContext;
-		_scriptOutput.Attach(_interpreter);
 
 		Assets = assets;
 		Position = Point.Empty;
@@ -54,7 +48,6 @@ public sealed class WorldMorph : Morph
 
 	#region Properties
 
-	public Interpreter Interpreter => _interpreter;
 	public ScriptOutputHub ScriptOutput => _scriptOutput;
 	public WorldScriptContext ScriptContext => _scriptContext;
 
@@ -72,11 +65,6 @@ public sealed class WorldMorph : Morph
 	#endregion
 
 	#region Methods
-
-	public void EnqueueScript(string scriptSource)
-	{
-		_scriptQueue.Enqueue(scriptSource);
-	}
 
 	public void EnqueueAction(Action action)
 	{
@@ -112,23 +100,6 @@ public sealed class WorldMorph : Morph
 	public override void Update(double deltaTime)
 	{
 		_toastLayer.Size = Size;
-
-		// Advance MiniScript VM
-		_interpreter.RunUntilDone(deltaTime);
-
-		// Execute exactly one REPL line per frame (or per update)
-		if (!_scriptBusy && _scriptQueue.TryDequeue(out var line))
-		{
-			try
-			{
-				_scriptBusy = true;
-				_interpreter.REPL(line);
-			}
-			finally
-			{
-				_scriptBusy = false;
-			}
-		}
 
 		while (_actionQueue.TryDequeue(out var action)) action();
 

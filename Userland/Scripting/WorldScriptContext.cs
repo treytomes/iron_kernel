@@ -1,11 +1,11 @@
 using IronKernel.Common.ValueObjects;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Miniscript;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 using Userland.Services;
 using Userland.Morphic;
-using Miniscript;
 
 namespace Userland.Scripting;
 
@@ -45,7 +45,6 @@ public sealed class WorldScriptContext : IScriptHost
 	public WorldMorph World => _world;
 	public WorldCommandManager Commands => _world.Commands;
 	public ScriptOutputHub Output => _world.ScriptOutput;
-	public bool IsRunning => _world.Interpreter.Running();
 	public KeyboardState Keyboard { get; } = new();
 
 	#endregion
@@ -58,9 +57,6 @@ public sealed class WorldScriptContext : IScriptHost
 		ReadLineOverride != null
 			? ReadLineOverride(prompt)
 			: WindowService.PromptAsync(prompt);
-
-	public void StopWorldScript() => _world.Interpreter.Stop();
-	public void ResetWorldScript() => _world.Interpreter.Reset();
 
 	public void OnKey(KeyEvent e)
 	{
