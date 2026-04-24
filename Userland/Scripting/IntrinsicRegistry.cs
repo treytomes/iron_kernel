@@ -19,6 +19,7 @@ public static class IntrinsicRegistry
 
 		CreateHelpIntrinsic();
 		CreateDecompileIntrinsic();
+		CreateClsIntrinsic();
 	}
 
 	private static void CreateHelpIntrinsic()
@@ -112,6 +113,17 @@ public static class IntrinsicRegistry
 			{
 				return Error(ctx, $"decompile error: {ex.Message}");
 			}
+		};
+	}
+
+	private static void CreateClsIntrinsic()
+	{
+		var cls = Intrinsic.Create("cls");
+		cls.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is IScriptHost host)
+				host.ClearOutputRequested?.Invoke();
+			return Intrinsic.Result.Null;
 		};
 	}
 

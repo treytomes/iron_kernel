@@ -131,15 +131,7 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 		// Swatch fill
 		var color = _color ?? s.MutedText;
 		var innerSize = SwatchSize - Padding * 2;
-		for (var x = 0; x < innerSize; x++)
-			for (var y = 0; y < innerSize; y++)
-			{
-				rc.SetPixel(
-					new Point(
-						Padding * 2 + x,
-						Padding * 2 + y),
-					color);
-			}
+		rc.RenderFilledRect(new Rectangle(Padding * 2, Padding * 2, innerSize, innerSize), color);
 	}
 
 	#endregion

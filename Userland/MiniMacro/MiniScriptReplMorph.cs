@@ -107,6 +107,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 				return await _console.ReadLineAsync();
 			};
 			ctx.RunSourceRequested = RunSource;
+			ctx.ClearOutputRequested = _console.Clear;
 			_interpreter.hostData = ctx;
 		}
 

@@ -17,6 +17,11 @@ public interface IScriptHost
 	/// to whoever owns the interpreter (typically the REPL morph).
 	/// </summary>
 	Action<string>? RunSourceRequested { get; set; }
+
+	/// <summary>
+	/// Called by the <c>cls</c> intrinsic to clear the active console output.
+	/// </summary>
+	Action? ClearOutputRequested { get; set; }
 	void EnsureEnv(TAC.Context ctx);
 	Task<string?> ReadLineAsync(string prompt);
 }

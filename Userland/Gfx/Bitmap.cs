@@ -20,6 +20,7 @@ public class Bitmap : IImage<Bitmap, bool>
 	#region Fields
 
 	public readonly bool[] Data;
+	private RadialColor?[]? _rowBuffer;
 
 	#endregion
 
@@ -123,44 +124,17 @@ public class Bitmap : IImage<Bitmap, bool>
 	/// </summary>
 	public void Render(IRenderingContext rc, Point position, RadialColor? fgColor = null, RadialColor? bgColor = null)
 	{
-		var x = position.X;
-		var y = position.Y;
+		_rowBuffer ??= new RadialColor?[Size.Width];
+		var row = _rowBuffer;
+		var srcData = Data;
+		var w = Size.Width;
+
 		for (var dy = 0; dy < Size.Height; dy++)
 		{
-			if (y + dy < 0)
-			{
-				continue;
-			}
-			if (y + dy >= rc.Size.Height)
-			{
-				break;
-			}
-			for (var dx = 0; dx < Size.Width; dx++)
-			{
-				if (x + dx < 0)
-				{
-					continue;
-				}
-				if (x + dx >= rc.Size.Width)
-				{
-					break;
-				}
-				var value = GetPixel(dx, dy);
-				if (value)
-				{
-					if (fgColor != null)
-					{
-						rc.SetPixel(new Point(x + dx, y + dy), fgColor);
-					}
-				}
-				else
-				{
-					if (bgColor != null)
-					{
-						rc.SetPixel(new Point(x + dx, y + dy), bgColor);
-					}
-				}
-			}
+			var srcOffset = dy * w;
+			for (var dx = 0; dx < w; dx++)
+				row[dx] = srcData[srcOffset + dx] ? fgColor : bgColor;
+			rc.RenderSpan(position.X, position.Y + dy, row);
 		}
 	}
 

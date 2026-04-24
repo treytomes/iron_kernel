@@ -18,6 +18,7 @@ public class RunIntrinsicTests
         public IFileSystem FileSystem { get; } = new TestFileSystem();
         public IWindowService WindowService { get; } = new StubWindowService();
         public Action<string>? RunSourceRequested { get; set; }
+        public Action? ClearOutputRequested { get; set; }
 
         public void EnsureEnv(TAC.Context ctx)
         {

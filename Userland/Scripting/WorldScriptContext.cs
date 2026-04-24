@@ -36,6 +36,7 @@ public sealed class WorldScriptContext : IScriptHost
 	#region Properties
 
 	public Action<string>? RunSourceRequested { get; set; }
+	public Action? ClearOutputRequested { get; set; }
 	public IWindowService WindowService { get; }
 	public IFileSystem FileSystem { get; }
 	public MorphHandleRegistry Handles => _handles;
