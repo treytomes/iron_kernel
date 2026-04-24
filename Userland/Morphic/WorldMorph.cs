@@ -229,13 +229,7 @@ public sealed class WorldMorph : Morph
 			KeyboardFocus.OnKey(e);
 		}
 
-		// Console.WriteLine($"Keypress: {e}");
-
-		// Only forward to scripts if UI didn't handle it
-		if (!e.Handled || action == InputAction.Release)
-		{
-			_scriptContext?.OnKey(e);
-		}
+		_scriptContext?.OnKey(e);
 	}
 
 	public void PointerWheel(Point delta)
