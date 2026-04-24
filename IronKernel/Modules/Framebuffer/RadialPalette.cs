@@ -24,6 +24,7 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 		ColorDepth = colorDepth;
 		PaletteSize = colorDepth * colorDepth * colorDepth;
 
+		// Linear RGB grid: each channel evenly spaced 0..1 across colorDepth steps.
 		_colors = new List<Color>(PaletteSize);
 		for (var r = 0; r < colorDepth; r++)
 		{
@@ -31,17 +32,10 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 			{
 				for (var b = 0; b < colorDepth; b++)
 				{
-					var rr = r * 255 / (colorDepth - 1);
-					var gg = g * 255 / (colorDepth - 1);
-					var bb = b * 255 / (colorDepth - 1);
-
-					var mid = (rr * 30 + gg * 59 + bb * 11) / 100;
-
-					var r1 = (rr + mid) / 2 * 230 / 255 + 10;
-					var g1 = (gg + mid) / 2 * 230 / 255 + 10;
-					var b1 = (bb + mid) / 2 * 230 / 255 + 10;
-
-					_colors.Add(new Color(r1 / 255f, g1 / 255f, b1 / 255f));
+					_colors.Add(new Color(
+						r / (colorDepth - 1f),
+						g / (colorDepth - 1f),
+						b / (colorDepth - 1f)));
 				}
 			}
 		}

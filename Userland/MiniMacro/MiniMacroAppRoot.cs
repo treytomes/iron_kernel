@@ -94,6 +94,7 @@ public sealed class MiniMacroRoot
 				launcher.AddApp<MiniScriptReplMorph>("MiniScript REPL");
 				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
 				launcher.AddApp<FireDemoMorph>("Fire Demo");
+				launcher.AddApp<ColorGridMorph>("Color Grid");
 				launcher.AddAction("Toast Test", () =>
 				{
 					world.ShowToast("This is an info toast", ToastSeverity.Info);

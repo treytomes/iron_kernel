@@ -36,16 +36,27 @@ public class FireDemoMorph : Morph
 		_fire = new byte[Size.Height, Size.Width];
 		Array.Clear(_fire);
 
-		// Generate the palette.
-		// Hue goes from 0 to 85: red to yellow (0–85/255 in 0–1 scale).
-		// Saturation is always 1.0.
-		// Lightness is 0..1 for x=0..128, and 1.0 for x=128..255.
+		// Fire gradient: black → red → orange → yellow → white.
+		// Stops are biased so the typical simulation output range (intensity
+		// 80–140, t≈0.31–0.55) maps to vivid orange rather than dark red.
+		var stops = new (float t, Color c)[]
+		{
+			(0f,    Color.Black),
+			(0.1f,  new Color(1f, 0f,   0f)),   // red
+			(0.4f,  new Color(1f, 0.6f, 0f)),   // orange
+			(0.65f, new Color(1f, 1f,   0f)),   // yellow
+			(1f,    Color.White),
+		};
 		for (var x = 0; x < PALETTE_SIZE; x++)
 		{
-			var h = (x / 3) / 255f;
-			var s = 1f;
-			var l = Math.Min(1f, (x * 2) / 255f);
-			_palette[x] = Color.FromHSL(h, s, l);
+			var t = x / (PALETTE_SIZE - 1f);
+			// Find the two stops that bracket t.
+			int i = 0;
+			while (i < stops.Length - 2 && t > stops[i + 1].t) i++;
+			var lo = stops[i];
+			var hi = stops[i + 1];
+			var u = (t - lo.t) / (hi.t - lo.t);
+			_palette[x] = lo.c.Lerp(hi.c, u);
 		}
 	}
 

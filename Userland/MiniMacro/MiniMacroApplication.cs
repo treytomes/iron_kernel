@@ -84,6 +84,7 @@ public sealed class MiniMacroApplication(
 		services.AddTransient<MiniScriptReplMorph>();
 		services.AddTransient<TextEditorWindowMorph>();
 		services.AddTransient<FireDemoMorph>();
+		services.AddTransient<ColorGridMorph>();
 
 		// ------------------------------------------------------------------
 		// App root

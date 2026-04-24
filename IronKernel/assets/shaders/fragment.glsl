@@ -6,17 +6,16 @@ in vec2 vTexCoord;
 
 out vec4 FragColor;
 
-uniform usampler2D uTexture;  // 16-bit unsigned index per pixel
-uniform sampler2D uPalette;   // palette: PaletteSize x 1 RGB texture
-uniform int uPaletteSize;     // number of palette entries (ColorDepth^3)
+uniform usampler2D uTexture;  // R16UI index texture
+uniform sampler2D uPalette;   // palette: PaletteSize x 1 RGB
+uniform int uPaletteSize;     // ColorDepth^3
 
 void main()
 {
-    // Fetch the raw 16-bit index (comes back as uint in the R channel)
-    uint index = texture(uTexture, vTexCoord).r;
+    ivec2 texSize = textureSize(uTexture, 0);
+    ivec2 texel = ivec2(vTexCoord * vec2(texSize));
+    uint index = texelFetch(uTexture, texel, 0).r;
 
-    // Look up the palette entry — sample from center of the texel
     float paletteU = (float(index) + 0.5) / float(uPaletteSize);
-    FragColor = texture(uPalette, vec2(paletteU, 0.5));
-    FragColor.a = 1.0;
+    FragColor = vec4(texture(uPalette, vec2(paletteU, 0.5)).rgb, 1.0);
 }
