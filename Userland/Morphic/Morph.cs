@@ -755,10 +755,17 @@ public abstract class Morph : ICommandTarget
 	public void ApplyScriptEdits()
 	{
 		ApplyScriptState();
-		for (var n = 0; n < Submorphs.Count; n++)
+		ApplyScriptEditsToChildren(this);
+	}
+
+	private static void ApplyScriptEditsToChildren(Morph parent)
+	{
+		for (var n = 0; n < parent.Submorphs.Count; n++)
 		{
-			var morph = Submorphs[n];
-			morph?.ApplyScriptState();
+			var child = parent.Submorphs[n];
+			if (child == null) continue;
+			child.ApplyScriptState();
+			ApplyScriptEditsToChildren(child);
 		}
 	}
 
