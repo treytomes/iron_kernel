@@ -160,8 +160,12 @@ internal class VirtualDisplay : IVirtualDisplay
 		_paletteUniformLocation = _shaderProgram.GetUniformLocation("uPalette");
 		GL.UseProgram(0);
 
-		// Initialize palette  
+		// Initialize palette
 		_palette = new();
+
+		// Set blend state once — IronKernel owns the entire GL context.
+		GL.Enable(EnableCap.Blend);
+		GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
 		// Set initial window size and calculate scaling  
 		CalculateScaleAndPadding(_lastWindowSize);
@@ -338,74 +342,25 @@ internal class VirtualDisplay : IVirtualDisplay
 			_textureNeedsUpdate = false;
 		}
 
-		// Save current viewport and other GL state  
-		int[] currentViewport = new int[4];
-		GL.GetInteger(GetPName.Viewport, currentViewport);
-
-		bool blendWasEnabled = GL.IsEnabled(EnableCap.Blend);
-		int[] previousBlendFunc = new int[2];
-		GL.GetInteger(GetPName.BlendSrc, out previousBlendFunc[0]);
-		GL.GetInteger(GetPName.BlendDst, out previousBlendFunc[1]);
-
-		// Calculate the final dimensions for the viewport  
-		int scaledWidth = (int)(Width * _scale);
-		int scaledHeight = (int)(Height * _scale);
-		int xOffset = (int)_padding.X;
-		int yOffset = (int)_padding.Y;
-
-		// Set the viewport to match the scaled display area with padding  
-		// This ensures aspect ratio preservation and proper positioning  
-		GL.Viewport(xOffset, yOffset, scaledWidth, scaledHeight);
-
-		// Clear the color buffer to ensure clean black bars  
-		// Note: This clears the entire framebuffer, not just the viewport area  
+		// Set viewport to the scaled display area (recalculated on resize via CalculateScaleAndPadding).
+		GL.Viewport((int)_padding.X, (int)_padding.Y, (int)(Width * _scale), (int)(Height * _scale));
 		GL.Clear(ClearBufferMask.ColorBufferBit);
 
-		// Setup blending  
-		GL.Enable(EnableCap.Blend);
-		GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-		// Use shader and VAO  
 		_shaderProgram.Use();
 		GL.BindVertexArray(_vao);
 
-		// Save current texture bindings  
-		int[] previousTexture0 = new int[1];
-		int[] previousTexture1 = new int[1];
-		GL.GetInteger(GetPName.TextureBinding2D, previousTexture0);
-
-		// Bind palette to texture unit 1  
 		GL.ActiveTexture(TextureUnit.Texture1);
-		GL.GetInteger(GetPName.TextureBinding2D, previousTexture1);
 		GL.BindTexture(TextureTarget.Texture2D, Palette.Id);
 		GL.Uniform1(_paletteUniformLocation, 1);
 
-		// Bind main texture to texture unit 0  
 		GL.ActiveTexture(TextureUnit.Texture0);
 		GL.BindTexture(TextureTarget.Texture2D, _texture.Id);
 		GL.Uniform1(_textureUniformLocation, 0);
 
-		// Draw quad  
 		GL.DrawElements(PrimitiveType.Triangles, _quadIndices.Length, DrawElementsType.UnsignedInt, 0);
 
-		// Restore previous state  
 		GL.BindVertexArray(0);
 		GL.UseProgram(0);
-
-		// Restore texture bindings  
-		GL.ActiveTexture(TextureUnit.Texture0);
-		GL.BindTexture(TextureTarget.Texture2D, previousTexture0[0]);
-		GL.ActiveTexture(TextureUnit.Texture1);
-		GL.BindTexture(TextureTarget.Texture2D, previousTexture1[0]);
-		GL.ActiveTexture(TextureUnit.Texture0); // Leave active texture at 0  
-
-		// Restore blend state  
-		if (!blendWasEnabled)
-			GL.Disable(EnableCap.Blend);
-		GL.BlendFunc((BlendingFactor)previousBlendFunc[0], (BlendingFactor)previousBlendFunc[1]);
-
-		// Restore viewport  
-		GL.Viewport(currentViewport[0], currentViewport[1], currentViewport[2], currentViewport[3]);
 	}
 
 	/// <summary>  

@@ -155,17 +155,11 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		x1 = Math.Min(x1, clip.Right);
 		y1 = Math.Min(y1, clip.Bottom);
 
-		for (var y = y0; y < y1; y++)
-		{
-			if (y < 0 || y >= Size.Height) continue;
-			var rowOffset = y * Size.Width;
+		if (x0 >= x1 || y0 >= y1) return;
 
-			for (var x = x0; x < x1; x++)
-			{
-				if (x < 0 || x >= Size.Width) continue;
-				_data![rowOffset + x] = color;
-			}
-		}
+		var rowWidth = x1 - x0;
+		for (var y = y0; y < y1; y++)
+			_data.AsSpan(y * Size.Width + x0, rowWidth).Fill(color);
 
 		_isDirty = true;
 	}
