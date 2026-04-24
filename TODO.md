@@ -87,7 +87,7 @@
 
 ## Testing
 
-- [ ] Improve unit test coverage — identify untested areas and add tests; priority: `TextEditingCore`, `TextDocument`, `SelectionController`, and `LineEditingBehavior`
+- [x] Improve unit test coverage — identify untested areas and add tests; priority: `TextEditingCore`, `TextDocument`, `SelectionController`, and `LineEditingBehavior`
 
 ## Documentation
 
