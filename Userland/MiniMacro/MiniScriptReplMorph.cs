@@ -30,6 +30,7 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	private readonly ILogger<MiniScriptReplMorph> _logger;
 	private ReplState _state = ReplState.Initializing;
 	private Task<string>? _readTask = null;
+	private string? _pendingRunSource = null;
 
 	#endregion
 
@@ -100,11 +101,12 @@ public sealed class MiniScriptReplMorph : WindowMorph
 
 		if (world?.ScriptContext is { } ctx)
 		{
-			ctx.ReadLineOverride = prompt =>
+			ctx.ReadLineOverride = async prompt =>
 			{
 				_console.Write(prompt);
-				return _console.ReadLineAsync();
+				return await _console.ReadLineAsync();
 			};
+			ctx.RunSourceRequested = RunSource;
 			_interpreter.hostData = ctx;
 		}
 
@@ -119,6 +121,14 @@ public sealed class MiniScriptReplMorph : WindowMorph
 	public override void Update(double deltaTime)
 	{
 		base.Update(deltaTime);
+
+		if (_pendingRunSource != null)
+		{
+			var source = _pendingRunSource;
+			_pendingRunSource = null;
+			ApplyRunSource(source);
+			return;
+		}
 
 		if (_state == ReplState.Initializing)
 		{
@@ -137,7 +147,6 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			_interpreter.REPL(line);
 			if (_interpreter.NeedMoreInput())
 			{
-				// _console.WriteLine();
 				_console.Write(Prompt);
 				_readTask = _console.ReadLineAsync();
 			}
@@ -162,43 +171,41 @@ public sealed class MiniScriptReplMorph : WindowMorph
 		}
 	}
 
+	private void ApplyRunSource(string source)
+	{
+		_interpreter.Stop();
+		_interpreter.Reset(source);
+		_interpreter.Compile();
+		if (_interpreter.NeedMoreInput())
+		{
+			_interpreter.errorOutput?.Invoke("Script error.", true);
+			_interpreter.Stop();
+		}
+		_state = ReplState.Running;
+	}
+
 	private void SwitchState(ReplState newState)
 	{
 		if (_state == newState) return;
 		_state = newState;
 
-		switch (_state)
+		if (_state == ReplState.Reading)
 		{
-			case ReplState.Reading:
-				_console.Write(Prompt);
-				_readTask = _console.ReadLineAsync();
-				break;
-
-			case ReplState.Running:
-				var world = GetWorld();
-				if (world == null) return;
-
-				if (world?.ScriptContext.PendingRunSource != null)
-				{
-					var source = world.ScriptContext.PendingRunSource;
-					world.ScriptContext.PendingRunSource = null;
-
-					_interpreter.Stop();        // ensure clean state
-					_interpreter.Reset(source);
-					_interpreter.Compile();
-					if (_interpreter.NeedMoreInput())
-					{
-						_interpreter.errorOutput?.Invoke("Script error.", true);
-						_interpreter.Stop();
-					}
-					else
-					{
-						// _interpreter.REPL("");
-					}
-					// _interpreter.RunUntilDone(0.03f); // THIS is where compile & runtime errors appear
-				}
-				break;
+			_console.Write(Prompt);
+			_readTask = _console.ReadLineAsync();
 		}
+	}
+
+	private void RunSource(string source)
+	{
+		// Defer execution: the run() intrinsic may fire from inside the interpreter's
+		// own step loop. Resetting the interpreter synchronously there causes the REPL
+		// while-loop to pick up the new VM and run it inline, which recurses infinitely
+		// if the new script also calls run(). Signal yielding so the loop exits, then
+		// apply the source on the next Update() tick.
+		if (_interpreter.vm != null)
+			_interpreter.vm.yielding = true;
+		_pendingRunSource = source;
 	}
 
 	#endregion

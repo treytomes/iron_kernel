@@ -62,7 +62,7 @@ public sealed class CanvasMorph : Morph
 	{
 		if (_buffer == null) return;
 
-		Clear(color);
+		_buffer.Clear(color);
 
 		// _bufferDirty = true;
 		Invalidate();
