@@ -21,6 +21,7 @@ public class FireDemoMorph : Morph
 	private byte[,] _fire;
 	private readonly Color[] _palette = new Color[PALETTE_SIZE];
 	private readonly Random _random = new();
+	private Color?[] _rowBuffer = [];
 
 	#endregion
 
@@ -88,16 +89,18 @@ public class FireDemoMorph : Morph
 			}
 		}
 
-		// Set the drawing buffer to the fire buffer, using the palette colors.
+		// Render fire buffer row by row using the palette.
+		if (_rowBuffer.Length != Size.Width)
+			_rowBuffer = new Color?[Size.Width];
+
 		for (var y = 0; y < Size.Height; y++)
 		{
 			for (var x = 0; x < Size.Width; x++)
 			{
 				var f = GetFire(x, y);
-				if (f < 0 || f >= _palette.Length) continue;
-				var color = _palette[f];
-				rc.SetPixel(new Point(x, y), color);
+				_rowBuffer[x] = (uint)f < (uint)_palette.Length ? _palette[f] : Color.Black;
 			}
+			rc.RenderSpan(0, y, _rowBuffer);
 		}
 	}
 
