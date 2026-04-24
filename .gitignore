@@ -2,6 +2,8 @@ bin
 chats
 obj
 publish
+coverage-results
+coverage-report
 
 # Krita artifacts
 *.png~
