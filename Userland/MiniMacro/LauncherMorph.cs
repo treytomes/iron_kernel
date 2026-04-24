@@ -31,13 +31,6 @@ public sealed class LauncherMorph : WindowMorph
 
 	#endregion
 
-	#region Constants
-
-	private const int BUTTON_WIDTH = 160;
-	private const int BUTTON_HEIGHT = 14;
-
-	#endregion
-
 	#region Fields
 
 	private readonly IServiceProvider _services;
@@ -50,7 +43,7 @@ public sealed class LauncherMorph : WindowMorph
 	#region Constructor
 
 	public LauncherMorph(IServiceProvider services, Point position)
-		: base(position, new Size(BUTTON_WIDTH + 8, 32), "Launcher")
+		: base(position, new Size(120, 32), "Launcher")
 	{
 		_services = services;
 		_stack = new VerticalStackMorph
@@ -68,19 +61,19 @@ public sealed class LauncherMorph : WindowMorph
 
 	protected override void UpdateLayout()
 	{
-		// Stretch all button-like children to fill the stack width.
-		foreach (var child in _stack.Submorphs)
-		{
-			if (child is ButtonMorph)
-				child.Size = new Size(BUTTON_WIDTH, child.Size.Height);
-		}
-
+		// First pass: let buttons size naturally to their labels.
 		base.UpdateLayout();
 
-		// Fit window height to stack contents.
-		var stackHeight = _stack.Size.Height;
-		if (stackHeight > 0)
-			Size = new Size(Size.Width, HeaderHeight + stackHeight);
+		// Stack now knows the widest button. Stretch everything to that width
+		// and fit the window to match.
+		var stackSize = _stack.Size;
+		if (stackSize.Width <= 0 || stackSize.Height <= 0) return;
+
+		var innerWidth = stackSize.Width - _stack.Padding * 2;
+		foreach (var child in _stack.Submorphs)
+			child.Size = new Size(innerWidth, child.Size.Height);
+
+		Size = new Size(stackSize.Width, HeaderHeight + stackSize.Height);
 	}
 
 	#endregion
@@ -91,7 +84,7 @@ public sealed class LauncherMorph : WindowMorph
 		where TMorph : Morph
 	{
 		_hasApps = true;
-		var button = new ButtonMorph(Point.Empty, new Size(BUTTON_WIDTH, BUTTON_HEIGHT), displayName)
+		var button = new ButtonMorph(Point.Empty, Size.Empty, displayName)
 		{
 			Command = new ActionCommand(() =>
 			{
@@ -118,7 +111,7 @@ public sealed class LauncherMorph : WindowMorph
 			_hasActions = true;
 		}
 
-		_stack.AddMorph(new ButtonMorph(Point.Empty, new Size(BUTTON_WIDTH, BUTTON_HEIGHT), displayName)
+		_stack.AddMorph(new ButtonMorph(Point.Empty, Size.Empty, displayName)
 		{
 			Command = new ActionCommand(action)
 		});
