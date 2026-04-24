@@ -68,7 +68,7 @@ public sealed class MiniMacroApplication(
 		services.AddSingleton<IRenderingContext, RenderingContext>();
 		services.AddSingleton<IAssetService, AssetService>();
 		services.AddSingleton<IWindowService>(sp =>
-				new WindowService(sp.GetRequiredService<WorldMorph>(), sp));
+			sp.GetRequiredService<WorldMorph>().ScriptContext.WindowService);
 		services.AddSingleton<IClipboardService, ClipboardService>();
 
 		services.AddSingleton<WorldMorph>(sp =>

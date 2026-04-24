@@ -27,7 +27,7 @@ public sealed class WorldScriptContext : IScriptHost
 		_logger = logger;
 		_world = world;
 		_services = services;
-		WindowService = services.GetRequiredService<IWindowService>();
+		WindowService = new WindowService(world, services);
 		FileSystem = services.GetRequiredService<IFileSystem>();
 	}
 
