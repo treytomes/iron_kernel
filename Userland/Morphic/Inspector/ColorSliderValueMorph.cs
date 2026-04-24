@@ -5,7 +5,7 @@ using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
-public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
+public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 {
 	#region Fields
 	private Color? _color;
@@ -15,13 +15,13 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	private readonly SliderWithEditorMorph _g;
 	private readonly SliderWithEditorMorph _b;
 	private readonly ButtonMorph _toggleButton;
-	private readonly RadialColorSwatchMorph _swatch;
+	private readonly ColorSwatchMorph _swatch;
 	private readonly HorizontalStackMorph _root;
 	private readonly VerticalStackMorph _sliderStack;
 	#endregion
 
 	#region Construction
-	public RadialColorSliderValueMorph(Action<Color?>? setter)
+	public ColorSliderValueMorph(Action<Color?>? setter)
 	{
 		_setter = setter;
 		IsSelectable = false;
@@ -54,7 +54,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 			OnClick = OnToggleNull
 		};
 
-		_swatch = new RadialColorSwatchMorph(() => _color);
+		_swatch = new ColorSwatchMorph(() => _color);
 
 		_root.AddMorph(_swatch);
 		_root.AddMorph(_toggleButton);

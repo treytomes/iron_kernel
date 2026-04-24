@@ -5,7 +5,7 @@ using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
-public sealed class RadialColorValueMorph : Morph, IValueContentMorph
+public sealed class ColorValueMorph : Morph, IValueContentMorph
 {
 	#region Fields
 
@@ -21,7 +21,7 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 
 	#region Constructor
 
-	public RadialColorValueMorph(Action<Color?>? setter)
+	public ColorValueMorph(Action<Color?>? setter)
 	{
 		_setter = setter;
 		IsSelectable = false;

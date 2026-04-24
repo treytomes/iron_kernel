@@ -5,11 +5,11 @@ using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
-public sealed class RadialColorSwatchMorph : Morph
+public sealed class ColorSwatchMorph : Morph
 {
 	private readonly Func<Color?> _getColor;
 
-	public RadialColorSwatchMorph(Func<Color?> getColor)
+	public ColorSwatchMorph(Func<Color?> getColor)
 	{
 		_getColor = getColor;
 		IsSelectable = false;

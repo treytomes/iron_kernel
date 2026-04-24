@@ -62,7 +62,7 @@ public class InspectorFactory : IInspectorFactory
 		// --- Color ---
 		if (declaredType == typeof(Color) || declaredType == typeof(Color?))
 		{
-			return new RadialColorSliderValueMorph(c => setter?.Invoke(c));
+			return new ColorSliderValueMorph(c => setter?.Invoke(c));
 		}
 
 		// --- String ---
