@@ -41,28 +41,28 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 
 					var mid = (rr * 30 + gg * 59 + bb * 11) / 100;
 
-					var r1 = ~~((rr + mid * 1) / 2 * 230 / 255 + 10);
-					var g1 = ~~((gg + mid * 1) / 2 * 230 / 255 + 10);
-					var b1 = ~~((bb + mid * 1) / 2 * 230 / 255 + 10);
+					var r1 = (rr + mid) / 2 * 230 / 255 + 10;
+					var g1 = (gg + mid) / 2 * 230 / 255 + 10;
+					var b1 = (bb + mid) / 2 * 230 / 255 + 10;
 
-					_colors.Add(new Color((byte)r1, (byte)g1, (byte)b1));
+					_colors.Add(new Color(r1 / 255f, g1 / 255f, b1 / 255f));
 				}
 			}
 		}
 
 		while (_colors.Count < PALETTE_SIZE)
 		{
-			_colors.Add(new Color(0, 0, 0));
+			_colors.Add(Color.Black);
 		}
 
-		// Populate palette data.
+		// Populate palette texture data (byte RGB for GL).
 		var data = new byte[PALETTE_SIZE * 3];
 		for (int i = 0; i < PALETTE_SIZE; i++)
 		{
 			var color = _colors[i];
-			data[i * 3] = color.Red;
-			data[i * 3 + 1] = color.Green;
-			data[i * 3 + 2] = color.Blue;
+			data[i * 3]     = (byte)(color.R * 255f);
+			data[i * 3 + 1] = (byte)(color.G * 255f);
+			data[i * 3 + 2] = (byte)(color.B * 255f);
 		}
 
 		_texture = new Texture(PALETTE_SIZE, 1, false);

@@ -1,107 +1,110 @@
+using System.Runtime.InteropServices;
+
 namespace IronKernel.Common.ValueObjects;
 
-public sealed record Color : IEquatable<Color>
+[StructLayout(LayoutKind.Sequential)]
+public readonly record struct Color : IEquatable<Color>
 {
 	#region Fields
 
-	public readonly byte Red;
-	public readonly byte Green;
-	public readonly byte Blue;
+	public readonly float R;
+	public readonly float G;
+	public readonly float B;
 
 	#endregion
 
 	#region Constructors
 
-	public Color(byte r, byte g, byte b)
+	public Color(float r, float g, float b)
 	{
-		Red = r;
-		Green = g;
-		Blue = b;
+		R = Math.Clamp(r, 0f, 1f);
+		G = Math.Clamp(g, 0f, 1f);
+		B = Math.Clamp(b, 0f, 1f);
 	}
+
+	#endregion
+
+	#region Named constants
+
+	public static Color Black       => new(0f,   0f,   0f);
+	public static Color DarkerGray  => new(0.2f, 0.2f, 0.2f);
+	public static Color DarkSlateGray => new(0.2f, 0.4f, 0.4f);
+	public static Color DarkGray    => new(0.4f, 0.4f, 0.4f);
+	public static Color Gray        => new(0.6f, 0.6f, 0.6f);
+	public static Color LightGray   => new(0.8f, 0.8f, 0.8f);
+	public static Color White       => new(1f,   1f,   1f);
+
+	public static Color Red         => new(1f,   0f,   0f);
+	public static Color Orange      => new(1f,   0.6f, 0f);
+	public static Color Yellow      => new(1f,   1f,   0f);
+	public static Color Green       => new(0f,   1f,   0f);
+	public static Color Cyan        => new(0f,   1f,   1f);
+	public static Color Blue        => new(0f,   0f,   1f);
 
 	#endregion
 
 	#region Methods
 
-	/// <remarks>
-	/// From https://lodev.org/cgtutor/color.html
-	/// </remarks>
+	public Color Lerp(Color other, float t)
+	{
+		t = Math.Clamp(t, 0f, 1f);
+		return new Color(
+			R + (other.R - R) * t,
+			G + (other.G - G) * t,
+			B + (other.B - B) * t);
+	}
+
+	public Color Add(Color other) =>
+		new(R + other.R, G + other.G, B + other.B);
+
+	public Color WithR(float r) => new(r, G, B);
+	public Color WithG(float g) => new(R, g, B);
+	public Color WithB(float b) => new(R, G, b);
+
+	/// <summary>
+	/// Creates a Color from HSL values in the 0–1 range.
+	/// </summary>
 	public static Color FromHSL(float h, float s, float l)
 	{
-		float r, g, b; //this function works with floats between 0 and 1
-		float temp1, temp2, tempR, tempG, tempB;
-		h = h / 255.0f;
-		s = s / 255.0f;
-		l = l / 255.0f;
+		float r, g, b;
 
-
-		//If saturation is 0, the color is a shade of gray
-		if (s == 0) r = g = b = l;
-
-		//If saturation > 0, more complex calculations are needed
+		if (s == 0f)
+		{
+			r = g = b = l;
+		}
 		else
 		{
-			//Set the temporary values
-			if (l < 0.5) temp2 = l * (1 + s);
-			else temp2 = (l + s) - (l * s);
-			temp1 = 2 * l - temp2;
-			tempR = h + 1.0f / 3.0f;
-			if (tempR > 1) tempR--;
-			tempG = h;
-			tempB = h - 1.0f / 3.0f;
-			if (tempB < 0) tempB++;
+			var temp2 = l < 0.5f ? l * (1f + s) : (l + s) - (l * s);
+			var temp1 = 2f * l - temp2;
 
-			//Red
-			if (tempR < 1.0 / 6.0) r = temp1 + (temp2 - temp1) * 6.0f * tempR;
-			else if (tempR < 0.5) r = temp2;
-			else if (tempR < 2.0 / 3.0) r = temp1 + (temp2 - temp1) * ((2.0f / 3.0f) - tempR) * 6.0f;
-			else r = temp1;
-
-			//Green
-			if (tempG < 1.0 / 6.0) g = temp1 + (temp2 - temp1) * 6.0f * tempG;
-			else if (tempG < 0.5) g = temp2;
-			else if (tempG < 2.0 / 3.0) g = temp1 + (temp2 - temp1) * ((2.0f / 3.0f) - tempG) * 6.0f;
-			else g = temp1;
-
-			//Blue
-			if (tempB < 1.0 / 6.0) b = temp1 + (temp2 - temp1) * 6.0f * tempB;
-			else if (tempB < 0.5) b = temp2;
-			else if (tempB < 2.0 / 3.0) b = temp1 + (temp2 - temp1) * ((2.0f / 3.0f) - tempB) * 6.0f;
-			else b = temp1;
+			r = HueToChannel(temp1, temp2, h + 1f / 3f);
+			g = HueToChannel(temp1, temp2, h);
+			b = HueToChannel(temp1, temp2, h - 1f / 3f);
 		}
 
-		var colorRGB = new Color(
-			(byte)(r * 255.0f),
-			(byte)(g * 255.0f),
-			(byte)(b * 255.0f)
-		);
-		return colorRGB;
+		return new Color(r, g, b);
 	}
 
-	public bool Equals(Color? other)
+	private static float HueToChannel(float t1, float t2, float hue)
 	{
-		return Red == other?.Red && Green == other?.Green && Blue == other?.Blue;
+		if (hue < 0f) hue += 1f;
+		if (hue > 1f) hue -= 1f;
+
+		if (hue < 1f / 6f) return t1 + (t2 - t1) * 6f * hue;
+		if (hue < 0.5f)    return t2;
+		if (hue < 2f / 3f) return t1 + (t2 - t1) * (2f / 3f - hue) * 6f;
+		return t1;
 	}
 
-	// public override bool Equals(object? obj)
-	// {
-	// 	return (obj != null) && obj is Color && Equals((Color)obj);
-	// }
+	public bool Equals(Color other) =>
+		R == other.R && G == other.G && B == other.B;
 
-	public override int GetHashCode()
-	{
-		return (Red << 16) | (Green << 8) | Blue;
-	}
+	public override int GetHashCode() =>
+		HashCode.Combine(R, G, B);
 
-	// public static bool operator ==(Color a, Color b)
-	// {
-	// 	return a.Equals(b);
-	// }
+	public static Color operator +(Color a, Color b) => a.Add(b);
 
-	// public static bool operator !=(Color a, Color b)
-	// {
-	// 	return !(a == b);
-	// }
+	public override string ToString() => $"(R:{R:F3} G:{G:F3} B:{B:F3})";
 
 	#endregion
 }

@@ -218,22 +218,22 @@ public class RadialColorTests
     [Fact]
     public void FromColor_Black_MapsToBlack()
     {
-        var result = RadialColor.FromColor(new Color(0, 0, 0));
+        var result = RadialColor.FromColor(new Color(0f, 0f, 0f));
         Assert.Equal(RadialColor.Black, result);
     }
 
     [Fact]
     public void FromColor_White_MapsToWhite()
     {
-        var result = RadialColor.FromColor(new Color(255, 255, 255));
+        var result = RadialColor.FromColor(new Color(1f, 1f, 1f));
         Assert.Equal(RadialColor.White, result);
     }
 
     [Fact]
     public void FromColor_MidGray_QuantizesCorrectly()
     {
-        // 128/255 * 5 ≈ 2.5 → rounds to 3
-        var result = RadialColor.FromColor(new Color(128, 128, 128));
+        // 0.5 * 5 = 2.5 → rounds to 3 (midpoint rounds up)
+        var result = RadialColor.FromColor(new Color(0.5f, 0.5f, 0.5f));
         Assert.Equal(3, result.R);
         Assert.Equal(3, result.G);
         Assert.Equal(3, result.B);

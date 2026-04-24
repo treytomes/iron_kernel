@@ -4,111 +4,269 @@ namespace IronKernel.Tests;
 
 public class ColorTests
 {
+    // ── Constructor and clamping ──────────────────────────────────────────────
+
     [Fact]
     public void Constructor_SetsChannels()
     {
-        var c = new Color(1, 2, 3);
-        Assert.Equal(1, c.Red);
-        Assert.Equal(2, c.Green);
-        Assert.Equal(3, c.Blue);
+        var c = new Color(0.1f, 0.5f, 0.9f);
+        Assert.Equal(0.1f, c.R);
+        Assert.Equal(0.5f, c.G);
+        Assert.Equal(0.9f, c.B);
     }
+
+    [Fact]
+    public void Constructor_ClampsAboveOne()
+    {
+        var c = new Color(2f, 3f, 4f);
+        Assert.Equal(1f, c.R);
+        Assert.Equal(1f, c.G);
+        Assert.Equal(1f, c.B);
+    }
+
+    [Fact]
+    public void Constructor_ClampsBelowZero()
+    {
+        var c = new Color(-1f, -0.5f, -2f);
+        Assert.Equal(0f, c.R);
+        Assert.Equal(0f, c.G);
+        Assert.Equal(0f, c.B);
+    }
+
+    // ── Named constants ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void Black_AllZero()
+    {
+        var c = Color.Black;
+        Assert.Equal(0f, c.R);
+        Assert.Equal(0f, c.G);
+        Assert.Equal(0f, c.B);
+    }
+
+    [Fact]
+    public void White_AllOne()
+    {
+        var c = Color.White;
+        Assert.Equal(1f, c.R);
+        Assert.Equal(1f, c.G);
+        Assert.Equal(1f, c.B);
+    }
+
+    [Fact]
+    public void Red_OnlyRedChannel()
+    {
+        var c = Color.Red;
+        Assert.Equal(1f, c.R);
+        Assert.Equal(0f, c.G);
+        Assert.Equal(0f, c.B);
+    }
+
+    [Fact]
+    public void Green_OnlyGreenChannel()
+    {
+        var c = Color.Green;
+        Assert.Equal(0f, c.R);
+        Assert.Equal(1f, c.G);
+        Assert.Equal(0f, c.B);
+    }
+
+    [Fact]
+    public void Blue_OnlyBlueChannel()
+    {
+        var c = Color.Blue;
+        Assert.Equal(0f, c.R);
+        Assert.Equal(0f, c.G);
+        Assert.Equal(1f, c.B);
+    }
+
+    // ── Equality ──────────────────────────────────────────────────────────────
 
     [Fact]
     public void Equals_SameChannels_ReturnsTrue()
     {
-        var a = new Color(10, 20, 30);
-        var b = new Color(10, 20, 30);
+        var a = new Color(0.2f, 0.4f, 0.6f);
+        var b = new Color(0.2f, 0.4f, 0.6f);
         Assert.Equal(a, b);
     }
 
     [Fact]
     public void Equals_DifferentChannels_ReturnsFalse()
     {
-        var a = new Color(10, 20, 30);
-        var b = new Color(10, 20, 31);
+        var a = new Color(0.2f, 0.4f, 0.6f);
+        var b = new Color(0.2f, 0.4f, 0.7f);
         Assert.NotEqual(a, b);
     }
 
     [Fact]
     public void GetHashCode_SameChannels_SameHash()
     {
-        var a = new Color(10, 20, 30);
-        var b = new Color(10, 20, 30);
+        var a = new Color(0.1f, 0.2f, 0.3f);
+        var b = new Color(0.1f, 0.2f, 0.3f);
         Assert.Equal(a.GetHashCode(), b.GetHashCode());
     }
+
+    // ── Lerp ──────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Lerp_AtZero_ReturnsOriginal()
+    {
+        var a = Color.Red;
+        var b = Color.Blue;
+        Assert.Equal(a, a.Lerp(b, 0f));
+    }
+
+    [Fact]
+    public void Lerp_AtOne_ReturnsOther()
+    {
+        var a = Color.Red;
+        var b = Color.Blue;
+        Assert.Equal(b, a.Lerp(b, 1f));
+    }
+
+    [Fact]
+    public void Lerp_AtMidpoint_AveragesChannels()
+    {
+        var a = new Color(0f, 0f, 0f);
+        var b = new Color(1f, 1f, 1f);
+        var mid = a.Lerp(b, 0.5f);
+        Assert.Equal(0.5f, mid.R);
+        Assert.Equal(0.5f, mid.G);
+        Assert.Equal(0.5f, mid.B);
+    }
+
+    [Fact]
+    public void Lerp_ClampsBelowZero()
+    {
+        var a = Color.Black;
+        var b = Color.White;
+        var result = a.Lerp(b, -1f);
+        Assert.Equal(Color.Black, result);
+    }
+
+    [Fact]
+    public void Lerp_ClampsAboveOne()
+    {
+        var a = Color.Black;
+        var b = Color.White;
+        var result = a.Lerp(b, 2f);
+        Assert.Equal(Color.White, result);
+    }
+
+    // ── Add ───────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Add_SaturatesAtOne()
+    {
+        var a = new Color(0.8f, 0.8f, 0.8f);
+        var b = new Color(0.5f, 0.5f, 0.5f);
+        var result = a + b;
+        Assert.Equal(1f, result.R);
+        Assert.Equal(1f, result.G);
+        Assert.Equal(1f, result.B);
+    }
+
+    [Fact]
+    public void Add_BelowSaturation_SumsChannels()
+    {
+        var a = new Color(0.1f, 0.2f, 0.3f);
+        var b = new Color(0.1f, 0.1f, 0.1f);
+        var result = a + b;
+        Assert.Equal(0.2f, result.R, precision: 5);
+        Assert.Equal(0.3f, result.G, precision: 5);
+        Assert.Equal(0.4f, result.B, precision: 5);
+    }
+
+    // ── With* builders ────────────────────────────────────────────────────────
+
+    [Fact]
+    public void WithR_ReplacesRedChannel()
+    {
+        var c = new Color(0.1f, 0.2f, 0.3f).WithR(0.9f);
+        Assert.Equal(0.9f, c.R);
+        Assert.Equal(0.2f, c.G);
+        Assert.Equal(0.3f, c.B);
+    }
+
+    [Fact]
+    public void WithG_ReplacesGreenChannel()
+    {
+        var c = new Color(0.1f, 0.2f, 0.3f).WithG(0.8f);
+        Assert.Equal(0.1f, c.R);
+        Assert.Equal(0.8f, c.G);
+        Assert.Equal(0.3f, c.B);
+    }
+
+    [Fact]
+    public void WithB_ReplacesBlueChannel()
+    {
+        var c = new Color(0.1f, 0.2f, 0.3f).WithB(0.7f);
+        Assert.Equal(0.1f, c.R);
+        Assert.Equal(0.2f, c.G);
+        Assert.Equal(0.7f, c.B);
+    }
+
+    // ── FromHSL ───────────────────────────────────────────────────────────────
 
     [Fact]
     public void FromHSL_Grayscale_EqualChannels()
     {
-        // s=0 means grayscale: all channels should be equal
-        var c = Color.FromHSL(0, 0, 128);
-        Assert.Equal(c.Red, c.Green);
-        Assert.Equal(c.Green, c.Blue);
-    }
-
-    [Fact]
-    public void FromHSL_Red_DominantRedChannel()
-    {
-        // Hue=0 (red), full saturation and mid lightness
-        var c = Color.FromHSL(0, 255, 128);
-        Assert.True(c.Red > c.Green, "Red channel should dominate for hue=0");
-        Assert.True(c.Red > c.Blue, "Red channel should dominate for hue=0");
+        var c = Color.FromHSL(0f, 0f, 0.5f);
+        Assert.Equal(c.R, c.G);
+        Assert.Equal(c.G, c.B);
     }
 
     [Fact]
     public void FromHSL_Black_AllZero()
     {
-        var c = Color.FromHSL(0, 0, 0);
-        Assert.Equal(0, c.Red);
-        Assert.Equal(0, c.Green);
-        Assert.Equal(0, c.Blue);
+        var c = Color.FromHSL(0f, 0f, 0f);
+        Assert.Equal(0f, c.R, precision: 5);
+        Assert.Equal(0f, c.G, precision: 5);
+        Assert.Equal(0f, c.B, precision: 5);
     }
 
     [Fact]
-    public void FromHSL_White_AllMax()
+    public void FromHSL_White_AllOne()
     {
-        var c = Color.FromHSL(0, 0, 255);
-        Assert.Equal(255, c.Red);
-        Assert.Equal(255, c.Green);
-        Assert.Equal(255, c.Blue);
+        var c = Color.FromHSL(0f, 0f, 1f);
+        Assert.Equal(1f, c.R, precision: 5);
+        Assert.Equal(1f, c.G, precision: 5);
+        Assert.Equal(1f, c.B, precision: 5);
+    }
+
+    [Fact]
+    public void FromHSL_Red_DominantRedChannel()
+    {
+        var c = Color.FromHSL(0f, 1f, 0.5f);
+        Assert.True(c.R > c.G, "Red channel should dominate for hue=0");
+        Assert.True(c.R > c.B, "Red channel should dominate for hue=0");
     }
 
     [Fact]
     public void FromHSL_Green_DominantGreenChannel()
     {
-        // Hue=85 ≈ 1/3 * 255, full saturation, mid lightness
-        var c = Color.FromHSL(85, 255, 128);
-        Assert.True(c.Green > c.Red);
-        Assert.True(c.Green > c.Blue);
+        var c = Color.FromHSL(1f / 3f, 1f, 0.5f);
+        Assert.True(c.G > c.R);
+        Assert.True(c.G > c.B);
     }
 
     [Fact]
     public void FromHSL_Blue_DominantBlueChannel()
     {
-        // Hue=170 ≈ 2/3 * 255
-        var c = Color.FromHSL(170, 255, 128);
-        Assert.True(c.Blue > c.Red);
-        Assert.True(c.Blue > c.Green);
-    }
-
-    [Fact]
-    public void FromHSL_HighLightness_UsesSumFormula()
-    {
-        // l > 0.5 → temp2 = (l + s) - (l * s) branch
-        var c = Color.FromHSL(0, 200, 200);
-        Assert.True(c.Red > 0);
+        var c = Color.FromHSL(2f / 3f, 1f, 0.5f);
+        Assert.True(c.B > c.R);
+        Assert.True(c.B > c.G);
     }
 
     [Theory]
-    [InlineData(43,  255, 128)]  // tempR in (1/6, 1/2) → r = temp2
-    [InlineData(128, 255, 128)]  // tempR in (1/2, 2/3) → r = temp1 + …
-    [InlineData(200, 255, 128)]  // tempR > 2/3 → r = temp1
-    public void FromHSL_AllHueSectors_ProduceValidRgb(float h, float s, float l)
+    [InlineData(1f / 6f, 1f, 0.5f)]
+    [InlineData(0.5f,    1f, 0.5f)]
+    [InlineData(5f / 6f, 1f, 0.5f)]
+    public void FromHSL_AllHueSectors_ProduceValidRange(float h, float s, float l)
     {
         var c = Color.FromHSL(h, s, l);
-        // Just verify it doesn't throw and returns plausible byte values
-        Assert.InRange(c.Red,   (byte)0, (byte)255);
-        Assert.InRange(c.Green, (byte)0, (byte)255);
-        Assert.InRange(c.Blue,  (byte)0, (byte)255);
+        Assert.InRange(c.R, 0f, 1f);
+        Assert.InRange(c.G, 0f, 1f);
+        Assert.InRange(c.B, 0f, 1f);
     }
 }

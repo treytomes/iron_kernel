@@ -87,20 +87,23 @@ public sealed record RadialColor : IEquatable<RadialColor>
 		);
 	}
 
-	/// <summary>  
-	/// Converts a standard Color to a RadialColor.  
-	/// </summary>  
+	/// <summary>
+	/// Converts a float-based Color to a RadialColor by quantizing to the 6-level palette.
+	/// </summary>
 	public static RadialColor FromColor(Color color)
 	{
-		var r = (byte)Math.Min(5, Math.Round(color.Red / 255f * 5));
-		var g = (byte)Math.Min(5, Math.Round(color.Green / 255f * 5));
-		var b = (byte)Math.Min(5, Math.Round(color.Blue / 255f * 5));
+		var r = (byte)Math.Round(color.R * 5f, MidpointRounding.AwayFromZero);
+		var g = (byte)Math.Round(color.G * 5f, MidpointRounding.AwayFromZero);
+		var b = (byte)Math.Round(color.B * 5f, MidpointRounding.AwayFromZero);
 		return new RadialColor(r, g, b);
 	}
 
+	/// <summary>
+	/// Creates a RadialColor from HSL values in the legacy 0–255 scale.
+	/// </summary>
 	public static RadialColor FromHSL(float h, float s, float l)
 	{
-		return FromColor(Color.FromHSL(h, s, l));
+		return FromColor(Color.FromHSL(h / 255f, s / 255f, l / 255f));
 	}
 
 	/// <summary>  
