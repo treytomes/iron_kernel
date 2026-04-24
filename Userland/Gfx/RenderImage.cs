@@ -7,6 +7,8 @@ namespace Userland.Gfx;
 public sealed class RenderImage
 	: Image, IImage<RenderImage>
 {
+	private RadialColor?[]? _flipBuffer;
+
 	public RenderImage(Image image)
 		: base(image.Size.Width, image.Size.Height, image.Data, 1)
 	{
@@ -28,14 +30,14 @@ public sealed class RenderImage
 			for (var dy = 0; dy < Size.Height; dy++)
 			{
 				var sy = flipV ? (Size.Height - 1 - dy) : dy;
-				var rowSpan = Data.AsSpan(sy * Size.Width, Size.Width);
-				rc.RenderSpan(position.X, position.Y + dy, rowSpan);
+				rc.RenderSpan(position.X, position.Y + dy, Data.AsSpan(sy * Size.Width, Size.Width));
 			}
 		}
 		else
 		{
-			// Flip-horizontal: copy row into a temporary reversed span.
-			var tmp = new RadialColor?[Size.Width];
+			// Flip-horizontal: reverse each row into a cached buffer (allocated once).
+			_flipBuffer ??= new RadialColor?[Size.Width];
+			var tmp = _flipBuffer;
 			for (var dy = 0; dy < Size.Height; dy++)
 			{
 				var sy = flipV ? (Size.Height - 1 - dy) : dy;

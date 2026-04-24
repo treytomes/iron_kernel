@@ -219,19 +219,11 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		if (y < clip.Top || y >= clip.Bottom)
 			return;
 
-		var xStart = pnt.X + _currentOffset.X;
-		var xEnd = xStart + len;
+		var xStart = Math.Max(pnt.X + _currentOffset.X, Math.Max(clip.Left, 0));
+		var xEnd = Math.Min(pnt.X + _currentOffset.X + len, Math.Min(clip.Right, Size.Width));
+		if (xStart >= xEnd) return;
 
-		xStart = Math.Max(xStart, clip.Left);
-		xEnd = Math.Min(xEnd, clip.Right);
-
-		var rowOffset = y * Size.Width;
-		for (var x = xStart; x < xEnd; x++)
-		{
-			if (x < 0 || x >= Size.Width) continue;
-			_data![rowOffset + x] = color;
-		}
-
+		_data.AsSpan(y * Size.Width + xStart, xEnd - xStart).Fill(color);
 		_isDirty = true;
 	}
 
@@ -245,17 +237,12 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		if (x < clip.Left || x >= clip.Right)
 			return;
 
-		var yStart = pnt.Y + _currentOffset.Y;
-		var yEnd = yStart + len;
-
-		yStart = Math.Max(yStart, clip.Top);
-		yEnd = Math.Min(yEnd, clip.Bottom);
+		var yStart = Math.Max(pnt.Y + _currentOffset.Y, Math.Max(clip.Top, 0));
+		var yEnd = Math.Min(pnt.Y + _currentOffset.Y + len, Math.Min(clip.Bottom, Size.Height));
+		if (yStart >= yEnd) return;
 
 		for (var y = yStart; y < yEnd; y++)
-		{
-			if (y < 0 || y >= Size.Height) continue;
 			_data![y * Size.Width + x] = color;
-		}
 
 		_isDirty = true;
 	}
