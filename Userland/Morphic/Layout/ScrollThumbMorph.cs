@@ -39,9 +39,10 @@ public abstract class ScrollThumbMorph : Morph
 
 	#region Methods
 
-	protected Color ResolveThumbColor()
+	protected Color? ResolveThumbColor()
 	{
-		var s = Style!.Semantic;
+		var s = Style?.Semantic;
+		if (s == null) return null;
 
 		if (!IsEnabled)
 			return s.MutedText;
@@ -65,7 +66,9 @@ public abstract class ScrollThumbMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), ResolveThumbColor());
+		var color = ResolveThumbColor();
+		if (color == null) return;
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), color.Value);
 		base.DrawSelf(rc);
 	}
 

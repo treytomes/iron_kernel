@@ -10,8 +10,9 @@ public sealed class VerticalScrollThumbMorph(
 {
 	protected override void UpdateLayout()
 	{
-		var style = Style ?? throw new NullReferenceException("Style is missing.");
-		Size = new Size(style.DefaultFontStyle.TileSize.Width + Padding * 2, Size.Height);
+		var style = Style;
+		if (style != null)
+			Size = new Size(style.DefaultFontStyle.TileSize.Width + Padding * 2, Size.Height);
 		base.UpdateLayout();
 	}
 

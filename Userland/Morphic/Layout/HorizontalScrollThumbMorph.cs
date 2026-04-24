@@ -10,8 +10,9 @@ public sealed class HorizontalScrollThumbMorph(
 {
 	protected override void UpdateLayout()
 	{
-		var style = Style ?? throw new NullReferenceException("Style is missing.");
-		Size = new Size(Size.Width, style.DefaultFontStyle.TileSize.Height + Padding * 2);
+		var style = Style;
+		if (style != null)
+			Size = new Size(Size.Width, style.DefaultFontStyle.TileSize.Height + Padding * 2);
 		base.UpdateLayout();
 	}
 
