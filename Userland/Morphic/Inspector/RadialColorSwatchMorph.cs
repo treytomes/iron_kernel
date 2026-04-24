@@ -1,14 +1,15 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
 public sealed class RadialColorSwatchMorph : Morph
 {
-	private readonly Func<RadialColor?> _getColor;
+	private readonly Func<Color?> _getColor;
 
-	public RadialColorSwatchMorph(Func<RadialColor?> getColor)
+	public RadialColorSwatchMorph(Func<Color?> getColor)
 	{
 		_getColor = getColor;
 		IsSelectable = false;

@@ -4,6 +4,7 @@ using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Morphic.Inspector;
 using Userland.Services;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -117,10 +118,10 @@ public sealed class CheckBoxMorph : Morph, IValueContentMorph
 					: EmptyCheckBoxTile;
 
 		// Base state resolution (shared pattern) [1]
-		RadialColor fg =
+		Color fg =
 			!IsEnabled ? s.SecondaryText : s.Text;
 
-		RadialColor bg = s.Surface;
+		Color bg = s.Surface;
 
 		// Animated overlays
 		if (_hover.Value > 0f)

@@ -1,4 +1,5 @@
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -10,7 +11,7 @@ public sealed class MiniScriptHighlighter : ISyntaxHighlighter
 		"function", "return", "end"
 	};
 
-	public RadialColor? GetForeground(
+	public Color? GetForeground(
 		TextDocument document,
 		int line,
 		int column)
@@ -23,11 +24,11 @@ public sealed class MiniScriptHighlighter : ISyntaxHighlighter
 
 		// ----- Line comment
 		if (inComment)
-			return RadialColor.Green;
+			return Color.Green;
 
 		// ----- String literal
 		if (inString)
-			return RadialColor.Orange;
+			return Color.Orange;
 
 		// ----- Keywords
 		if (char.IsLetter(text[column]))
@@ -42,12 +43,12 @@ public sealed class MiniScriptHighlighter : ISyntaxHighlighter
 
 			string word = text.Substring(start, end - start);
 			if (Keywords.Contains(word))
-				return RadialColor.Yellow;
+				return Color.Yellow;
 		}
 
 		// ----- Numbers
 		if (IsNumberAt(text, column))
-			return RadialColor.Cyan;
+			return Color.Cyan;
 
 		return null;
 	}

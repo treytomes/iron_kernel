@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Miniscript;
 using Userland.Morphic;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Scripting;
 
@@ -94,7 +95,7 @@ public static class CanvasIntrinsics
 
 			if (ctx.GetVar("color") is ValMap map && map.IsColor())
 			{
-				canvas.Clear(map.ToColor());
+				canvas.Clear(map.ToFloatColor());
 			}
 
 			return Intrinsic.Result.Null;
@@ -114,14 +115,14 @@ public static class CanvasIntrinsics
 				return Intrinsic.Result.Null;
 
 			var count = list.values.Count;
-			var buffer = new RadialColor?[count];
+			var buffer = new Color?[count];
 
 			for (int i = 0; i < count; i++)
 			{
 				if (list.values[i] is ValMap map && map.IsColor())
-					buffer[i] = map.ToColor();
+					buffer[i] = map.ToFloatColor();
 				else
-					buffer[i] = RadialColor.Black;
+					buffer[i] = Color.Black;
 			}
 
 			canvas.WritePixels(buffer);
@@ -148,7 +149,7 @@ public static class CanvasIntrinsics
 			canvas.SetPixel(
 				ctx.GetVar("x").IntValue(),
 				ctx.GetVar("y").IntValue(),
-				map.ToColor()
+				map.ToFloatColor()
 			);
 
 			return Intrinsic.Result.Null;
@@ -172,7 +173,8 @@ public static class CanvasIntrinsics
 				ctx.GetVar("y").IntValue()
 			);
 
-			return new Intrinsic.Result(color.ToMiniScriptValue());
+			if (color == null) return Intrinsic.Result.Null;
+			return new Intrinsic.Result(color.Value.ToMiniScriptValue());
 		};
 	}
 

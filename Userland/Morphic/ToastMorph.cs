@@ -1,6 +1,8 @@
 using System.Drawing;
+using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Events;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -79,7 +81,7 @@ public sealed class ToastMorph : Morph
         };
 
         rc.RenderFilledRect(new Rectangle(Point.Empty, Size), bg);
-        rc.RenderRect(new Rectangle(Point.Empty, Size), bg.Lerp(IronKernel.Common.ValueObjects.RadialColor.Black, 0.4f));
+        rc.RenderRect(new Rectangle(Point.Empty, Size), bg.Lerp(Color.Black, 0.4f));
         _label.ForegroundColor = fg;
     }
 }

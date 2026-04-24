@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
@@ -59,10 +60,9 @@ public class InspectorFactory : IInspectorFactory
 		}
 
 		// --- Color ---
-		if (declaredType == typeof(RadialColor))
+		if (declaredType == typeof(Color) || declaredType == typeof(Color?))
 		{
 			return new RadialColorSliderValueMorph(c => setter?.Invoke(c));
-			// return new RadialColorValueMorph(c => setter?.Invoke(c));
 		}
 
 		// --- String ---

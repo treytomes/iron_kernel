@@ -6,6 +6,7 @@ using Userland.Morphic.Inspector;
 using Userland.Services;
 using System.Drawing;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -26,8 +27,8 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 	/// </summary>
 	private int? _wrapWidth;
 
-	private RadialColor? _foregroundColorOverride;
-	private RadialColor? _backgroundColorOverride;
+	private Color? _foregroundColorOverride;
+	private Color? _backgroundColorOverride;
 
 	#endregion
 
@@ -50,7 +51,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 
 	public Size TileSize => Style?.DefaultFontStyle.TileSize ?? new Size(1, 1);
 
-	public RadialColor? ForegroundColor
+	public Color? ForegroundColor
 	{
 		get => _foregroundColorOverride;
 		set
@@ -61,7 +62,7 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		}
 	}
 
-	public RadialColor? BackgroundColor
+	public Color? BackgroundColor
 	{
 		get => _backgroundColorOverride;
 		set
@@ -72,12 +73,12 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		}
 	}
 
-	private RadialColor EffectiveForegroundColor =>
+	private Color EffectiveForegroundColor =>
 		_foregroundColorOverride
 		?? GetWorld()?.Style.LabelForegroundColor
-		?? RadialColor.White;
+		?? Color.White;
 
-	private RadialColor? EffectiveBackgroundColor =>
+	private Color? EffectiveBackgroundColor =>
 		_backgroundColorOverride
 		?? GetWorld()?.Style.LabelBackgroundColor;
 
@@ -341,10 +342,10 @@ public sealed class LabelMorph : Morph, ISemanticResizeTarget, IValueContentMorp
 		if (text != null) Text = text.ToString();
 
 		var foregroundColor = ScriptObject["foregroundColor"] as ValMap;
-		if (foregroundColor != null && foregroundColor.IsColor()) ForegroundColor = foregroundColor.ToColor();
+		if (foregroundColor != null && foregroundColor.IsColor()) ForegroundColor = foregroundColor.ToFloatColor();
 
 		var backgroundColor = ScriptObject["backgroundColor"] as ValMap;
-		if (backgroundColor != null && backgroundColor.IsColor()) BackgroundColor = backgroundColor.ToColor();
+		if (backgroundColor != null && backgroundColor.IsColor()) BackgroundColor = backgroundColor.ToFloatColor();
 	}
 
 	#endregion

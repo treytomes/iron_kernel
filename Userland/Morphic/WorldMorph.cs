@@ -1,6 +1,7 @@
 using IronKernel.Common.ValueObjects;
 using System.Collections.Concurrent;
 using System.Drawing;
+using Color = IronKernel.Common.ValueObjects.Color;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
 using Userland.Services;
@@ -51,7 +52,7 @@ public sealed class WorldMorph : Morph
 	public ScriptOutputHub ScriptOutput => _scriptOutput;
 	public WorldScriptContext ScriptContext => _scriptContext;
 
-	public RadialColor BackgroundColor { get; set; } = new RadialColor(4, 4, 3);
+	public Color BackgroundColor { get; set; } = new Color(4 / 5f, 4 / 5f, 3 / 5f);
 
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }

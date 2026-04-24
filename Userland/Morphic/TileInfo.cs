@@ -1,13 +1,14 @@
 using IronKernel.Common.ValueObjects;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
 public sealed class TileInfo
 {
 	public int TileIndex;
-	public RadialColor ForegroundColor = RadialColor.White;
-	public RadialColor BackgroundColor = RadialColor.Black;
+	public Color ForegroundColor = Color.White;
+	public Color BackgroundColor = Color.Black;
 	public bool BlocksMovement;
 	public bool BlocksVision;
 	public string Tag = "floor";
@@ -45,10 +46,10 @@ public sealed class TileInfo
 		TileIndex = _scriptObject["tileIndex"].IntValue();
 
 		if (_scriptObject["foregroundColor"] is ValMap fg && fg.IsColor())
-			ForegroundColor = fg.ToColor();
+			ForegroundColor = fg.ToFloatColor();
 
 		if (_scriptObject["backgroundColor"] is ValMap bg && bg.IsColor())
-			BackgroundColor = bg.ToColor();
+			BackgroundColor = bg.ToFloatColor();
 
 		BlocksMovement = _scriptObject["blocksMovement"].BoolValue();
 		BlocksVision = _scriptObject["blocksVision"].BoolValue();

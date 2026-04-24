@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 using Userland.Gfx;
 using Userland.Morphic;
 using Userland.Morphic.Commands;
@@ -15,7 +16,7 @@ public sealed class MiniMacroRoot
 {
 	#region Constants
 
-	private static readonly RadialColor BORDER_COLOR = new RadialColor(2, 1, 0);
+	private static readonly Color BORDER_COLOR = new Color(2f / 5f, 1f / 5f, 0f);
 
 	#endregion
 

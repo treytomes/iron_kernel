@@ -31,15 +31,15 @@ public sealed record AppMouseButtonEvent(InputAction Action, MouseButton Button,
 public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
 
 
-public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data, bool IsComplete);
+public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<Color> Data, bool IsComplete);
 public sealed record AppFbWriteRect(
 	int X,
 	int Y,
 	int Width,
 	int Height,
-	RadialColor[] Data,
+	Color[] Data,
 	bool IsComplete);
-public sealed record AppFbSetBorder(RadialColor Color);
+public sealed record AppFbSetBorder(Color Color);
 
 public sealed record AppFbInfoQuery(Guid CorrelationID) : Query(CorrelationID);
 public sealed record AppFbInfoResponse(Guid CorrelationID, Size Size) : Response<Size>(CorrelationID, Size);

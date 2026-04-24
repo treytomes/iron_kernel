@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Events;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Controls;
 
@@ -69,7 +70,7 @@ sealed class SliderThumbMorph : Morph
 			new Rectangle(Point.Empty, Size),
 			IsPressed ? s.PrimaryActive :
 			IsEffectivelyHovered ? s.PrimaryHover :
-			s.Border.Lerp(RadialColor.Black, 0.75f));
+			s.Border.Lerp(Color.Black, 0.75f));
 	}
 
 	protected override void UpdateLayout()

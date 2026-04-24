@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Services;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -27,7 +28,7 @@ public sealed class ImageMorph : Morph
 	#region Properties
 
 	public string Url { get; }
-	public RadialColor? Foreground { get; set; }
+	public Color? Foreground { get; set; }
 	public RenderImage.RenderFlag Flags { get; set; }
 
 	#endregion
@@ -37,7 +38,7 @@ public sealed class ImageMorph : Morph
 	protected override async void OnLoad(IAssetService assets)
 	{
 		_image = await assets.LoadImageAsync(Url);
-		_image.Recolor(RadialColor.Black, null);
+		_image.Recolor(Color.Black, null);
 		Size = _image.Size;
 	}
 
@@ -45,7 +46,7 @@ public sealed class ImageMorph : Morph
 	{
 		if (_image == null) return;
 		var img = new RenderImage(_image);
-		if (Foreground != null) img.Recolor(RadialColor.White, Foreground);
+		if (Foreground != null) img.Recolor(Color.White, Foreground.Value);
 		img.Render(rc, new Point(0, 0), Flags);
 	}
 

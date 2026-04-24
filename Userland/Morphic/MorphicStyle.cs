@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -15,29 +16,29 @@ public sealed class MorphicStyle
 	public required HandleStyle InspectHandle { get; init; }
 
 	// Structural UI
-	public required RadialColor HaloOutline { get; init; }
-	public required RadialColor SelectionTint { get; init; }
+	public required Color HaloOutline { get; init; }
+	public required Color SelectionTint { get; init; }
 
 	// Labels
-	public required RadialColor LabelForegroundColor { get; init; }
-	public required RadialColor? LabelBackgroundColor { get; init; }
+	public required Color LabelForegroundColor { get; init; }
+	public required Color? LabelBackgroundColor { get; init; }
 
 	// Buttons
-	public required RadialColor ButtonBackgroundColor { get; init; }
-	public required RadialColor ButtonHoverBackgroundColor { get; init; }
-	public required RadialColor ButtonActiveBackgroundColor { get; init; }
-	public required RadialColor ButtonForegroundColor { get; init; }
-	public required RadialColor ButtonDisabledBackgroundColor { get; init; }
-	public required RadialColor ButtonDisabledForegroundColor { get; init; }
+	public required Color ButtonBackgroundColor { get; init; }
+	public required Color ButtonHoverBackgroundColor { get; init; }
+	public required Color ButtonActiveBackgroundColor { get; init; }
+	public required Color ButtonForegroundColor { get; init; }
+	public required Color ButtonDisabledBackgroundColor { get; init; }
+	public required Color ButtonDisabledForegroundColor { get; init; }
 
 	public required FontStyle DefaultFontStyle { get; init; }
 
 	public sealed class HandleStyle
 	{
-		public required RadialColor Background { get; init; }
-		public required RadialColor BackgroundHover { get; init; }
-		public required RadialColor Foreground { get; init; }
-		public required RadialColor ForegroundHover { get; init; }
+		public required Color Background { get; init; }
+		public required Color BackgroundHover { get; init; }
+		public required Color Foreground { get; init; }
+		public required Color ForegroundHover { get; init; }
 	}
 
 	public sealed class FontStyle

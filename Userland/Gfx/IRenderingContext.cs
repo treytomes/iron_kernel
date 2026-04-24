@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Gfx;
 
@@ -38,7 +39,7 @@ public interface IRenderingContext
 	/// Fills the entire rendering context with the specified color.  
 	/// </summary>  
 	/// <param name="color">The color to fill with.</param>  
-	void Fill(RadialColor color);
+	void Fill(Color color);
 
 	/// <summary>  
 	/// Clears the rendering context (fills with black).  
@@ -50,21 +51,21 @@ public interface IRenderingContext
 	/// </summary>  
 	/// <param name="pnt">The position of the pixel.</param>  
 	/// <param name="color">The color to set.</param>  
-	void SetPixel(Point pnt, RadialColor color);
+	void SetPixel(Point pnt, Color color);
 
 	/// <summary>  
 	/// Gets the palette index of the pixel at the specified position.  
 	/// </summary>  
 	/// <param name="pnt">The position of the pixel.</param>  
 	/// <returns>The color of the pixel, or black if out of bounds.</returns>  
-	RadialColor GetPixel(Point pnt);
+	Color GetPixel(Point pnt);
 
 	/// <summary>  
 	/// Renders a filled rectangle with the specified corners and palette index.  
 	/// </summary>  
 	/// <param name="rect">The bounds of the rect to fill.</param>  
 	/// <param name="color">The color to fill with.</param>  
-	void RenderFilledRect(Rectangle rect, RadialColor color);
+	void RenderFilledRect(Rectangle rect, Color color);
 
 	/// <summary>  
 	/// Renders a rectangle outline with the specified bounds, color, and thickness.  
@@ -72,7 +73,7 @@ public interface IRenderingContext
 	/// <param name="rect">The bounds of the rectangle.</param>  
 	/// <param name="color">The color of the outline.</param>
 	/// <param name="thickness">The thickness of the outline (default is 1).</param>
-	void RenderRect(Rectangle rect, RadialColor color, int thickness = 1);
+	void RenderRect(Rectangle rect, Color color, int thickness = 1);
 
 	/// <summary>  
 	/// Renders a horizontal line with the specified starting point, length, and palette index.  
@@ -80,7 +81,7 @@ public interface IRenderingContext
 	/// <param name="pnt">The starting point of the line.</param>  
 	/// <param name="len">The length of the line in pixels.</param>  
 	/// <param name="color">The color of the line.</param>  
-	void RenderHLine(Point pnt, int len, RadialColor color);
+	void RenderHLine(Point pnt, int len, Color color);
 
 	/// <summary>  
 	/// Renders a vertical line with the specified starting point, length, and palette index.  
@@ -88,7 +89,7 @@ public interface IRenderingContext
 	/// <param name="pnt">The starting point of the line.</param>  
 	/// <param name="len">The length of the line in pixels.</param>  
 	/// <param name="color">The color of the line.</param>  
-	void RenderVLine(Point pnt, int len, RadialColor color);
+	void RenderVLine(Point pnt, int len, Color color);
 
 	/// <summary>  
 	/// Renders a line between two points with the specified palette index.  
@@ -96,7 +97,7 @@ public interface IRenderingContext
 	/// <param name="pnt1">The start point of the line.</param>  
 	/// <param name="pnt2">The end point of the line.</param>  
 	/// <param name="color">The color of the line.</param>  
-	void RenderLine(Point pnt1, Point pnt2, RadialColor color);
+	void RenderLine(Point pnt1, Point pnt2, Color color);
 
 	/// <summary>  
 	/// Renders a circle with ordered dithering for a soft edge effect.  
@@ -106,7 +107,7 @@ public interface IRenderingContext
 	/// <param name="color">The primary color of the circle.</param>  
 	/// <param name="falloffStart">The point at which the falloff begins (0.0-1.0).</param>  
 	/// <param name="secondaryColor">Optional secondary color for the dithered region.</param>  
-	void RenderOrderedDitheredCircle(Point center, int radius, RadialColor color, float falloffStart = 0.6f, RadialColor? secondaryColor = null);
+	void RenderOrderedDitheredCircle(Point center, int radius, Color color, float falloffStart = 0.6f, Color? secondaryColor = null);
 
 	/// <summary>  
 	/// Renders a circle outline with the specified center, radius, and color.  
@@ -114,7 +115,7 @@ public interface IRenderingContext
 	/// <param name="center">The center of the circle.</param>  
 	/// <param name="radius">The radius of the circle.</param>  
 	/// <param name="color">The color of the circle.</param>  
-	void RenderCircle(Point center, int radius, RadialColor color);
+	void RenderCircle(Point center, int radius, Color color);
 
 	/// <summary>  
 	/// Renders a filled circle with the specified center, radius, and color.  
@@ -122,20 +123,20 @@ public interface IRenderingContext
 	/// <param name="center">The center of the circle.</param>  
 	/// <param name="radius">The radius of the circle.</param>  
 	/// <param name="color">The color to fill with.</param>  
-	void RenderFilledCircle(Point center, int radius, RadialColor color);
+	void RenderFilledCircle(Point center, int radius, Color color);
 
 	/// <summary>  
 	/// Performs a flood fill starting at the specified point with the specified palette index.  
 	/// </summary>  
 	/// <param name="pnt">The starting point for the fill.</param>  
 	/// <param name="color">The color to fill with.</param>  
-	void FloodFill(Point pnt, RadialColor color);
+	void FloodFill(Point pnt, Color color);
 
 	/// <summary>
 	/// Writes a horizontal span of pixels at the given position in local space.
 	/// Transparent pixels (null-indexed) are skipped. Clip and offset are applied.
 	/// </summary>
-	void RenderSpan(int x, int y, ReadOnlySpan<RadialColor?> span);
+	void RenderSpan(int x, int y, ReadOnlySpan<Color?> span);
 
 	/// <summary>
 	/// Updates the virtual display with the current pixel data if it has changed.

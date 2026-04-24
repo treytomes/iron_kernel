@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.MiniMacro;
 
@@ -11,12 +12,12 @@ public sealed class BoxMorph : Morph
 	{
 		Position = position;
 		Size = size;
-		FillColor = RadialColor.DarkGray;
-		BorderColor = RadialColor.Gray;
+		FillColor = Color.DarkGray;
+		BorderColor = Color.Gray;
 	}
 
-	public RadialColor FillColor { get; set; }
-	public RadialColor BorderColor { get; set; }
+	public Color FillColor { get; set; }
+	public Color BorderColor { get; set; }
 
 	public Size EditMe { get; set; } = new Size(128, 96);
 

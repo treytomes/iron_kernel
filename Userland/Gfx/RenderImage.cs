@@ -1,13 +1,14 @@
 using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Gfx;
 
 public sealed class RenderImage
 	: Image, IImage<RenderImage>
 {
-	private RadialColor?[]? _flipBuffer;
+	private Color?[]? _rowBuffer;
 
 	public RenderImage(Image image)
 		: base(image.Size.Width, image.Size.Height, image.Data, 1)
@@ -24,28 +25,25 @@ public sealed class RenderImage
 		var flipH = (flags & RenderFlag.FlipHorizontal) != 0;
 		var flipV = (flags & RenderFlag.FlipVertical) != 0;
 
-		if (!flipH)
+		_rowBuffer ??= new Color?[Size.Width];
+		var buf = _rowBuffer;
+
+		for (var dy = 0; dy < Size.Height; dy++)
 		{
-			// Fast path: each source row is a contiguous slice of Data.
-			for (var dy = 0; dy < Size.Height; dy++)
+			var sy = flipV ? (Size.Height - 1 - dy) : dy;
+			var srcRow = Data.AsSpan(sy * Size.Width, Size.Width);
+
+			if (!flipH)
 			{
-				var sy = flipV ? (Size.Height - 1 - dy) : dy;
-				rc.RenderSpan(position.X, position.Y + dy, Data.AsSpan(sy * Size.Width, Size.Width));
+				srcRow.CopyTo(buf);
 			}
-		}
-		else
-		{
-			// Flip-horizontal: reverse each row into a cached buffer (allocated once).
-			_flipBuffer ??= new RadialColor?[Size.Width];
-			var tmp = _flipBuffer;
-			for (var dy = 0; dy < Size.Height; dy++)
+			else
 			{
-				var sy = flipV ? (Size.Height - 1 - dy) : dy;
-				var srcRow = Data.AsSpan(sy * Size.Width, Size.Width);
 				for (var i = 0; i < Size.Width; i++)
-					tmp[i] = srcRow[Size.Width - 1 - i];
-				rc.RenderSpan(position.X, position.Y + dy, tmp);
+					buf[i] = srcRow[Size.Width - 1 - i];
 			}
+
+			rc.RenderSpan(position.X, position.Y + dy, buf);
 		}
 	}
 

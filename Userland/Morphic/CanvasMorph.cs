@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -13,7 +14,6 @@ public sealed class CanvasMorph : Morph
 	#region Fields
 
 	private RenderImage? _buffer = null;
-	// private bool _bufferDirty = true;
 
 	#endregion
 
@@ -43,9 +43,7 @@ public sealed class CanvasMorph : Morph
 		var h = Math.Max(0, Size.Height);
 
 		_buffer = new RenderImage(w, h);
-		_buffer.Clear(RadialColor.Black);
-
-		// _bufferDirty = true;
+		_buffer.Clear(Color.Black);
 	}
 
 	protected override void UpdateLayout()
@@ -58,31 +56,27 @@ public sealed class CanvasMorph : Morph
 
 	#region Public API (script-callable)
 
-	public void Clear(RadialColor color)
+	public void Clear(Color? color)
 	{
 		if (_buffer == null) return;
-
 		_buffer.Clear(color);
-
-		// _bufferDirty = true;
 		Invalidate();
 	}
 
-	public void WritePixels(RadialColor?[] pixels)
+	public void WritePixels(Color?[] pixels)
 	{
 		_buffer?.WritePixels(pixels);
 		Invalidate();
 	}
 
-	public void SetPixel(int x, int y, RadialColor color)
+	public void SetPixel(int x, int y, Color? color)
 	{
 		_buffer?.SetPixel(x, y, color);
-		// _bufferDirty = true;
 	}
 
-	public RadialColor GetPixel(int x, int y)
+	public Color? GetPixel(int x, int y)
 	{
-		return _buffer?.GetPixel(x, y) ?? RadialColor.Black;
+		return _buffer?.GetPixel(x, y);
 	}
 
 	#endregion
@@ -92,7 +86,6 @@ public sealed class CanvasMorph : Morph
 	protected override void DrawSelf(IRenderingContext rc)
 	{
 		_buffer?.Render(rc, Point.Empty, RenderImage.RenderFlag.None);
-		// _bufferDirty = false;
 	}
 
 	#endregion

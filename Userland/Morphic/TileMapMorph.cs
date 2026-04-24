@@ -3,6 +3,7 @@ using IronKernel.Common.ValueObjects;
 using Miniscript;
 using Userland.Gfx;
 using Userland.Services;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -37,8 +38,8 @@ public sealed class TileMapMorph : Morph
 				_tiles[x, y] = new()
 				{
 					TileIndex = (int)'.',
-					ForegroundColor = RadialColor.White,
-					BackgroundColor = RadialColor.Black,
+					ForegroundColor = Color.White,
+					BackgroundColor = Color.Black,
 					BlocksMovement = false,
 					BlocksVision = false,
 					Tag = "floor"

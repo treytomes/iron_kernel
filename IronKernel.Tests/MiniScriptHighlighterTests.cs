@@ -1,6 +1,7 @@
 using IronKernel.Common.ValueObjects;
 using Microsoft.Extensions.Logging.Abstractions;
 using Userland.Morphic;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace IronKernel.Tests;
 
@@ -11,7 +12,7 @@ public class MiniScriptHighlighterTests
     private static TextDocument Doc(string text) =>
         new(NullLogger.Instance, text);
 
-    private RadialColor? Color(string line, int col) =>
+    private Color? GetColor(string line, int col) =>
         Make().GetForeground(Doc(line), 0, col);
 
     // ── Out-of-bounds ─────────────────────────────────────────────────────────
@@ -19,13 +20,13 @@ public class MiniScriptHighlighterTests
     [Fact]
     public void NegativeColumn_ReturnsNull()
     {
-        Assert.Null(Color("hello", -1));
+        Assert.Null(GetColor("hello", -1));
     }
 
     [Fact]
     public void ColumnPastEnd_ReturnsNull()
     {
-        Assert.Null(Color("hi", 99));
+        Assert.Null(GetColor("hi", 99));
     }
 
     // ── Plain text ────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ public class MiniScriptHighlighterTests
     [Fact]
     public void PlainIdentifier_ReturnsNull()
     {
-        Assert.Null(Color("x", 0));
+        Assert.Null(GetColor("x", 0));
     }
 
     // ── Keywords ─────────────────────────────────────────────────────────────
@@ -50,20 +51,20 @@ public class MiniScriptHighlighterTests
     public void Keyword_ReturnsYellow(string keyword)
     {
         // Check the first character of each keyword
-        Assert.Equal(RadialColor.Yellow, Color(keyword, 0));
+        Assert.Equal(Color.Yellow, GetColor(keyword, 0));
     }
 
     [Fact]
     public void NonKeyword_Identifier_ReturnsNull()
     {
-        Assert.Null(Color("foo", 0));
+        Assert.Null(GetColor("foo", 0));
     }
 
     [Fact]
     public void Keyword_AsPartOfLongerWord_ReturnsNull()
     {
         // "iffy" contains "if" but is not a keyword
-        Assert.Null(Color("iffy", 0));
+        Assert.Null(GetColor("iffy", 0));
     }
 
     // ── String literals ───────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ public class MiniScriptHighlighterTests
     public void InsideString_ReturnsOrange()
     {
         // "hello" — column 2 is inside the string
-        Assert.Equal(RadialColor.Orange, Color("\"hello\"", 2));
+        Assert.Equal(Color.Orange, GetColor("\"hello\"", 2));
     }
 
     [Fact]
@@ -80,7 +81,7 @@ public class MiniScriptHighlighterTests
     {
         // The opening quote itself at col 0 is not yet inside the string
         // (GetLineState only flips inString for i < targetColumn)
-        Assert.Null(Color("\"hello\"", 0));
+        Assert.Null(GetColor("\"hello\"", 0));
     }
 
     [Fact]
@@ -90,14 +91,14 @@ public class MiniScriptHighlighterTests
         // GetLineState loops i < targetColumn so at col 6, only columns
         // 0..5 are processed. Col 0 toggles inString=true, no other quote
         // before col 6, so inString=true at the closing quote.
-        Assert.Equal(RadialColor.Orange, Color("\"hello\"", 6));
+        Assert.Equal(Color.Orange, GetColor("\"hello\"", 6));
     }
 
     [Fact]
     public void AfterClosedString_ReturnsNull()
     {
         // "hi" x — 'x' at col 5 is outside the string
-        Assert.Null(Color("\"hi\" x", 5));
+        Assert.Null(GetColor("\"hi\" x", 5));
     }
 
     // ── Line comments ─────────────────────────────────────────────────────────
@@ -105,27 +106,27 @@ public class MiniScriptHighlighterTests
     [Fact]
     public void InsideLineComment_ReturnsGreen()
     {
-        Assert.Equal(RadialColor.Green, Color("// comment", 3));
+        Assert.Equal(Color.Green, GetColor("// comment", 3));
     }
 
     [Fact]
     public void SlashSlash_FirstChar_ReturnsGreen()
     {
-        Assert.Equal(RadialColor.Green, Color("//x", 2));
+        Assert.Equal(Color.Green, GetColor("//x", 2));
     }
 
     [Fact]
     public void CommentAfterCode_CodePortionUnaffected()
     {
         // "x // note" — 'x' at col 0 is plain text
-        Assert.Null(Color("x // note", 0));
+        Assert.Null(GetColor("x // note", 0));
     }
 
     [Fact]
     public void CommentAfterCode_CommentPortionIsGreen()
     {
         // 'n' at col 5 is inside the comment
-        Assert.Equal(RadialColor.Green, Color("x // note", 5));
+        Assert.Equal(Color.Green, GetColor("x // note", 5));
     }
 
     // ── Numbers ───────────────────────────────────────────────────────────────
@@ -133,26 +134,26 @@ public class MiniScriptHighlighterTests
     [Fact]
     public void Integer_ReturnsCyan()
     {
-        Assert.Equal(RadialColor.Cyan, Color("42", 0));
+        Assert.Equal(Color.Cyan, GetColor("42", 0));
     }
 
     [Fact]
     public void Float_ReturnsCyan()
     {
-        Assert.Equal(RadialColor.Cyan, Color("3.14", 0));
+        Assert.Equal(Color.Cyan, GetColor("3.14", 0));
     }
 
     [Fact]
     public void DigitInsideIdentifier_ReturnsNull()
     {
         // "foo2bar" — the '2' at col 3 is part of an identifier
-        Assert.Null(Color("foo2bar", 3));
+        Assert.Null(GetColor("foo2bar", 3));
     }
 
     [Fact]
     public void NumberInExpression_ReturnsCyan()
     {
         // "x = 5" — '5' at col 4
-        Assert.Equal(RadialColor.Cyan, Color("x = 5", 4));
+        Assert.Equal(Color.Cyan, GetColor("x = 5", 4));
     }
 }

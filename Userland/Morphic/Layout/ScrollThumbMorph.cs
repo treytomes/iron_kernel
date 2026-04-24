@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Events;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Layout;
 
@@ -38,7 +39,7 @@ public abstract class ScrollThumbMorph : Morph
 
 	#region Methods
 
-	protected RadialColor ResolveThumbColor()
+	protected Color ResolveThumbColor()
 	{
 		var s = Style!.Semantic;
 

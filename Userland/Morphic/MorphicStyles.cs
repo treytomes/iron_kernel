@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -13,31 +14,31 @@ public static class MorphicStyles
 		// --- Handles ---
 		MoveHandle = new()
 		{
-			Background = RadialColor.Orange,
-			BackgroundHover = RadialColor.Orange.Lerp(RadialColor.Black, 0.35f),
-			Foreground = RadialColor.Orange.Lerp(RadialColor.White, 0.5f),
-			ForegroundHover = RadialColor.Orange.Lerp(RadialColor.White, 0.35f),
+			Background = Color.Orange,
+			BackgroundHover = Color.Orange.Lerp(Color.Black, 0.35f),
+			Foreground = Color.Orange.Lerp(Color.White, 0.5f),
+			ForegroundHover = Color.Orange.Lerp(Color.White, 0.35f),
 		},
 		ResizeHandle = new()
 		{
-			Background = RadialColor.Cyan,
-			BackgroundHover = RadialColor.Cyan.Lerp(RadialColor.Black, 0.35f),
-			Foreground = RadialColor.Cyan.Lerp(RadialColor.White, 0.5f),
-			ForegroundHover = RadialColor.Cyan.Lerp(RadialColor.White, 0.35f),
+			Background = Color.Cyan,
+			BackgroundHover = Color.Cyan.Lerp(Color.Black, 0.35f),
+			Foreground = Color.Cyan.Lerp(Color.White, 0.5f),
+			ForegroundHover = Color.Cyan.Lerp(Color.White, 0.35f),
 		},
 		DeleteHandle = new()
 		{
-			Background = RadialColor.Red,
-			BackgroundHover = RadialColor.Red.Lerp(RadialColor.Black, 0.35f),
-			Foreground = RadialColor.Red.Lerp(RadialColor.White, 0.5f),
-			ForegroundHover = RadialColor.Red.Lerp(RadialColor.White, 0.35f),
+			Background = Color.Red,
+			BackgroundHover = Color.Red.Lerp(Color.Black, 0.35f),
+			Foreground = Color.Red.Lerp(Color.White, 0.5f),
+			ForegroundHover = Color.Red.Lerp(Color.White, 0.35f),
 		},
 		InspectHandle = new()
 		{
-			Background = RadialColor.Green,
-			BackgroundHover = RadialColor.Green.Lerp(RadialColor.Black, 0.35f),
-			Foreground = RadialColor.Green.Lerp(RadialColor.White, 0.5f),
-			ForegroundHover = RadialColor.Green.Lerp(RadialColor.White, 0.35f),
+			Background = Color.Green,
+			BackgroundHover = Color.Green.Lerp(Color.Black, 0.35f),
+			Foreground = Color.Green.Lerp(Color.White, 0.5f),
+			ForegroundHover = Color.Green.Lerp(Color.White, 0.35f),
 		},
 		DefaultFontStyle = new()
 		{
@@ -59,19 +60,19 @@ public static class MorphicStyles
 		// },
 
 		// --- Structural ---
-		HaloOutline = RadialColor.Yellow,
-		SelectionTint = RadialColor.Yellow.Lerp(RadialColor.White, 0.6f),
+		HaloOutline = Color.Yellow,
+		SelectionTint = Color.Yellow.Lerp(Color.White, 0.6f),
 
 		// --- Labels ---
-		LabelForegroundColor = RadialColor.White,
+		LabelForegroundColor = Color.White,
 		LabelBackgroundColor = null,
 
 		// --- Buttons (derived from semantic Primary) ---
-		ButtonBackgroundColor = RadialColor.DarkGray,
-		ButtonHoverBackgroundColor = RadialColor.Gray,
-		ButtonActiveBackgroundColor = RadialColor.LightGray,
-		ButtonForegroundColor = RadialColor.White,
-		ButtonDisabledBackgroundColor = RadialColor.DarkGray.Lerp(RadialColor.Black, 0.4f),
-		ButtonDisabledForegroundColor = RadialColor.Gray,
+		ButtonBackgroundColor = Color.DarkGray,
+		ButtonHoverBackgroundColor = Color.Gray,
+		ButtonActiveBackgroundColor = Color.LightGray,
+		ButtonForegroundColor = Color.White,
+		ButtonDisabledBackgroundColor = Color.DarkGray.Lerp(Color.Black, 0.4f),
+		ButtonDisabledForegroundColor = Color.Gray,
 	};
 }

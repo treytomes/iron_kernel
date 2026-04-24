@@ -4,6 +4,7 @@ using Userland.Morphic;
 using IronKernel.Common.ValueObjects;
 using Userland.Services;
 using Microsoft.Extensions.Logging;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.MiniMacro;
 
@@ -58,23 +59,23 @@ public sealed class MiniScriptReplMorph : WindowMorph
 			implicitOutput = (text, newline) =>
 				{
 					if (string.IsNullOrEmpty(text)) return;
-					_console.CurrentForegroundColor = RadialColor.Yellow;
+					_console.CurrentForegroundColor = Color.Yellow;
 					if (newline)
 						_console.WriteLine(text);
 					else
 						_console.Write(text);
-					_console.CurrentForegroundColor = RadialColor.Orange;
+					_console.CurrentForegroundColor = Color.Orange;
 				},
 
 			errorOutput = (text, newline) =>
 				{
 					if (string.IsNullOrEmpty(text)) return;
-					_console.CurrentForegroundColor = RadialColor.Red;
+					_console.CurrentForegroundColor = Color.Red;
 					if (newline)
 						_console.WriteLine(text);
 					else
 						_console.Write(text);
-					_console.CurrentForegroundColor = RadialColor.Orange;
+					_console.CurrentForegroundColor = Color.Orange;
 				}
 		};
 	}

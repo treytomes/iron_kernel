@@ -2,6 +2,7 @@ using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Events;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Halo;
 
@@ -80,7 +81,7 @@ public abstract class HandleMorph : Morph
 			: StyleForHandle.Background;
 
 		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), bg);
-		rc.RenderRect(new Rectangle(Point.Empty, Size), bg.Lerp(RadialColor.Black, 0.25f));
+		rc.RenderRect(new Rectangle(Point.Empty, Size), bg.Lerp(Color.Black, 0.25f));
 
 		_icon.Foreground = IsEffectivelyHovered
 			? StyleForHandle.ForegroundHover

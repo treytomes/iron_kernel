@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Services;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -66,8 +67,8 @@ public sealed class TextConsoleMorph : Morph
 
 	public Size CellSize { get; private set; }
 
-	public RadialColor CurrentForegroundColor { get; set; } = RadialColor.Orange;
-	public RadialColor CurrentBackgroundColor { get; set; } = RadialColor.Black;
+	public Color CurrentForegroundColor { get; set; } = Color.Orange;
+	public Color CurrentBackgroundColor { get; set; } = Color.Black;
 
 	public override bool WantsKeyboardFocus => true;
 
@@ -717,14 +718,14 @@ public sealed class TextConsoleMorph : Morph
 	private struct ConsoleCell
 	{
 		public char Char;
-		public RadialColor Foreground;
-		public RadialColor Background;
+		public Color Foreground;
+		public Color Background;
 
 		public static ConsoleCell Empty => new()
 		{
 			Char = ' ',
-			Foreground = RadialColor.White,
-			Background = RadialColor.Black
+			Foreground = Color.White,
+			Background = Color.Black
 		};
 	}
 

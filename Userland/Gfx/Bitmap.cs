@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Gfx;
 
@@ -20,7 +21,7 @@ public class Bitmap : IImage<Bitmap, bool>
 	#region Fields
 
 	public readonly bool[] Data;
-	private RadialColor?[]? _rowBuffer;
+	private Color?[]? _rowBuffer;
 
 	#endregion
 
@@ -83,7 +84,7 @@ public class Bitmap : IImage<Bitmap, bool>
 					{
 						var dy = y * scale + sy;
 						var dx = x * scale + sx;
-						Data[dy * Size.Width + dx] = color != null && color.Index != 0;
+						Data[dy * Size.Width + dx] = color != null;
 					}
 				}
 			}
@@ -122,9 +123,9 @@ public class Bitmap : IImage<Bitmap, bool>
 	/// Render a bitmap with the set foreground and background colors.
 	/// A value of 255 in either color indicates transparent.
 	/// </summary>
-	public void Render(IRenderingContext rc, Point position, RadialColor? fgColor = null, RadialColor? bgColor = null)
+	public void Render(IRenderingContext rc, Point position, Color? fgColor = null, Color? bgColor = null)
 	{
-		_rowBuffer ??= new RadialColor?[Size.Width];
+		_rowBuffer ??= new Color?[Size.Width];
 		var row = _rowBuffer;
 		var srcData = Data;
 		var w = Size.Width;

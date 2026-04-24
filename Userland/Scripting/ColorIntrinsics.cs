@@ -1,5 +1,6 @@
 using IronKernel.Common.ValueObjects;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Scripting;
 
@@ -16,12 +17,10 @@ public static class ColorIntrinsics
 		{
 			try
 			{
-				var color = new RadialColor(
-					(byte)ctx.GetVar("r").IntValue(),
-					(byte)ctx.GetVar("g").IntValue(),
-					(byte)ctx.GetVar("b").IntValue()
-				);
-				return new Intrinsic.Result(color.ToMiniScriptValue());
+				var r = (float)ctx.GetVar("r").FloatValue();
+				var g = (float)ctx.GetVar("g").FloatValue();
+				var b = (float)ctx.GetVar("b").FloatValue();
+				return new Intrinsic.Result(new Color(r, g, b).ToMiniScriptValue());
 			}
 			catch (Exception ex)
 			{

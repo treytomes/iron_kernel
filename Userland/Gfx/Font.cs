@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Gfx;
 
@@ -30,14 +31,14 @@ public sealed class Font
 
 	#region Methods
 
-	public void WriteChar(IRenderingContext rc, char ch, Point position, RadialColor fg, RadialColor? bg = null)
+	public void WriteChar(IRenderingContext rc, char ch, Point position, Color fg, Color? bg = null)
 	{
 		var index = ch + _glyphOffset;
 		if (index >= 0 && index < _tiles.Count)
 			_tiles[index].Render(rc, position, fg, bg);
 	}
 
-	public void WriteString(IRenderingContext rc, string text, Point position, RadialColor fg, RadialColor? bg = null)
+	public void WriteString(IRenderingContext rc, string text, Point position, Color fg, Color? bg = null)
 	{
 		for (int i = 0; i < text.Length; i++)
 		{

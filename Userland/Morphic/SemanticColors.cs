@@ -1,89 +1,90 @@
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
 public sealed class SemanticColors
 {
 	// Core surfaces
-	public required RadialColor Background { get; init; }
-	public required RadialColor Surface { get; init; }
-	public required RadialColor Border { get; init; }
+	public required Color Background { get; init; }
+	public required Color Surface { get; init; }
+	public required Color Border { get; init; }
 
 	// Text
-	public required RadialColor Text { get; init; }
-	public required RadialColor SecondaryText { get; init; }
-	public required RadialColor MutedText { get; init; }
+	public required Color Text { get; init; }
+	public required Color SecondaryText { get; init; }
+	public required Color MutedText { get; init; }
 
 	// Primary intent
-	public required RadialColor Primary { get; init; }
-	public required RadialColor PrimaryHover { get; init; }
-	public required RadialColor PrimaryActive { get; init; }
-	public required RadialColor PrimaryMuted { get; init; }
+	public required Color Primary { get; init; }
+	public required Color PrimaryHover { get; init; }
+	public required Color PrimaryActive { get; init; }
+	public required Color PrimaryMuted { get; init; }
 
 	// Success intent
-	public required RadialColor Success { get; init; }
-	public required RadialColor SuccessHover { get; init; }
-	public required RadialColor SuccessActive { get; init; }
-	public required RadialColor SuccessMuted { get; init; }
+	public required Color Success { get; init; }
+	public required Color SuccessHover { get; init; }
+	public required Color SuccessActive { get; init; }
+	public required Color SuccessMuted { get; init; }
 
 	// Danger intent
-	public required RadialColor Danger { get; init; }
-	public required RadialColor DangerHover { get; init; }
-	public required RadialColor DangerActive { get; init; }
-	public required RadialColor DangerMuted { get; init; }
+	public required Color Danger { get; init; }
+	public required Color DangerHover { get; init; }
+	public required Color DangerActive { get; init; }
+	public required Color DangerMuted { get; init; }
 
 	// Warning intent
-	public required RadialColor Warning { get; init; }
-	public required RadialColor WarningHover { get; init; }
-	public required RadialColor WarningActive { get; init; }
-	public required RadialColor WarningMuted { get; init; }
+	public required Color Warning { get; init; }
+	public required Color WarningHover { get; init; }
+	public required Color WarningActive { get; init; }
+	public required Color WarningMuted { get; init; }
 
 	// Info intent
-	public required RadialColor Info { get; init; }
-	public required RadialColor InfoHover { get; init; }
-	public required RadialColor InfoActive { get; init; }
-	public required RadialColor InfoMuted { get; init; }
+	public required Color Info { get; init; }
+	public required Color InfoHover { get; init; }
+	public required Color InfoActive { get; init; }
+	public required Color InfoMuted { get; init; }
 
 	public static readonly SemanticColors DefaultSemantic = new()
 	{
 		// Core surfaces
-		Background = RadialColor.Black,
-		Surface = RadialColor.DarkGray,
-		Border = RadialColor.Gray,
+		Background = Color.Black,
+		Surface = Color.DarkGray,
+		Border = Color.Gray,
 
 		// Text
-		Text = RadialColor.White,
-		SecondaryText = RadialColor.Yellow,
-		MutedText = RadialColor.Gray,
+		Text = Color.White,
+		SecondaryText = Color.Yellow,
+		MutedText = Color.Gray,
 
 		// Primary (focus / selected)
-		Primary = RadialColor.Cyan,
-		PrimaryHover = RadialColor.Cyan.Lerp(RadialColor.White, 0.35f),
-		PrimaryActive = RadialColor.Cyan.Lerp(RadialColor.Black, 0.35f),
-		PrimaryMuted = RadialColor.Cyan.Lerp(RadialColor.DarkGray, 0.6f),
+		Primary = Color.Cyan,
+		PrimaryHover = Color.Cyan.Lerp(Color.White, 0.35f),
+		PrimaryActive = Color.Cyan.Lerp(Color.Black, 0.35f),
+		PrimaryMuted = Color.Cyan.Lerp(Color.DarkGray, 0.6f),
 
 		// Success (affirmative)
-		Success = RadialColor.Green,
-		SuccessHover = RadialColor.Green.Lerp(RadialColor.White, 0.35f),
-		SuccessActive = RadialColor.Green.Lerp(RadialColor.Black, 0.35f),
-		SuccessMuted = RadialColor.Green.Lerp(RadialColor.DarkGray, 0.6f),
+		Success = Color.Green,
+		SuccessHover = Color.Green.Lerp(Color.White, 0.35f),
+		SuccessActive = Color.Green.Lerp(Color.Black, 0.35f),
+		SuccessMuted = Color.Green.Lerp(Color.DarkGray, 0.6f),
 
 		// Danger (destructive)
-		Danger = RadialColor.Red,
-		DangerHover = RadialColor.Red.Lerp(RadialColor.White, 0.35f),
-		DangerActive = RadialColor.Red.Lerp(RadialColor.Black, 0.35f),
-		DangerMuted = RadialColor.Red.Lerp(RadialColor.DarkGray, 0.6f),
+		Danger = Color.Red,
+		DangerHover = Color.Red.Lerp(Color.White, 0.35f),
+		DangerActive = Color.Red.Lerp(Color.Black, 0.35f),
+		DangerMuted = Color.Red.Lerp(Color.DarkGray, 0.6f),
 
 		// Warning (caution)
-		Warning = RadialColor.Orange,
-		WarningHover = RadialColor.Orange.Lerp(RadialColor.White, 0.35f),
-		WarningActive = RadialColor.Orange.Lerp(RadialColor.Black, 0.35f),
-		WarningMuted = RadialColor.Orange.Lerp(RadialColor.DarkGray, 0.6f),
+		Warning = Color.Orange,
+		WarningHover = Color.Orange.Lerp(Color.White, 0.35f),
+		WarningActive = Color.Orange.Lerp(Color.Black, 0.35f),
+		WarningMuted = Color.Orange.Lerp(Color.DarkGray, 0.6f),
 
 		// Info (informational)
-		Info = RadialColor.Blue,
-		InfoHover = RadialColor.Blue.Lerp(RadialColor.White, 0.35f),
-		InfoActive = RadialColor.Blue.Lerp(RadialColor.Black, 0.35f),
-		InfoMuted = RadialColor.Blue.Lerp(RadialColor.DarkGray, 0.6f),
+		Info = Color.Blue,
+		InfoHover = Color.Blue.Lerp(Color.White, 0.35f),
+		InfoActive = Color.Blue.Lerp(Color.Black, 0.35f),
+		InfoMuted = Color.Blue.Lerp(Color.DarkGray, 0.6f),
 	};
 }

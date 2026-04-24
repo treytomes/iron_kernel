@@ -1,20 +1,21 @@
 using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace IronKernel.Modules.Framebuffer.ValueObjects;
 
 // Input
 
-public sealed record FbWriteSpan(int X, int Y, IReadOnlyList<RadialColor> Data, bool IsComplete);
+public sealed record FbWriteSpan(int X, int Y, IReadOnlyList<Color> Data, bool IsComplete);
 public sealed record FbWriteRect(
 	int X,
 	int Y,
 	int Width,
 	int Height,
-	RadialColor[] Data,
+	Color[] Data,
 	bool IsComplete);
-public sealed record FbSetBorder(RadialColor Color);
+public sealed record FbSetBorder(Color Color);
 public sealed record FbFrameReady(ulong FrameId);
 
 // Output

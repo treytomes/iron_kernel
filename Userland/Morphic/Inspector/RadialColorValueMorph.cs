@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
@@ -8,8 +9,8 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 {
 	#region Fields
 
-	private RadialColor? _color;
-	private readonly Action<RadialColor?>? _setter;
+	private Color? _color;
+	private readonly Action<Color?>? _setter;
 
 	private readonly ChannelStepperMorph _r;
 	private readonly ChannelStepperMorph _g;
@@ -20,7 +21,7 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 
 	#region Constructor
 
-	public RadialColorValueMorph(Action<RadialColor?>? setter)
+	public RadialColorValueMorph(Action<Color?>? setter)
 	{
 		_setter = setter;
 		IsSelectable = false;
@@ -59,16 +60,16 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 
 	public void Refresh(object? value)
 	{
-		_color = value as RadialColor;
-
-		if (_color != null)
+		if (value is Color c)
 		{
-			_r.Value = _color.R;
-			_g.Value = _color.G;
-			_b.Value = _color.B;
+			_color = c;
+			_r.Value = (byte)Math.Round(c.R * 5f);
+			_g.Value = (byte)Math.Round(c.G * 5f);
+			_b.Value = (byte)Math.Round(c.B * 5f);
 		}
 		else
 		{
+			_color = null;
 			_r.Value = 0;
 			_g.Value = 0;
 			_b.Value = 0;
@@ -141,22 +142,22 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 	private void OnRChanged(byte r)
 	{
 		if (_color == null) return;
-		UpdateColor(_color.WithR(r));
+		UpdateColor(new Color(r / 5f, _color.Value.G, _color.Value.B));
 	}
 
 	private void OnGChanged(byte g)
 	{
 		if (_color == null) return;
-		UpdateColor(_color.WithG(g));
+		UpdateColor(new Color(_color.Value.R, g / 5f, _color.Value.B));
 	}
 
 	private void OnBChanged(byte b)
 	{
 		if (_color == null) return;
-		UpdateColor(_color.WithB(b));
+		UpdateColor(new Color(_color.Value.R, _color.Value.G, b / 5f));
 	}
 
-	private void UpdateColor(RadialColor newColor)
+	private void UpdateColor(Color newColor)
 	{
 		if (newColor.Equals(_color))
 			return;
@@ -174,7 +175,7 @@ public sealed class RadialColorValueMorph : Morph, IValueContentMorph
 	{
 		if (_color == null)
 		{
-			Refresh(RadialColor.Black);
+			Refresh(Color.Black);
 			_setter?.Invoke(_color);
 		}
 		else

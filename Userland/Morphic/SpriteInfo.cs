@@ -1,5 +1,6 @@
 using IronKernel.Common.ValueObjects;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -8,8 +9,8 @@ public sealed class SpriteInfo
 	public int X;
 	public int Y;
 	public int TileIndex;
-	public RadialColor ForegroundColor = RadialColor.White;
-	public RadialColor BackgroundColor = RadialColor.Black;
+	public Color ForegroundColor = Color.White;
+	public Color BackgroundColor = Color.Black;
 
 	private ValMap? _scriptObject;
 
@@ -44,9 +45,9 @@ public sealed class SpriteInfo
 		TileIndex = _scriptObject["tileIndex"].IntValue();
 
 		if (_scriptObject["foregroundColor"] is ValMap fg && fg.IsColor())
-			ForegroundColor = fg.ToColor();
+			ForegroundColor = fg.ToFloatColor();
 
 		if (_scriptObject["backgroundColor"] is ValMap bg && bg.IsColor())
-			BackgroundColor = bg.ToColor();
+			BackgroundColor = bg.ToFloatColor();
 	}
 }

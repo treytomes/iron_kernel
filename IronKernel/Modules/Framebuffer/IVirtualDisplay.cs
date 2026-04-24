@@ -58,37 +58,29 @@ internal interface IVirtualDisplay : IDisposable
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  
 	/// <exception cref="ArgumentNullException">Thrown if pixelData is null.</exception>  
 	/// <exception cref="ArgumentException">Thrown if pixelData length doesn't match display size.</exception>  
-	void UpdatePixels(RadialColor[] pixelData);
+	void UpdatePixels(Color[] pixelData);
 
 	void SetPixels(
 		int x,
 		int y,
 		int width,
 		int height,
-		RadialColor[] data);
+		Color[] data);
 
-	/// <summary>  
-	/// Sets a single pixel in the virtual display.  
-	/// </summary>  
-	/// <param name="x">The x-coordinate of the pixel.</param>  
-	/// <param name="y">The y-coordinate of the pixel.</param>  
-	/// <param name="color">The palette index to set.</param>  
-	/// <returns>True if the pixel was set, false if coordinates were out of bounds.</returns>  
-	bool SetPixel(int x, int y, RadialColor color);
+	/// <summary>
+	/// Sets a single pixel in the virtual display.
+	/// </summary>
+	bool SetPixel(int x, int y, Color color);
 
-	/// <summary>  
-	/// Gets the color index at the specified pixel.  
-	/// </summary>  
-	/// <param name="x">The x-coordinate of the pixel.</param>  
-	/// <param name="y">The y-coordinate of the pixel.</param>  
-	/// <returns>The palette index at the specified pixel, or 0 if out of bounds.</returns>  
-	RadialColor GetPixel(int x, int y);
+	/// <summary>
+	/// Gets the color at the specified pixel.
+	/// </summary>
+	Color GetPixel(int x, int y);
 
-	/// <summary>  
-	/// Clears the virtual display to the specified color index.  
-	/// </summary>  
-	/// <param name="color">The palette index to fill with.</param>  
-	void Clear(RadialColor color);
+	/// <summary>
+	/// Clears the virtual display to the specified color.
+	/// </summary>
+	void Clear(Color color);
 
 	/// <summary>  
 	/// Resizes the display to fit the new window size.  

@@ -3,6 +3,7 @@ using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Commands;
 using Userland.Morphic.Events;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -26,12 +27,12 @@ public sealed class ButtonMorph : Morph
 	private float _hoverT;
 
 	// Optional style overrides
-	private RadialColor? _backgroundOverride;
-	private RadialColor? _hoverBackgroundOverride;
-	private RadialColor? _activeBackgroundOverride;
-	private RadialColor? _foregroundOverride;
-	private RadialColor? _disabledBackgroundOverride;
-	private RadialColor? _disabledForegroundOverride;
+	private Color? _backgroundOverride;
+	private Color? _hoverBackgroundOverride;
+	private Color? _activeBackgroundOverride;
+	private Color? _foregroundOverride;
+	private Color? _disabledBackgroundOverride;
+	private Color? _disabledForegroundOverride;
 
 	#endregion
 
@@ -76,37 +77,37 @@ public sealed class ButtonMorph : Morph
 
 	#region Style properties (overrides)
 
-	public RadialColor? BackgroundColor
+	public Color? BackgroundColor
 	{
 		get => _backgroundOverride;
 		set { _backgroundOverride = value; Invalidate(); }
 	}
 
-	public RadialColor? HoverBackgroundColor
+	public Color? HoverBackgroundColor
 	{
 		get => _hoverBackgroundOverride;
 		set { _hoverBackgroundOverride = value; Invalidate(); }
 	}
 
-	public RadialColor? ActiveBackgroundColor
+	public Color? ActiveBackgroundColor
 	{
 		get => _activeBackgroundOverride;
 		set { _activeBackgroundOverride = value; Invalidate(); }
 	}
 
-	public RadialColor? ForegroundColor
+	public Color? ForegroundColor
 	{
 		get => _foregroundOverride;
 		set { _foregroundOverride = value; Invalidate(); }
 	}
 
-	public RadialColor? DisabledBackgroundColor
+	public Color? DisabledBackgroundColor
 	{
 		get => _disabledBackgroundOverride;
 		set { _disabledBackgroundOverride = value; Invalidate(); }
 	}
 
-	public RadialColor? DisabledForegroundColor
+	public Color? DisabledForegroundColor
 	{
 		get => _disabledForegroundOverride;
 		set { _disabledForegroundOverride = value; Invalidate(); }
@@ -122,35 +123,35 @@ public sealed class ButtonMorph : Morph
 
 	#region Style resolution
 
-	private RadialColor EffectiveBackground =>
+	private Color EffectiveBackground =>
 		_backgroundOverride
 		?? GetWorld()?.Style.ButtonBackgroundColor
-		?? RadialColor.DarkGray;
+		?? Color.DarkGray;
 
-	private RadialColor EffectiveHoverBackground =>
+	private Color EffectiveHoverBackground =>
 		_hoverBackgroundOverride
 		?? GetWorld()?.Style.ButtonHoverBackgroundColor
 		?? EffectiveBackground;
 
-	private RadialColor EffectiveActiveBackground =>
+	private Color EffectiveActiveBackground =>
 		_activeBackgroundOverride
 		?? GetWorld()?.Style.ButtonActiveBackgroundColor
 		?? EffectiveBackground;
 
-	private RadialColor EffectiveForeground =>
+	private Color EffectiveForeground =>
 		_foregroundOverride
 		?? GetWorld()?.Style.ButtonForegroundColor
-		?? RadialColor.White;
+		?? Color.White;
 
-	private RadialColor EffectiveDisabledBackground =>
+	private Color EffectiveDisabledBackground =>
 		_disabledBackgroundOverride
 		?? GetWorld()?.Style.ButtonDisabledBackgroundColor
-		?? RadialColor.DarkGray;
+		?? Color.DarkGray;
 
-	private RadialColor EffectiveDisabledForeground =>
+	private Color EffectiveDisabledForeground =>
 		_disabledForegroundOverride
 		?? GetWorld()?.Style.ButtonDisabledForegroundColor
-		?? RadialColor.Gray;
+		?? Color.Gray;
 
 	#endregion
 
@@ -203,7 +204,7 @@ public sealed class ButtonMorph : Morph
 				2,
 				Bounds.Width,
 				Bounds.Height);
-			rc.RenderFilledRect(shadow, RadialColor.DarkerGray);
+			rc.RenderFilledRect(shadow, Color.DarkerGray);
 		}
 
 		// Body
@@ -213,7 +214,7 @@ public sealed class ButtonMorph : Morph
 		DrawBevel(rc, body, !IsPressed);
 
 		// Outline
-		rc.RenderRect(body, RadialColor.Black);
+		rc.RenderRect(body, Color.Black);
 
 		// Label color
 		_label.ForegroundColor = IsEnabled
@@ -223,8 +224,8 @@ public sealed class ButtonMorph : Morph
 
 	private void DrawBevel(IRenderingContext rc, Rectangle r, bool raised)
 	{
-		var light = raised ? RadialColor.White : RadialColor.DarkGray;
-		var dark = raised ? RadialColor.DarkGray : RadialColor.White;
+		var light = raised ? Color.White : Color.DarkGray;
+		var dark = raised ? Color.DarkGray : Color.White;
 
 		rc.RenderLine(new Point(r.Left, r.Top), new Point(r.Right - 1, r.Top), light);
 		rc.RenderLine(new Point(r.Left, r.Top), new Point(r.Left, r.Bottom - 1), light);

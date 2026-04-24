@@ -2,6 +2,7 @@ using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using System.Drawing;
 using Userland.Gfx;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Halo;
 
@@ -66,8 +67,8 @@ public sealed class HaloMorph : Morph
 		UpdateFromTarget();
 
 		var bg = (_outlineColorLerpWeight > 0)
-			? Style.HaloOutline.Lerp(RadialColor.White, _outlineColorLerpWeight)
-			: Style.HaloOutline.Lerp(RadialColor.Black, -_outlineColorLerpWeight);
+			? Style.HaloOutline.Lerp(Color.White, _outlineColorLerpWeight)
+			: Style.HaloOutline.Lerp(Color.Black, -_outlineColorLerpWeight);
 
 		rc.RenderRect(
 			new Rectangle(Point.Empty, Size),

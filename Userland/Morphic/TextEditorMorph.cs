@@ -4,6 +4,7 @@ using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
 using Userland.Morphic.Events;
 using Userland.Services;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic;
 
@@ -406,7 +407,7 @@ public sealed class TextEditorMorph : Morph
 					}
 				}
 
-				RadialColor fg;
+				Color fg;
 				if (selected)
 					fg = Style!.Semantic.Background;
 				else if (SyntaxHighlighter != null)
@@ -415,7 +416,7 @@ public sealed class TextEditorMorph : Morph
 				else
 					fg = Style!.Semantic.Text;
 
-				RadialColor bg;
+				Color bg;
 				if (selected)
 					bg = Style!.Semantic.Text;
 				else

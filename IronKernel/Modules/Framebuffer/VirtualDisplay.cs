@@ -47,7 +47,7 @@ internal class VirtualDisplay : IVirtualDisplay
 
 	// Pixel data management
 	private bool _textureNeedsUpdate = false;
-	private RadialColor[] _pixelData;
+	private Color[] _pixelData;
 	private byte[] _indexBuffer = [];
 
 	private bool _disposedValue;
@@ -68,7 +68,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		_logger = logger;
 		_settings = settings ?? throw new ArgumentNullException(nameof(settings));
 		_lastWindowSize = windowSize;
-		_pixelData = new RadialColor[_settings.Width * _settings.Height];
+		_pixelData = new Color[_settings.Width * _settings.Height];
 	}
 
 	#endregion
@@ -199,7 +199,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="pixelData">The new pixel data (palette indices).</param>  
 	/// <exception cref="ArgumentNullException">Thrown if pixelData is null.</exception>  
 	/// <exception cref="ArgumentException">Thrown if pixelData length doesn't match display size.</exception>  
-	public void UpdatePixels(RadialColor[] pixelData)
+	public void UpdatePixels(Color[] pixelData)
 	{
 		if (pixelData == null)
 			throw new ArgumentNullException(nameof(pixelData));
@@ -216,7 +216,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		int y,
 		int width,
 		int height,
-		RadialColor[] data)
+		Color[] data)
 	{
 		if (width <= 0 || height <= 0) return;
 
@@ -244,7 +244,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="y">The y-coordinate of the pixel.</param>  
 	/// <param name="colorIndex">The palette index to set.</param>  
 	/// <returns>True if the pixel was set, false if coordinates were out of bounds.</returns>  
-	public bool SetPixel(int x, int y, RadialColor color)
+	public bool SetPixel(int x, int y, Color color)
 	{
 		if (x < 0 || x >= Width || y < 0 || y >= Height)
 			return false;
@@ -261,20 +261,16 @@ internal class VirtualDisplay : IVirtualDisplay
 	/// <param name="x">The x-coordinate of the pixel.</param>  
 	/// <param name="y">The y-coordinate of the pixel.</param>  
 	/// <returns>The palette index at the specified pixel, or 0 if out of bounds.</returns>  
-	public RadialColor GetPixel(int x, int y)
+	public Color GetPixel(int x, int y)
 	{
 		if (x < 0 || x >= Width || y < 0 || y >= Height)
-			return RadialColor.Black;
+			return Color.Black;
 
 		var index = y * Width + x;
 		return _pixelData[index];
 	}
 
-	/// <summary>  
-	/// Clears the virtual display to the specified color index.  
-	/// </summary>  
-	/// <param name="color">The palette index to fill with.</param>  
-	public void Clear(RadialColor color)
+	public void Clear(Color color)
 	{
 		Array.Fill(_pixelData, color);
 		_textureNeedsUpdate = true;
@@ -331,13 +327,13 @@ internal class VirtualDisplay : IVirtualDisplay
 			return;
 		}
 
-		// Update texture if needed
+		// Update texture if needed — quantize float Color to palette index here in the kernel.
 		if (_textureNeedsUpdate)
 		{
 			var pixels = _pixelData;
 			var buf = _indexBuffer;
 			for (var i = 0; i < pixels.Length; i++)
-				buf[i] = pixels[i].Index;
+				buf[i] = RadialColor.FromColor(pixels[i]).Index;
 			_texture.UploadData(buf);
 			_textureNeedsUpdate = false;
 		}

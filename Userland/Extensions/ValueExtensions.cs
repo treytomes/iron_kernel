@@ -1,6 +1,7 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Miniscript;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland;
 
@@ -14,15 +15,15 @@ public static class ValueExtensions
 			&& @this["b"] != null;
 	}
 
-	public static RadialColor ToColor(this ValMap @this)
+	public static Color ToFloatColor(this ValMap @this)
 	{
-		var red = (byte)@this["r"].IntValue();
-		var green = (byte)@this["g"].IntValue();
-		var blue = (byte)@this["b"].IntValue();
-		return new RadialColor(red, green, blue);
+		var red = (float)@this["r"].FloatValue();
+		var green = (float)@this["g"].FloatValue();
+		var blue = (float)@this["b"].FloatValue();
+		return new Color(red, green, blue);
 	}
 
-	public static ValMap ToMiniScriptValue(this RadialColor @this)
+	public static ValMap ToMiniScriptValue(this Color @this)
 	{
 		var color = new ValMap();
 		color["r"] = new ValNumber(@this.R);

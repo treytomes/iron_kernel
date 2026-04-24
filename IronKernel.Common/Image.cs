@@ -1,12 +1,10 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace IronKernel.Common;
 
-/// <summary>
-/// An image is filled with palette-indexed pixel data.
-/// </summary>
-public class Image : IImage<Image, RadialColor>
+public class Image : IImage<Image>
 {
 	#region Constants
 
@@ -16,20 +14,20 @@ public class Image : IImage<Image, RadialColor>
 
 	#region Fields
 
-	public readonly RadialColor?[] Data;
+	public readonly Color?[] Data;
 
 	#endregion
 
 	#region Constructors
 
-	public Image(int width, int height, RadialColor?[] data, int scale)
+	public Image(int width, int height, Color?[] data, int scale)
 	{
 		if (scale < 1)
 		{
 			throw new ArgumentException("Value must be > 0.", nameof(scale));
 		}
 		Size = new Size(width * scale, height * scale);
-		Data = new RadialColor?[Size.Width * Size.Height];
+		Data = new Color?[Size.Width * Size.Height];
 
 		for (var y = 0; y < height; y++)
 		{
@@ -50,16 +48,16 @@ public class Image : IImage<Image, RadialColor>
 		}
 	}
 
-	public Image(int width, int height, RadialColor?[] data)
+	public Image(int width, int height, Color?[] data)
 	{
 		Size = new Size(width, height);
-		Data = (RadialColor?[])data.Clone();
+		Data = (Color?[])data.Clone();
 	}
 
 	public Image(int width, int height)
 	{
 		Size = new Size(width, height);
-		Data = new RadialColor[width * height];
+		Data = new Color?[width * height];
 	}
 
 	#endregion
@@ -68,23 +66,17 @@ public class Image : IImage<Image, RadialColor>
 
 	public Size Size { get; }
 
-	public RadialColor? this[int x, int y]
+	public Color? this[int x, int y]
 	{
-		get
-		{
-			return GetPixel(x, y);
-		}
-		set
-		{
-			SetPixel(x, y, value);
-		}
+		get => GetPixel(x, y);
+		set => SetPixel(x, y, value);
 	}
 
 	#endregion
 
 	#region Methods
 
-	public void WritePixels(ReadOnlySpan<RadialColor?> pixels)
+	public void WritePixels(ReadOnlySpan<Color?> pixels)
 	{
 		if (pixels.Length != Data.Length)
 			throw new ArgumentException("Pixel buffer size mismatch.");
@@ -92,7 +84,7 @@ public class Image : IImage<Image, RadialColor>
 		pixels.CopyTo(Data);
 	}
 
-	public void Recolor(RadialColor? oldColor, RadialColor? newColor)
+	public void Recolor(Color? oldColor, Color? newColor)
 	{
 		for (var i = 0; i < Data.Length; i++)
 		{
@@ -103,31 +95,28 @@ public class Image : IImage<Image, RadialColor>
 		}
 	}
 
-	public void Clear(RadialColor color)
+	public void Clear(Color? color)
 	{
 		Array.Fill(Data, color);
 	}
 
-	public RadialColor? GetPixel(int x, int y)
+	public Color? GetPixel(int x, int y)
 	{
 		var index = (y * Size.Width + x) * BPP;
 		if (index < 0 || index > Data.Length) return null;
 		return Data[index];
 	}
 
-	public void SetPixel(int x, int y, RadialColor? color)
+	public void SetPixel(int x, int y, Color? color)
 	{
 		var index = (y * Size.Width + x) * BPP;
 		if (index < 0 || index > Data.Length) return;
 		Data[index] = color;
 	}
 
-	/// <summary>
-	/// Create a new image from a rectangle of this image.
-	/// </summary>
 	public Image Crop(int x, int y, int width, int height)
 	{
-		var data = new RadialColor?[width * height * BPP];
+		var data = new Color?[width * height * BPP];
 
 		for (var i = 0; i < height; i++)
 		{

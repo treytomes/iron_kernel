@@ -1,14 +1,15 @@
 using System.Drawing;
 using IronKernel.Common.ValueObjects;
 using Userland.Morphic.Layout;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Morphic.Inspector;
 
 public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 {
 	#region Fields
-	private RadialColor? _color;
-	private readonly Action<RadialColor?>? _setter;
+	private Color? _color;
+	private readonly Action<Color?>? _setter;
 
 	private readonly SliderWithEditorMorph _r;
 	private readonly SliderWithEditorMorph _g;
@@ -20,7 +21,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	#endregion
 
 	#region Construction
-	public RadialColorSliderValueMorph(Action<RadialColor?>? setter)
+	public RadialColorSliderValueMorph(Action<Color?>? setter)
 	{
 		_setter = setter;
 		IsSelectable = false;
@@ -89,7 +90,11 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	#region IValueContentMorph
 	public void Refresh(object? value)
 	{
-		if (value is not RadialColor newColor)
+		Color? newColor = null;
+		if (value is Color c)
+			newColor = c;
+
+		if (newColor == null)
 		{
 			if (_color == null)
 				return;
@@ -97,16 +102,16 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 		}
 		else
 		{
-			if (_color != null && newColor.Equals(_color))
-				return; // ✅ do not overwrite active edits
+			if (_color != null && newColor.Value.Equals(_color))
+				return; // do not overwrite active edits
 			_color = newColor;
 		}
 
 		if (_color != null)
 		{
-			_r.Value = _color.R;
-			_g.Value = _color.G;
-			_b.Value = _color.B;
+			_r.Value = MathF.Round(_color.Value.R * 5f);
+			_g.Value = MathF.Round(_color.Value.G * 5f);
+			_b.Value = MathF.Round(_color.Value.B * 5f);
 		}
 		else
 		{
@@ -128,14 +133,14 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 		if (_color == null)
 			return;
 
-		byte v = (byte)value;
+		float v = value / 5f;
 
 		var newColor = channel switch
 		{
-			Channel.R => _color.WithR(v),
-			Channel.G => _color.WithG(v),
-			Channel.B => _color.WithB(v),
-			_ => _color
+			Channel.R => _color.Value.WithR(v),
+			Channel.G => _color.Value.WithG(v),
+			Channel.B => _color.Value.WithB(v),
+			_ => _color.Value
 		};
 
 		if (newColor.Equals(_color))
@@ -152,7 +157,7 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 	{
 		if (_color == null)
 		{
-			_color = RadialColor.Black;
+			_color = Color.Black;
 			_setter?.Invoke(_color);
 		}
 		else
@@ -161,15 +166,15 @@ public sealed class RadialColorSliderValueMorph : Morph, IValueContentMorph
 			_setter?.Invoke(null);
 		}
 
-		// ✅ Always update UI state explicitly
+		// Always update UI state explicitly
 		UpdateEnabledState();
 
-		// ✅ Force sliders to sync when becoming visible
+		// Force sliders to sync when becoming visible
 		if (_color != null)
 		{
-			_r.Value = _color.R;
-			_g.Value = _color.G;
-			_b.Value = _color.B;
+			_r.Value = MathF.Round(_color.Value.R * 5f);
+			_g.Value = MathF.Round(_color.Value.G * 5f);
+			_b.Value = MathF.Round(_color.Value.B * 5f);
 		}
 
 		InvalidateLayout();

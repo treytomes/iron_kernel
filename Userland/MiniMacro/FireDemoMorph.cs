@@ -2,6 +2,7 @@ using IronKernel.Common.ValueObjects;
 using System.Drawing;
 using Userland.Gfx;
 using Userland.Morphic;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.MiniMacro;
 
@@ -18,7 +19,7 @@ public class FireDemoMorph : Morph
 	#region Fields
 
 	private byte[,] _fire;
-	private readonly RadialColor[] _palette = new RadialColor[PALETTE_SIZE];
+	private readonly Color[] _palette = new Color[PALETTE_SIZE];
 	private readonly Random _random = new();
 
 	#endregion
@@ -35,12 +36,15 @@ public class FireDemoMorph : Morph
 		Array.Clear(_fire);
 
 		// Generate the palette.
+		// Hue goes from 0 to 85: red to yellow (0–85/255 in 0–1 scale).
+		// Saturation is always 1.0.
+		// Lightness is 0..1 for x=0..128, and 1.0 for x=128..255.
 		for (var x = 0; x < PALETTE_SIZE; x++)
 		{
-			// Hue goes from 0 to 85: red to yellow.
-			// Saturation is always the maximum: 255.
-			// Lightness is 0..255 for x=0..128, and 255 for x=128..255.
-			_palette[x] = RadialColor.FromHSL((byte)(x / 3), 255, (byte)Math.Min(255, x * 2));
+			var h = (x / 3) / 255f;
+			var s = 1f;
+			var l = Math.Min(1f, (x * 2) / 255f);
+			_palette[x] = Color.FromHSL(h, s, l);
 		}
 	}
 
@@ -63,7 +67,7 @@ public class FireDemoMorph : Morph
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), RadialColor.Black);
+		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), Color.Black);
 
 		// Randomize the bottom row of the fire buffer.
 		for (var x = 0; x < Size.Width; x++)

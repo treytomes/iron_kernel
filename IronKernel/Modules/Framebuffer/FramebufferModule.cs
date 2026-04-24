@@ -3,6 +3,7 @@ using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
 using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
+using Color = IronKernel.Common.ValueObjects.Color;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 using System.Drawing;
@@ -17,7 +18,7 @@ internal sealed class FramebufferModule(
 {
 	#region Constants
 
-	private static readonly RadialColor DEFAULT_BORDER_COLOR = RadialColor.DarkGray;
+	private static readonly Color DEFAULT_BORDER_COLOR = Color.DarkGray;
 
 	#endregion
 
@@ -146,7 +147,7 @@ internal sealed class FramebufferModule(
 			(msg, ct) =>
 			{
 				_bus.Publish(
-					new HostSetBorderColor(msg.Color.ToColor()));
+					new HostSetBorderColor(new OpenTK.Mathematics.Color4(msg.Color.R, msg.Color.G, msg.Color.B, 1f)));
 				return Task.CompletedTask;
 			}
 		));
@@ -177,7 +178,7 @@ internal sealed class FramebufferModule(
 
 		_bus.Publish(
 			new HostSetBorderColor(
-				DEFAULT_BORDER_COLOR.ToColor()));
+				new OpenTK.Mathematics.Color4(DEFAULT_BORDER_COLOR.R, DEFAULT_BORDER_COLOR.G, DEFAULT_BORDER_COLOR.B, 1f)));
 
 		return Task.CompletedTask;
 	}

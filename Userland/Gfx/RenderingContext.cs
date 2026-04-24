@@ -1,6 +1,7 @@
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using System.Drawing;
+using Color = IronKernel.Common.ValueObjects.Color;
 
 namespace Userland.Gfx;
 
@@ -11,7 +12,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 
 	private readonly IApplicationBus _bus = bus;
 	private bool _isDirty = true;
-	private RadialColor[]? _data = null;
+	private Color[]? _data = null;
 
 	// Transformation and clipping stack.
 	private readonly Stack<Point> _offsetStack = new();
@@ -92,12 +93,12 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 
 		var response = await _bus.QueryAsync<AppFbInfoQuery, AppFbInfoResponse>(id => new AppFbInfoQuery(id));
 		Size = response.Size;
-		_data = new RadialColor[Size.Width * Size.Height];
-		Array.Fill(_data, RadialColor.Black);
+		_data = new Color[Size.Width * Size.Height];
+		Array.Fill(_data, Color.Black);
 	}
 
 	/// <inheritdoc/>
-	public void Fill(RadialColor color)
+	public void Fill(Color color)
 	{
 		Array.Fill(_data!, color);
 		_isDirty = true;
@@ -106,11 +107,11 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public void Clear()
 	{
-		Fill(RadialColor.Black);
+		Fill(Color.Black);
 	}
 
 	/// <inheritdoc/>
-	public void SetPixel(Point pnt, RadialColor color)
+	public void SetPixel(Point pnt, Color color)
 	{
 		var x = pnt.X + _currentOffset.X;
 		var y = pnt.Y + _currentOffset.Y;
@@ -126,7 +127,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderSpan(int x, int y, ReadOnlySpan<RadialColor?> span)
+	public void RenderSpan(int x, int y, ReadOnlySpan<Color?> span)
 	{
 		var dstY = y + _currentOffset.Y;
 		if (dstY < 0 || dstY >= Size.Height) return;
@@ -157,22 +158,22 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public RadialColor GetPixel(Point pnt)
+	public Color GetPixel(Point pnt)
 	{
 		var x = pnt.X + _currentOffset.X;
 		var y = pnt.Y + _currentOffset.Y;
 
 		if (IsClipped(x, y))
-			return RadialColor.Black;
+			return Color.Black;
 
 		if (x < 0 || x >= Size.Width || y < 0 || y >= Size.Height)
-			return RadialColor.Black;
+			return Color.Black;
 
 		return _data![y * Size.Width + x];
 	}
 
 	/// <inheritdoc/> 
-	public void RenderFilledRect(Rectangle rect, RadialColor color)
+	public void RenderFilledRect(Rectangle rect, Color color)
 	{
 		var x0 = rect.Left + _currentOffset.X;
 		var y0 = rect.Top + _currentOffset.Y;
@@ -196,7 +197,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderRect(Rectangle rect, RadialColor color, int thickness = 1)
+	public void RenderRect(Rectangle rect, Color color, int thickness = 1)
 	{
 		// Draw multiple concentric rectangles to achieve the desired thickness
 		for (var i = 0; i < thickness; i++)
@@ -210,7 +211,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderHLine(Point pnt, int len, RadialColor color)
+	public void RenderHLine(Point pnt, int len, Color color)
 	{
 		var y = pnt.Y + _currentOffset.Y;
 		var clip = _currentClip ?? Bounds;
@@ -228,7 +229,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderVLine(Point pnt, int len, RadialColor color)
+	public void RenderVLine(Point pnt, int len, Color color)
 	{
 		var x = pnt.X + _currentOffset.X;
 		var clip = _currentClip ?? Bounds;
@@ -248,7 +249,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderLine(Point pnt1, Point pnt2, RadialColor color)
+	public void RenderLine(Point pnt1, Point pnt2, Color color)
 	{
 		var x1 = pnt1.X;
 		var y1 = pnt1.Y;
@@ -287,7 +288,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderOrderedDitheredCircle(Point center, int radius, RadialColor color, float falloffStart = 0.6f, RadialColor? secondaryColor = null)
+	public void RenderOrderedDitheredCircle(Point center, int radius, Color color, float falloffStart = 0.6f, Color? secondaryColor = null)
 	{
 		// Bayer 4x4 dithering matrix  
 		var bayerMatrix = new int[,] {
@@ -346,7 +347,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 				}
 				else if (secondaryColor != null)
 				{
-					_data![rowOffset + x] = secondaryColor;
+					_data![rowOffset + x] = secondaryColor.Value;
 				}
 			}
 		}
@@ -355,7 +356,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderCircle(Point center, int radius, RadialColor color)
+	public void RenderCircle(Point center, int radius, Color color)
 	{
 		var xc = center.X;
 		var yc = center.Y;
@@ -384,7 +385,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <summary>  
 	/// Helper method to render the eight symmetrical points of a circle.  
 	/// </summary>  
-	private void RenderCirclePoints(int xc, int yc, int x, int y, RadialColor color)
+	private void RenderCirclePoints(int xc, int yc, int x, int y, Color color)
 	{
 		SetPixel(new Point(xc + x, yc + y), color);
 		SetPixel(new Point(xc + x, yc - y), color);
@@ -397,7 +398,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void RenderFilledCircle(Point center, int radius, RadialColor color)
+	public void RenderFilledCircle(Point center, int radius, Color color)
 	{
 		var cx = center.X + _currentOffset.X;
 		var cy = center.Y + _currentOffset.Y;
@@ -432,7 +433,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	}
 
 	/// <inheritdoc/>
-	public void FloodFill(Point pnt, RadialColor color)
+	public void FloodFill(Point pnt, Color color)
 	{
 		var x = pnt.X;
 		var y = pnt.Y;
@@ -478,7 +479,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <summary>  
 	/// Helper method for flood fill to check and queue spans to fill.  
 	/// </summary>  
-	private void CheckFillSpan(int leftX, int rightX, int y, RadialColor targetColor, RadialColor fillColor, Stack<(int X, int Y)> stack)
+	private void CheckFillSpan(int leftX, int rightX, int y, Color targetColor, Color fillColor, Stack<(int X, int Y)> stack)
 	{
 		if (y < 0 || y >= Size.Height)
 			return;
