@@ -34,10 +34,16 @@ internal sealed class AppSettings
 		/// </summary>  
 		public required string VertexShaderPath { get; init; } = "assets/shaders/vertex.glsl";
 
-		/// <summary>  
-		/// Path to the fragment shader file.  
-		/// </summary>  
+		/// <summary>
+		/// Path to the fragment shader file.
+		/// </summary>
 		public required string FragmentShaderPath { get; init; } = "assets/shaders/fragment.glsl";
+
+		/// <summary>
+		/// Discrete intensity levels per RGB channel used for palette quantization.
+		/// 6 = 216-color RadialColor palette (default). 4 = 64 colors, 8 = 512 colors, etc.
+		/// </summary>
+		public int ColorDepth { get; init; } = 6;
 	}
 
 	public class WindowSettings

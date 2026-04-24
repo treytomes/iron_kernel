@@ -4,7 +4,8 @@ using IronKernel.Common.ValueObjects;
 namespace IronKernel.Modules.Framebuffer;
 
 /// <summary>
-/// Generate a palette with 6 increments each of red, green, and blue.
+/// Generates a palette with <paramref name="colorDepth"/> discrete intensity levels per RGB channel.
+/// The default depth of 6 produces the 216-color RadialColor palette.
 /// </summary>
 public class RadialPalette : IReadOnlyList<Color>, IDisposable
 {
@@ -24,20 +25,20 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 
 	#region Constructors
 
-	public RadialPalette()
+	public RadialPalette(int colorDepth = 6)
 	{
-		// Generate the colors.
-		const int BITS = 6;
+		ColorDepth = colorDepth;
+
 		_colors = new List<Color>();
-		for (var r = 0; r < BITS; r++)
+		for (var r = 0; r < colorDepth; r++)
 		{
-			for (var g = 0; g < BITS; g++)
+			for (var g = 0; g < colorDepth; g++)
 			{
-				for (var b = 0; b < BITS; b++)
+				for (var b = 0; b < colorDepth; b++)
 				{
-					var rr = r * 255 / (BITS - 1);
-					var gg = g * 255 / (BITS - 1);
-					var bb = b * 255 / (BITS - 1);
+					var rr = r * 255 / (colorDepth - 1);
+					var gg = g * 255 / (colorDepth - 1);
+					var bb = b * 255 / (colorDepth - 1);
 
 					var mid = (rr * 30 + gg * 59 + bb * 11) / 100;
 
@@ -51,11 +52,8 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 		}
 
 		while (_colors.Count < PALETTE_SIZE)
-		{
 			_colors.Add(Color.Black);
-		}
 
-		// Populate palette texture data (byte RGB for GL).
 		var data = new byte[PALETTE_SIZE * 3];
 		for (int i = 0; i < PALETTE_SIZE; i++)
 		{
@@ -73,38 +71,20 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 
 	#region Properties
 
+	public int ColorDepth { get; }
+
 	public int Id => _texture.Id;
 
-	/// <summary>
-	/// Retrieve the color associated with a palette index.
-	/// </summary>
 	public Color this[int index] => _colors[index];
 
-	/// <summary>
-	/// Retrieve the palette index associated with a radial RGB value.
-	/// </summary>
-	/// <param name="r6">0-5</param>
-	/// <param name="g6">0-5</param>
-	/// <param name="b6">0-5</param>
-	/// <returns></returns>
-	public byte this[byte r6, byte g6, byte b6]
-	{
-		get
-		{
-			return (byte)(r6 * 6 * 6 + g6 * 6 + b6);
-		}
-	}
+	public byte this[byte r, byte g, byte b]
+		=> (byte)(r * ColorDepth * ColorDepth + g * ColorDepth + b);
 
 	public int Count => _colors.Count;
 
 	#endregion
 
 	#region Methods
-
-	public static byte GetIndex(byte r6, byte g6, byte b6)
-	{
-		return (byte)(r6 * 6 * 6 + g6 * 6 + b6);
-	}
 
 	public IEnumerator<Color> GetEnumerator() => _colors.GetEnumerator();
 
@@ -115,26 +95,18 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 		if (!disposedValue)
 		{
 			if (disposing)
-			{
-				// Dispose managed state (managed objects)
 				_texture?.Dispose();
-			}
-
-			// Dispose unmanaged state.
-
 			disposedValue = true;
 		}
 	}
 
 	~RadialPalette()
 	{
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 		Dispose(disposing: false);
 	}
 
 	public void Dispose()
 	{
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 		Dispose(disposing: true);
 		GC.SuppressFinalize(this);
 	}

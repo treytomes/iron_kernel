@@ -161,7 +161,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		GL.UseProgram(0);
 
 		// Initialize palette
-		_palette = new();
+		_palette = new(_settings.ColorDepth);
 
 		// Set blend state once — IronKernel owns the entire GL context.
 		GL.Enable(EnableCap.Blend);
@@ -392,12 +392,13 @@ internal class VirtualDisplay : IVirtualDisplay
 		GC.SuppressFinalize(this);
 	}
 
-	private static byte ColorToIndex(Color c)
+	private byte ColorToIndex(Color c)
 	{
-		var r = (byte)Math.Round(c.R * 5f, MidpointRounding.AwayFromZero);
-		var g = (byte)Math.Round(c.G * 5f, MidpointRounding.AwayFromZero);
-		var b = (byte)Math.Round(c.B * 5f, MidpointRounding.AwayFromZero);
-		return (byte)(r * 36 + g * 6 + b);
+		var max = _settings.ColorDepth - 1;
+		var r = (byte)Math.Round(c.R * max, MidpointRounding.AwayFromZero);
+		var g = (byte)Math.Round(c.G * max, MidpointRounding.AwayFromZero);
+		var b = (byte)Math.Round(c.B * max, MidpointRounding.AwayFromZero);
+		return (byte)(r * _settings.ColorDepth * _settings.ColorDepth + g * _settings.ColorDepth + b);
 	}
 
 	#endregion
