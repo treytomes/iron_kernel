@@ -38,7 +38,7 @@ public sealed class WorldScriptContext : IScriptHost
 
 	#region Properties
 
-	public string? PendingRunSource { get; set; }
+	public Action<string>? RunSourceRequested { get; set; }
 	public IWindowService WindowService { get; }
 	public IFileSystem FileSystem { get; }
 	public MorphHandleRegistry Handles => _handles;

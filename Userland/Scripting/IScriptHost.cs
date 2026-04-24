@@ -12,7 +12,11 @@ public interface IScriptHost
 {
 	IFileSystem FileSystem { get; }
 	IWindowService WindowService { get; }
-	string? PendingRunSource { get; set; }
+	/// <summary>
+	/// Called by the <c>run()</c> intrinsic to hand off a loaded script source
+	/// to whoever owns the interpreter (typically the REPL morph).
+	/// </summary>
+	Action<string>? RunSourceRequested { get; set; }
 	void EnsureEnv(TAC.Context ctx);
 	Task<string?> ReadLineAsync(string prompt);
 }

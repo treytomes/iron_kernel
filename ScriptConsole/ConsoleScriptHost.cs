@@ -12,7 +12,7 @@ public sealed class ConsoleScriptHost : IScriptHost
 {
     public IFileSystem FileSystem { get; }
     public IWindowService WindowService { get; } = new StubWindowService();
-    public string? PendingRunSource { get; set; }
+    public Action<string>? RunSourceRequested { get; set; }
 
     public ConsoleScriptHost(IFileSystem fileSystem)
     {

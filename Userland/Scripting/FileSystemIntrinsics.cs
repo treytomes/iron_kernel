@@ -175,8 +175,7 @@ public static class FileSystemIntrinsics
 				return Error(ctx, $"run: {ex.Message}");
 			}
 
-			world.PendingRunSource = source;
-			ctx.vm.yielding = true;
+			world.RunSourceRequested?.Invoke(source);
 			return Intrinsic.Result.Null;
 		};
 	}
