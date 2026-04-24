@@ -131,8 +131,14 @@ public interface IRenderingContext
 	/// <param name="color">The color to fill with.</param>  
 	void FloodFill(Point pnt, RadialColor color);
 
-	/// <summary>  
-	/// Updates the virtual display with the current pixel data if it has changed.  
-	/// </summary>  
+	/// <summary>
+	/// Writes a horizontal span of pixels at the given position in local space.
+	/// Transparent pixels (null-indexed) are skipped. Clip and offset are applied.
+	/// </summary>
+	void RenderSpan(int x, int y, ReadOnlySpan<RadialColor?> span);
+
+	/// <summary>
+	/// Updates the virtual display with the current pixel data if it has changed.
+	/// </summary>
 	void Present();
 }

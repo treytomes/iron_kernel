@@ -125,7 +125,38 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 		_isDirty = true;
 	}
 
-	/// <inheritdoc/> 
+	/// <inheritdoc/>
+	public void RenderSpan(int x, int y, ReadOnlySpan<RadialColor?> span)
+	{
+		var dstY = y + _currentOffset.Y;
+		if (dstY < 0 || dstY >= Size.Height) return;
+
+		var clip = _currentClip ?? Bounds;
+		if (dstY < clip.Top || dstY >= clip.Bottom) return;
+
+		var dstX0 = x + _currentOffset.X;
+
+		// Determine the visible x range within [clip.Left, clip.Right) and [0, Width)
+		var visLeft = Math.Max(dstX0, Math.Max(clip.Left, 0));
+		var visRight = Math.Min(dstX0 + span.Length, Math.Min(clip.Right, Size.Width));
+		if (visLeft >= visRight) return;
+
+		var row = _data.AsSpan(dstY * Size.Width);
+		var spanOffset = visLeft - dstX0;
+		var len = visRight - visLeft;
+		var src = span.Slice(spanOffset, len);
+		var dst = row.Slice(visLeft, len);
+
+		for (var i = 0; i < src.Length; i++)
+		{
+			if (src[i] is { } c)
+				dst[i] = c;
+		}
+
+		_isDirty = true;
+	}
+
+	/// <inheritdoc/>
 	public RadialColor GetPixel(Point pnt)
 	{
 		var x = pnt.X + _currentOffset.X;

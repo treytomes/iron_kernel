@@ -1,5 +1,6 @@
 using System.Drawing;
 using IronKernel.Common;
+using IronKernel.Common.ValueObjects;
 
 namespace Userland.Gfx;
 
@@ -18,37 +19,30 @@ public sealed class RenderImage
 
 	public void Render(IRenderingContext rc, Point position, RenderFlag flags = RenderFlag.None)
 	{
-		var x = position.X;
-		var y = position.Y;
-
 		var flipH = (flags & RenderFlag.FlipHorizontal) != 0;
 		var flipV = (flags & RenderFlag.FlipVertical) != 0;
 
-		for (var dy = 0; dy < Size.Height; dy++)
+		if (!flipH)
 		{
-			var dstY = y + dy;
-			if (dstY < 0)
-				continue;
-			if (dstY >= rc.Size.Height)
-				break;
-
-			var sy = flipV ? (Size.Height - 1 - dy) : dy;
-
-			for (var dx = 0; dx < Size.Width; dx++)
+			// Fast path: each source row is a contiguous slice of Data.
+			for (var dy = 0; dy < Size.Height; dy++)
 			{
-				var dstX = x + dx;
-				if (dstX < 0)
-					continue;
-				if (dstX >= rc.Size.Width)
-					break;
-
-				var sx = flipH ? (Size.Width - 1 - dx) : dx;
-
-				var color = GetPixel(sx, sy);
-				if (color != null)
-				{
-					rc.SetPixel(new Point(dstX, dstY), color);
-				}
+				var sy = flipV ? (Size.Height - 1 - dy) : dy;
+				var rowSpan = Data.AsSpan(sy * Size.Width, Size.Width);
+				rc.RenderSpan(position.X, position.Y + dy, rowSpan);
+			}
+		}
+		else
+		{
+			// Flip-horizontal: copy row into a temporary reversed span.
+			var tmp = new RadialColor?[Size.Width];
+			for (var dy = 0; dy < Size.Height; dy++)
+			{
+				var sy = flipV ? (Size.Height - 1 - dy) : dy;
+				var srcRow = Data.AsSpan(sy * Size.Width, Size.Width);
+				for (var i = 0; i < Size.Width; i++)
+					tmp[i] = srcRow[Size.Width - 1 - i];
+				rc.RenderSpan(position.X, position.Y + dy, tmp);
 			}
 		}
 	}
