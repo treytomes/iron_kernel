@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using Userland.Gfx;
@@ -6,7 +8,6 @@ using Userland.Morphic.Commands;
 using Userland.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Drawing;
 
 namespace Userland.MiniMacro;
 
@@ -29,6 +30,7 @@ public sealed class MiniMacroRoot
 
 	private readonly object _updateLock = new();
 	private readonly object _renderLock = new();
+	private readonly ConcurrentQueue<AppKeyboardEvent> _keyQueue = new();
 
 	#endregion
 
@@ -165,12 +167,15 @@ public sealed class MiniMacroRoot
 				return Task.CompletedTask;
 			});
 
+		// Enqueue key events rather than dispatching immediately. Each bus
+		// handler runs as a separate Task.Run, so without queueing the thread
+		// pool can reorder a Release before the preceding Press, permanently
+		// leaving KeyboardState in a stuck "down" state.
 		bus.Subscribe<AppKeyboardEvent>(
 			"Keyboard",
 			(e, _) =>
 			{
-				lock (_updateLock)
-					world.KeyPress(e.Action, e.Modifiers, e.Key);
+				_keyQueue.Enqueue(e);
 				return Task.CompletedTask;
 			});
 
@@ -179,7 +184,11 @@ public sealed class MiniMacroRoot
 			(e, _) =>
 			{
 				lock (_updateLock)
+				{
+					while (_keyQueue.TryDequeue(out var key))
+						world.KeyPress(key.Action, key.Modifiers, key.Key);
 					world.Update(e.ElapsedTime);
+				}
 				return Task.CompletedTask;
 			});
 
