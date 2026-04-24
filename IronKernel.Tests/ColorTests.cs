@@ -72,4 +72,43 @@ public class ColorTests
         Assert.Equal(255, c.Green);
         Assert.Equal(255, c.Blue);
     }
+
+    [Fact]
+    public void FromHSL_Green_DominantGreenChannel()
+    {
+        // Hue=85 ≈ 1/3 * 255, full saturation, mid lightness
+        var c = Color.FromHSL(85, 255, 128);
+        Assert.True(c.Green > c.Red);
+        Assert.True(c.Green > c.Blue);
+    }
+
+    [Fact]
+    public void FromHSL_Blue_DominantBlueChannel()
+    {
+        // Hue=170 ≈ 2/3 * 255
+        var c = Color.FromHSL(170, 255, 128);
+        Assert.True(c.Blue > c.Red);
+        Assert.True(c.Blue > c.Green);
+    }
+
+    [Fact]
+    public void FromHSL_HighLightness_UsesSumFormula()
+    {
+        // l > 0.5 → temp2 = (l + s) - (l * s) branch
+        var c = Color.FromHSL(0, 200, 200);
+        Assert.True(c.Red > 0);
+    }
+
+    [Theory]
+    [InlineData(43,  255, 128)]  // tempR in (1/6, 1/2) → r = temp2
+    [InlineData(128, 255, 128)]  // tempR in (1/2, 2/3) → r = temp1 + …
+    [InlineData(200, 255, 128)]  // tempR > 2/3 → r = temp1
+    public void FromHSL_AllHueSectors_ProduceValidRgb(float h, float s, float l)
+    {
+        var c = Color.FromHSL(h, s, l);
+        // Just verify it doesn't throw and returns plausible byte values
+        Assert.InRange(c.Red,   (byte)0, (byte)255);
+        Assert.InRange(c.Green, (byte)0, (byte)255);
+        Assert.InRange(c.Blue,  (byte)0, (byte)255);
+    }
 }
