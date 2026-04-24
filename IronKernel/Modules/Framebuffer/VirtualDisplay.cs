@@ -1,5 +1,5 @@
-using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.Shaders;
+using Color = IronKernel.Common.ValueObjects.Color;
 using Microsoft.Extensions.Logging;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -333,7 +333,7 @@ internal class VirtualDisplay : IVirtualDisplay
 			var pixels = _pixelData;
 			var buf = _indexBuffer;
 			for (var i = 0; i < pixels.Length; i++)
-				buf[i] = RadialColor.FromColor(pixels[i]).Index;
+				buf[i] = ColorToIndex(pixels[i]);
 			_texture.UploadData(buf);
 			_textureNeedsUpdate = false;
 		}
@@ -384,12 +384,20 @@ internal class VirtualDisplay : IVirtualDisplay
 	}
 
 	/// <summary>  
-	/// Disposes the virtual display, releasing all resources.  
-	/// </summary>  
+	/// Disposes the virtual display, releasing all resources.
+	/// </summary>
 	public void Dispose()
 	{
 		Dispose(disposing: true);
 		GC.SuppressFinalize(this);
+	}
+
+	private static byte ColorToIndex(Color c)
+	{
+		var r = (byte)Math.Round(c.R * 5f, MidpointRounding.AwayFromZero);
+		var g = (byte)Math.Round(c.G * 5f, MidpointRounding.AwayFromZero);
+		var b = (byte)Math.Round(c.B * 5f, MidpointRounding.AwayFromZero);
+		return (byte)(r * 36 + g * 6 + b);
 	}
 
 	#endregion

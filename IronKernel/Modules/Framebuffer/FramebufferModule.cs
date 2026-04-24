@@ -1,7 +1,6 @@
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
-using IronKernel.Common.ValueObjects;
 using IronKernel.Modules.Framebuffer.ValueObjects;
 using Color = IronKernel.Common.ValueObjects.Color;
 using IronKernel.Modules.OpenTKHost.ValueObjects;
@@ -192,19 +191,6 @@ internal sealed class FramebufferModule(
 
 		_subscriptions.Clear();
 		return ValueTask.CompletedTask;
-	}
-
-	private static byte[] Convert(IReadOnlyList<RadialColor?> data)
-	{
-		var result = new byte[data.Count];
-
-		for (int i = 0; i < data.Count; i++)
-		{
-			// Null means background / index 0
-			result[i] = data[i]?.Index ?? 0;
-		}
-
-		return result;
 	}
 
 	#endregion
