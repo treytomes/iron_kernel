@@ -75,10 +75,11 @@ internal sealed class OpenTKHostModule(
 				return Task.CompletedTask;
 			});
 
-		_bus.Subscribe<FbFrameReady>(
-			runtime,
-			"FramebufferReadyHandler",
-			OnFramebufferReady);
+		_bus.SubscribeInline<FbFrameReady>(msg =>
+		{
+			if (_frameBarriers.TryRemove(msg.FrameId, out var tcs))
+				tcs.TrySetResult();
+		});
 
 		HookEvents();
 		return Task.CompletedTask;
@@ -105,15 +106,6 @@ internal sealed class OpenTKHostModule(
 		return Task.CompletedTask;
 	}
 
-	private Task OnFramebufferReady(
-		FbFrameReady msg,
-		CancellationToken _)
-	{
-		if (_frameBarriers.TryRemove(msg.FrameId, out var tcs))
-			tcs.TrySetResult();
-
-		return Task.CompletedTask;
-	}
 	#endregion
 
 	#region Window event wiring

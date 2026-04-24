@@ -19,6 +19,13 @@ public interface IMessageBus
 		string handlerName,
 		Func<T, CancellationToken, Task> handler)
 		where T : notnull;
+
+	/// <summary>
+	/// Subscribe with synchronous inline dispatch — no Task.Run, no supervision.
+	/// Use only for fast, non-blocking handlers on the hot path.
+	/// </summary>
+	IDisposable SubscribeInline<T>(Action<T> handler)
+		where T : notnull;
 }
 
 public interface IKernelMessageBus : IMessageBus

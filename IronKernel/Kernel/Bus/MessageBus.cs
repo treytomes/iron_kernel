@@ -185,6 +185,23 @@ public sealed class MessageBus : IKernelMessageBus
 		return sub;
 	}
 
+	public IDisposable SubscribeInline<T>(Action<T> handler)
+		where T : notnull
+	{
+		var sub = new InlineSubscription<T>(handler, this);
+
+		var list = _handlers.GetOrAdd(
+			typeof(T),
+			_ => new List<ISubscription>());
+
+		lock (list)
+		{
+			list.Add(sub);
+		}
+
+		return sub;
+	}
+
 	private void Unsubscribe(Type type, ISubscription sub)
 	{
 		if (_handlers.TryGetValue(type, out var list))
@@ -320,6 +337,33 @@ public sealed class MessageBus : IKernelMessageBus
 			{
 				_bus._logger.LogError(ex, "Application handler '{HandlerName}' faulted", _handlerName);
 			}
+		}
+
+		public void Dispose()
+		{
+			if (_disposed) return;
+			_disposed = true;
+			_bus.Unsubscribe(typeof(T), this);
+		}
+	}
+
+	private sealed class InlineSubscription<T> : ISubscription, IDisposable
+		where T : notnull
+	{
+		private readonly Action<T> _handler;
+		private readonly MessageBus _bus;
+		private bool _disposed;
+
+		public InlineSubscription(Action<T> handler, MessageBus bus)
+		{
+			_handler = handler;
+			_bus = bus;
+		}
+
+		public void Dispatch(object message)
+		{
+			if (_disposed) return;
+			_handler((T)message);
 		}
 
 		public void Dispose()

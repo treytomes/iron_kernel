@@ -88,57 +88,41 @@ internal sealed class FramebufferModule(
 			}
 		));
 
-		_subscriptions.Add(_bus.Subscribe<FbWriteSpan>(
-			runtime,
-			"WriteSpanHandler",
-			(msg, ct) =>
+		_subscriptions.Add(_bus.SubscribeInline<FbWriteSpan>(msg =>
+		{
+			var x = msg.X;
+			var y = msg.Y;
+
+			for (var n = 0; n < msg.Data.Count; n++)
 			{
-				var x = msg.X;
-				var y = msg.Y;
+				_virtualDisplay.SetPixel(x, y, msg.Data[n]);
+				x++;
 
-				for (var n = 0; n < msg.Data.Count && !ct.IsCancellationRequested; n++)
+				if (x >= _virtualDisplay.Width)
 				{
-					_virtualDisplay.SetPixel(x, y, msg.Data[n]);
-					x++;
-
-					if (x >= _virtualDisplay.Width)
-					{
-						x = 0;
-						y++;
-						if (y >= _virtualDisplay.Height)
-							break;
-					}
+					x = 0;
+					y++;
+					if (y >= _virtualDisplay.Height)
+						break;
 				}
-
-				if (msg.IsComplete)
-				{
-					_bus.Publish(new FbFrameReady(_currentFrameId));
-				}
-
-				return Task.CompletedTask;
 			}
-		));
 
-		_subscriptions.Add(_bus.Subscribe<FbWriteRect>(
-			runtime,
-			"WriteRectHandler",
-			(msg, ct) =>
-			{
-				_virtualDisplay.SetPixels(
-					msg.X,
-					msg.Y,
-					msg.Width,
-					msg.Height,
-					msg.Data);
+			if (msg.IsComplete)
+				_bus.Publish(new FbFrameReady(_currentFrameId));
+		}));
 
-				if (msg.IsComplete)
-				{
-					_bus.Publish(new FbFrameReady(_currentFrameId));
-				}
+		_subscriptions.Add(_bus.SubscribeInline<FbWriteRect>(msg =>
+		{
+			_virtualDisplay.SetPixels(
+				msg.X,
+				msg.Y,
+				msg.Width,
+				msg.Height,
+				msg.Data);
 
-				return Task.CompletedTask;
-			}
-		));
+			if (msg.IsComplete)
+				_bus.Publish(new FbFrameReady(_currentFrameId));
+		}));
 
 		_subscriptions.Add(_bus.Subscribe<FbSetBorder>(
 			runtime,

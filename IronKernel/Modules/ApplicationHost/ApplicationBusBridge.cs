@@ -88,6 +88,18 @@ internal sealed class ApplicationBusBridge(
 		_subs.Add(sub);
 	}
 
+	/// <summary>
+	/// Like Request, but dispatches synchronously inline — no Task.Run overhead.
+	/// Use only for fast, non-blocking handlers.
+	/// </summary>
+	public void RequestInline<TApp, TKernel>(Func<TApp, TKernel> map)
+		where TApp : notnull
+		where TKernel : notnull
+	{
+		var sub = _kernelBus.SubscribeInline<TApp>(msg => _kernelBus.Publish(map(msg)));
+		_subs.Add(sub);
+	}
+
 	public void Dispose()
 	{
 		foreach (var s in _subs)
