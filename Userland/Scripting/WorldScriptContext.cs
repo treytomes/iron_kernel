@@ -26,11 +26,8 @@ public sealed class WorldScriptContext : IScriptHost
 	{
 		_logger = logger;
 		_world = world;
-
-		// TODO: I hate instantiating like this, but there's a circular reference between WorldMorph and WindowService now.
-		WindowService = new WindowService(world, services);
-
 		_services = services;
+		WindowService = services.GetRequiredService<IWindowService>();
 		FileSystem = services.GetRequiredService<IFileSystem>();
 	}
 
