@@ -13,6 +13,7 @@ public class Texture : IDisposable
 	private PixelFormat _format;
 	private int _bpp;
 	private bool _disposedValue = false;
+	private bool _isIndexed;
 
 	#endregion
 
@@ -22,25 +23,32 @@ public class Texture : IDisposable
 	{
 		Width = width;
 		Height = height;
+		_isIndexed = indexed;
 		_data = [];
 
-		// Generate the reference texture.
 		Id = GL.GenTexture();
 		if (Id == 0)
-		{
 			throw new Exception("Unable to generate palette texture.");
-		}
 
 		GL.BindTexture(TextureTarget.Texture2D, Id);
 		GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Nearest);
 		GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Nearest);
 
-		_format = indexed ? PixelFormat.Red : PixelFormat.Rgb;
-		_bpp = indexed ? 1 : 3;
-		_data = new byte[width * height * _bpp];
-
-		// Specify texture storage once so subsequent TexSubImage2D calls are valid.
-		GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, width, height, 0, _format, PixelType.UnsignedByte, _data);
+		if (indexed)
+		{
+			// 16-bit unsigned single-channel — holds indices up to 65535
+			_format = PixelFormat.RedInteger;
+			_bpp = 2;
+			_data = new byte[width * height * _bpp];
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.R16ui, width, height, 0, _format, PixelType.UnsignedShort, _data);
+		}
+		else
+		{
+			_format = PixelFormat.Rgb;
+			_bpp = 3;
+			_data = new byte[width * height * _bpp];
+			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgb, width, height, 0, _format, PixelType.UnsignedByte, _data);
+		}
 	}
 
 	#endregion
@@ -49,10 +57,7 @@ public class Texture : IDisposable
 
 	public byte[] Data
 	{
-		get
-		{
-			return _data;
-		}
+		get => _data;
 		set
 		{
 			_data = new byte[value.Length];
@@ -72,39 +77,29 @@ public class Texture : IDisposable
 		GL.BindTexture(TextureTarget.Texture2D, Id);
 	}
 
-	public void UploadData(byte[] data)
+	public void UploadData(ushort[] data)
 	{
 		Bind();
-		GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, Width, Height, _format, PixelType.UnsignedByte, data);
+		GL.TexSubImage2D(TextureTarget.Texture2D, 0, 0, 0, Width, Height, _format, PixelType.UnsignedShort, data);
 	}
 
 	protected virtual void Dispose(bool disposing)
 	{
 		if (!_disposedValue)
 		{
-			if (disposing)
-			{
-				// Dispose managed state (managed objects).
-			}
-
-			// Free unmanaged resources (unmanaged objects) and override finalizer.
 			if (Id != 0)
-			{
 				GL.DeleteTexture(Id);
-			}
 			_disposedValue = true;
 		}
 	}
 
 	~Texture()
 	{
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 		Dispose(disposing: false);
 	}
 
 	public void Dispose()
 	{
-		// Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
 		Dispose(disposing: true);
 		GC.SuppressFinalize(this);
 	}

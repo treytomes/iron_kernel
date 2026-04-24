@@ -5,16 +5,10 @@ namespace IronKernel.Modules.Framebuffer;
 
 /// <summary>
 /// Generates a palette with <paramref name="colorDepth"/> discrete intensity levels per RGB channel.
-/// The default depth of 6 produces the 216-color RadialColor palette.
+/// The default depth of 6 produces the 216-color RadialColor-equivalent palette.
 /// </summary>
 public class RadialPalette : IReadOnlyList<Color>, IDisposable
 {
-	#region Constants
-
-	private const int PALETTE_SIZE = 256;
-
-	#endregion
-
 	#region Fields
 
 	private readonly Texture _texture;
@@ -28,8 +22,9 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 	public RadialPalette(int colorDepth = 6)
 	{
 		ColorDepth = colorDepth;
+		PaletteSize = colorDepth * colorDepth * colorDepth;
 
-		_colors = new List<Color>();
+		_colors = new List<Color>(PaletteSize);
 		for (var r = 0; r < colorDepth; r++)
 		{
 			for (var g = 0; g < colorDepth; g++)
@@ -51,11 +46,8 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 			}
 		}
 
-		while (_colors.Count < PALETTE_SIZE)
-			_colors.Add(Color.Black);
-
-		var data = new byte[PALETTE_SIZE * 3];
-		for (int i = 0; i < PALETTE_SIZE; i++)
+		var data = new byte[PaletteSize * 3];
+		for (int i = 0; i < PaletteSize; i++)
 		{
 			var color = _colors[i];
 			data[i * 3]     = (byte)(color.R * 255f);
@@ -63,7 +55,7 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 			data[i * 3 + 2] = (byte)(color.B * 255f);
 		}
 
-		_texture = new Texture(PALETTE_SIZE, 1, false);
+		_texture = new Texture(PaletteSize, 1, false);
 		_texture.Data = data;
 	}
 
@@ -72,14 +64,9 @@ public class RadialPalette : IReadOnlyList<Color>, IDisposable
 	#region Properties
 
 	public int ColorDepth { get; }
-
+	public int PaletteSize { get; }
 	public int Id => _texture.Id;
-
 	public Color this[int index] => _colors[index];
-
-	public byte this[byte r, byte g, byte b]
-		=> (byte)(r * ColorDepth * ColorDepth + g * ColorDepth + b);
-
 	public int Count => _colors.Count;
 
 	#endregion

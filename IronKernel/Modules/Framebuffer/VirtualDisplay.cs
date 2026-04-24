@@ -38,6 +38,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	private Texture _texture = null!;
 	private int _textureUniformLocation;
 	private int _paletteUniformLocation;
+	private int _paletteSizeUniformLocation;
 
 	// Scaling and positioning variables  
 	private float _scale = 1.0f;
@@ -48,7 +49,7 @@ internal class VirtualDisplay : IVirtualDisplay
 	// Pixel data management
 	private bool _textureNeedsUpdate = false;
 	private Color[] _pixelData;
-	private byte[] _indexBuffer = [];
+	private ushort[] _indexBuffer = [];
 
 	private bool _disposedValue;
 
@@ -114,7 +115,7 @@ internal class VirtualDisplay : IVirtualDisplay
 
 		// Generate texture
 		_texture = new Texture(_settings.Width, _settings.Height, true);
-		_indexBuffer = new byte[_settings.Width * _settings.Height];
+		_indexBuffer = new ushort[_settings.Width * _settings.Height];
 
 		// Create VAO, VBO, and EBO  
 		_vao = GL.GenVertexArray();
@@ -158,6 +159,7 @@ internal class VirtualDisplay : IVirtualDisplay
 		_shaderProgram.Use();
 		_textureUniformLocation = _shaderProgram.GetUniformLocation("uTexture");
 		_paletteUniformLocation = _shaderProgram.GetUniformLocation("uPalette");
+		_paletteSizeUniformLocation = _shaderProgram.GetUniformLocation("uPaletteSize");
 		GL.UseProgram(0);
 
 		// Initialize palette
@@ -353,6 +355,8 @@ internal class VirtualDisplay : IVirtualDisplay
 		GL.BindTexture(TextureTarget.Texture2D, _texture.Id);
 		GL.Uniform1(_textureUniformLocation, 0);
 
+		GL.Uniform1(_paletteSizeUniformLocation, Palette.PaletteSize);
+
 		GL.DrawElements(PrimitiveType.Triangles, _quadIndices.Length, DrawElementsType.UnsignedInt, 0);
 
 		GL.BindVertexArray(0);
@@ -392,13 +396,13 @@ internal class VirtualDisplay : IVirtualDisplay
 		GC.SuppressFinalize(this);
 	}
 
-	private byte ColorToIndex(Color c)
+	private ushort ColorToIndex(Color c)
 	{
 		var max = _settings.ColorDepth - 1;
-		var r = (byte)Math.Round(c.R * max, MidpointRounding.AwayFromZero);
-		var g = (byte)Math.Round(c.G * max, MidpointRounding.AwayFromZero);
-		var b = (byte)Math.Round(c.B * max, MidpointRounding.AwayFromZero);
-		return (byte)(r * _settings.ColorDepth * _settings.ColorDepth + g * _settings.ColorDepth + b);
+		var r = (int)Math.Round(c.R * max, MidpointRounding.AwayFromZero);
+		var g = (int)Math.Round(c.G * max, MidpointRounding.AwayFromZero);
+		var b = (int)Math.Round(c.B * max, MidpointRounding.AwayFromZero);
+		return (ushort)(r * _settings.ColorDepth * _settings.ColorDepth + g * _settings.ColorDepth + b);
 	}
 
 	#endregion
