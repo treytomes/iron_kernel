@@ -8,6 +8,7 @@ using IronKernel.Modules.OpenTKHost.ValueObjects;
 using Microsoft.Extensions.Logging;
 using IronKernel.Modules.FileSystem.ValueObjects;
 using IronKernel.Modules.Clipboard.ValueObjects;
+using IronKernel.Modules.Sound.ValueObjects;
 using IronKernel.Common.ValueObjects;
 
 namespace IronKernel.Modules.ApplicationHost;
@@ -296,6 +297,12 @@ internal sealed class ApplicationHostModule(
 
 		_bridge.Request<AppClipboardGetQuery, ClipboardGetQuery>("ClipboardGetQueryHandler", (e, ct) => new(e.CorrelationID));
 		_bridge.Forward<ClipboardGetResponse, AppClipboardGetResponse>("ClipboardGetResponseHandler", (e, ct) => new(e.CorrelationID, e.Text));
+
+		// Sound
+		_bridge.RequestInline<AppSoundPlayAsset, SoundPlayAsset>(e => new(e.Url));
+		_bridge.RequestInline<AppSoundPlayPcm, SoundPlayPcm>(e => new(e.Samples, e.SampleRate));
+		_bridge.RequestInline<AppSoundStop, SoundStop>(_ => new());
+		_bridge.RequestInline<AppSoundSetVolume, SoundSetVolume>(e => new(e.Volume));
 
 		var context = new ApplicationContext(
 			_bus,

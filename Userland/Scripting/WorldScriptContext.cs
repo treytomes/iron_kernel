@@ -29,6 +29,7 @@ public sealed class WorldScriptContext : IScriptHost
 		_services = services;
 		WindowService = new WindowService(world, services);
 		FileSystem = services.GetRequiredService<IFileSystem>();
+		Sound = services.GetRequiredService<ISoundService>();
 	}
 
 	#endregion
@@ -39,6 +40,7 @@ public sealed class WorldScriptContext : IScriptHost
 	public Action? ClearOutputRequested { get; set; }
 	public IWindowService WindowService { get; }
 	public IFileSystem FileSystem { get; }
+	public ISoundService Sound { get; }
 	public MorphHandleRegistry Handles => _handles;
 	public WorldMorph World => _world;
 	public WorldCommandManager Commands => _world.Commands;

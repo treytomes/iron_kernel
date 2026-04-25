@@ -70,6 +70,7 @@ public sealed class MiniMacroApplication(
 		services.AddSingleton<IWindowService>(sp =>
 			sp.GetRequiredService<WorldMorph>().ScriptContext.WindowService);
 		services.AddSingleton<IClipboardService, ClipboardService>();
+		services.AddSingleton<ISoundService, SoundService>();
 
 		services.AddSingleton<WorldMorph>(sp =>
 		{

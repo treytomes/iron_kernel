@@ -122,6 +122,13 @@ public sealed record AppDirectoryListResponse(
 	IReadOnlyList<DirectoryEntry> Entries
 ) : Response<IReadOnlyList<DirectoryEntry>>(CorrelationID, Entries);
 
+// Sound messages
+
+public sealed record AppSoundPlayAsset(string Url);
+public sealed record AppSoundPlayPcm(float[] Samples, int SampleRate);
+public sealed record AppSoundStop();
+public sealed record AppSoundSetVolume(float Volume);
+
 // Clipboard messages
 
 public sealed record AppClipboardGetQuery(

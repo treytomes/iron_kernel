@@ -14,6 +14,7 @@ public static class IntrinsicRegistry
 		FileSystemIntrinsics.Register();
 		KeyboardIntrinsics.Register();
 		MorphIntrinsics.Register();
+		SoundIntrinsics.Register();
 		SpriteDisplayIntrinsics.Register();
 		TileMapIntrinsics.Register();
 
