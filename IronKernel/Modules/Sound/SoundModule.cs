@@ -135,8 +135,6 @@ internal sealed class SoundModule(
     {
         if (!_available) return;
 
-        var assetRoot = _settings.AssetRoot;
-
         // url is "asset://sound.NAME" → look up in settings, then load from disk
         if (!url.StartsWith("asset://sound.", StringComparison.OrdinalIgnoreCase))
         {
@@ -152,16 +150,17 @@ internal sealed class SoundModule(
             return;
         }
 
-        var fullPath = Path.Combine(assetRoot, relativePath);
-        if (!File.Exists(fullPath))
+        // relativePath is already relative to the working directory (publish root),
+        // e.g. "assets/sounds/blipA4.wav" — same convention as AssetLoaderModule.
+        if (!File.Exists(relativePath))
         {
-            _logger.LogWarning("SoundModule: sound file not found: {Path}", fullPath);
+            _logger.LogWarning("SoundModule: sound file not found: {Path}", relativePath);
             return;
         }
 
         try
         {
-            var bytes = File.ReadAllBytes(fullPath);
+            var bytes = File.ReadAllBytes(relativePath);
             var wav = WavLoader.Load(bytes);
             PlayShort(wav.Samples, wav.SampleRate, wav.Channels);
         }
