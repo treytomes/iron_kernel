@@ -55,7 +55,8 @@ internal sealed class SoundModule(
             runtime, "SoundPlayAssetHandler",
             (msg, ct) =>
             {
-                PlayAsset(msg.Url);
+                var error = PlayAsset(msg.Url);
+                _bus.Publish(new SoundPlayAssetResult(msg.CorrelationID, error == null, error));
                 return Task.CompletedTask;
             }));
 
@@ -142,9 +143,10 @@ internal sealed class SoundModule(
 
     #region Playback
 
-    private void PlayAsset(string url)
+    // Returns null on success, an error string on failure.
+    private string? PlayAsset(string url)
     {
-        if (!_available) return;
+        if (!_available) return null;
 
         string? diskPath = null;
 
@@ -154,7 +156,7 @@ internal sealed class SoundModule(
             if (!VfsPath.TryResolve(url, _userRoot, _sysRoot, out var resolved, out var err))
             {
                 _logger.LogWarning("SoundModule: path resolution failed for {Url}: {Err}", url, err);
-                return;
+                return err ?? $"Path resolution failed: {url}";
             }
             diskPath = resolved;
         }
@@ -164,20 +166,20 @@ internal sealed class SoundModule(
             if (!_settings.Assets.Sound.TryGetValue(key, out var rel))
             {
                 _logger.LogWarning("SoundModule: unknown sound asset key '{Key}'", key);
-                return;
+                return $"Unknown sound asset key: {key}";
             }
             diskPath = rel;
         }
         else
         {
             _logger.LogWarning("SoundModule: unsupported asset URL scheme: {Url}", url);
-            return;
+            return $"Unsupported sound URL scheme: {url}";
         }
 
         if (!File.Exists(diskPath))
         {
             _logger.LogWarning("SoundModule: sound file not found: {Path}", diskPath);
-            return;
+            return $"Sound file not found: {diskPath}";
         }
 
         try
@@ -185,10 +187,12 @@ internal sealed class SoundModule(
             var bytes = File.ReadAllBytes(diskPath);
             var wav = WavLoader.Load(bytes);
             PlayShort(wav.Samples, wav.SampleRate, wav.Channels);
+            return null;
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SoundModule: failed to play asset {Url}", url);
+            return ex.Message;
         }
     }
 

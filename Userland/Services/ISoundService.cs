@@ -2,8 +2,8 @@ namespace Userland.Services;
 
 public interface ISoundService
 {
-    /// <summary>Play a WAV asset by key (e.g. "blipa4").</summary>
-    void PlayAsset(string assetKey);
+    /// <summary>Play a WAV asset. Returns null on success, an error message on failure.</summary>
+    string? PlayAsset(string assetKey);
 
     /// <summary>Play raw PCM float samples (synthesizer output).</summary>
     void PlayPcm(float[] samples, int sampleRate);

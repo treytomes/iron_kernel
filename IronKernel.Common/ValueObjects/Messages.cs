@@ -124,7 +124,10 @@ public sealed record AppDirectoryListResponse(
 
 // Sound messages
 
-public sealed record AppSoundPlayAsset(string Url);
+public sealed record AppSoundPlayAsset(Guid CorrelationID, string Url) : Command(CorrelationID);
+public sealed record AppSoundPlayAssetResult(Guid CorrelationID, bool Success, string? Error)
+    : Response<bool>(CorrelationID, Success);
+
 public sealed record AppSoundPlayPcm(float[] Samples, int SampleRate);
 public sealed record AppSoundStop();
 public sealed record AppSoundSetVolume(float Volume);

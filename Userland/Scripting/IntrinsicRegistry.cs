@@ -23,30 +23,72 @@ public static class IntrinsicRegistry
 		CreateClsIntrinsic();
 	}
 
+	private static readonly string GeneralHelp = """
+		IronKernel MiniScript environment
+
+		FILE PROTOCOLS
+		  file://path       User storage (read/write).  e.g. file://notes.txt
+		  sys://path        System assets (read-only).  e.g. sys://sounds/blipA4.wav
+		  asset://kind.key  Named asset.               e.g. asset://sound.blipa4
+
+		FILESYSTEM
+		  dir [path]        List directory
+		  cd [path]         Change directory
+		  pwd               Print working directory
+		  mkdir path        Create directory
+		  del path          Delete file or directory
+		  copy from, to     Copy file
+		  move from, to     Move/rename file
+		  run filename      Run a .ms script
+		  import name       Import a module
+
+		SOUND
+		  Sound.playAsset path   Play a WAV (sys://, file://, or bare key)
+		  s = new Sound          Create a synthesizer voice
+		  s.init wf, freq, dur   Configure waveform/frequency/duration
+		  s.play                 Generate and play
+		  noteFreq n             MIDI note → Hz  (A4 = noteFreq(69) = 440)
+		  Sound.Sine / .Triangle / .Sawtooth / .Square / .Noise
+
+		DISPLAY
+		  Canvas — pixel drawing   TileMap — tile grid   Sprite — sprites
+
+		OTHER
+		  help [fn]          Show this help, or docstring for a function
+		  decompile fn       Dump bytecode for a function
+		  cls                Clear the terminal
+		""";
+
 	private static void CreateHelpIntrinsic()
 	{
 		var inspect = Intrinsic.Create("help");
-		inspect.AddParam("function");
+		inspect.AddParam("function", ValNull.instance);
 
 		inspect.code = (ctx, _) =>
 		{
 			try
 			{
-				if (ctx.interpreter.hostData is not WorldScriptContext world)
-					return Intrinsic.Result.Null;
-
 				var value = ctx.GetVar("function");
+
+				if (value == null || value == ValNull.instance)
+				{
+					foreach (var line in GeneralHelp.Split('\n'))
+						WriteLine(ctx, line.TrimEnd());
+					return Intrinsic.Result.Null;
+				}
 
 				if (value is not ValFunction fn)
 				{
-					return Error(ctx, "help: function must be a function reference");
+					foreach (var line in GeneralHelp.Split('\n'))
+						WriteLine(ctx, line.TrimEnd());
+					return Intrinsic.Result.Null;
 				}
 
 				WriteLine(ctx, fn.ToString());
-				var line = fn.function.code.FirstOrDefault();
-				if (line is not null)
+				var code = fn.function.code.FirstOrDefault();
+				if (code is not null)
 				{
-					var firstValue = line.Evaluate(ctx);
+					var firstValue = code.Evaluate(ctx);
 					if (firstValue is ValString helpText)
 					{
 						WriteLine(ctx, helpText.value);
@@ -58,10 +100,7 @@ public static class IntrinsicRegistry
 			}
 			catch (Exception ex)
 			{
-				ctx.interpreter.errorOutput?.Invoke(
-					$"help error: {ex.Message}",
-					true
-				);
+				ctx.interpreter.errorOutput?.Invoke($"help error: {ex.Message}", true);
 				return Intrinsic.Result.Null;
 			}
 		};

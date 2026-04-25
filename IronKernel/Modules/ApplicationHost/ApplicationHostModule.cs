@@ -299,7 +299,12 @@ internal sealed class ApplicationHostModule(
 		_bridge.Forward<ClipboardGetResponse, AppClipboardGetResponse>("ClipboardGetResponseHandler", (e, ct) => new(e.CorrelationID, e.Text));
 
 		// Sound
-		_bridge.RequestInline<AppSoundPlayAsset, SoundPlayAsset>(e => new(e.Url));
+		_bridge.Request<AppSoundPlayAsset, SoundPlayAsset>(
+			"AppSoundPlayAssetHandler",
+			(e, ct) => new(e.CorrelationID, e.Url));
+		_bridge.Forward<SoundPlayAssetResult, AppSoundPlayAssetResult>(
+			"SoundPlayAssetResultHandler",
+			(e, ct) => new(e.CorrelationID, e.Success, e.Error));
 		_bridge.RequestInline<AppSoundPlayPcm, SoundPlayPcm>(e => new(e.Samples, e.SampleRate));
 		_bridge.RequestInline<AppSoundStop, SoundStop>(_ => new());
 		_bridge.RequestInline<AppSoundSetVolume, SoundSetVolume>(e => new(e.Volume));

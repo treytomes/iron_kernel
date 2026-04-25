@@ -153,7 +153,7 @@ public static class SoundIntrinsics
         };
         proto["setVolume"] = volIntrinsic.GetFunc();
 
-        // Direct asset playback: Sound.playAsset("blipa4")
+        // Direct asset playback: Sound.playAsset("sys://sounds/blipA4.wav") or bare key
         var assetIntrinsic = Intrinsic.Create("");
         assetIntrinsic.AddParam("assetKey", ValString.empty);
         assetIntrinsic.code = (ctx, partial) =>
@@ -161,8 +161,11 @@ public static class SoundIntrinsics
             if (ctx.interpreter.hostData is not WorldScriptContext world)
                 return Intrinsic.Result.Null;
             var key = ctx.GetVar("assetKey")?.ToString() ?? string.Empty;
-            if (!string.IsNullOrWhiteSpace(key))
-                world.Sound.PlayAsset(key);
+            if (string.IsNullOrWhiteSpace(key))
+                return Intrinsic.Result.Null;
+            var error = world.Sound.PlayAsset(key);
+            if (error != null)
+                ctx.interpreter.errorOutput?.Invoke($"Sound.playAsset: {error}", true);
             return Intrinsic.Result.Null;
         };
         proto["playAsset"] = assetIntrinsic.GetFunc();

@@ -7,7 +7,7 @@ public sealed class SoundService(IApplicationBus bus) : ISoundService
 {
     private readonly IApplicationBus _bus = bus;
 
-    public void PlayAsset(string path)
+    public string? PlayAsset(string path)
     {
         // sys:// and file:// paths pass through; bare keys get wrapped as asset://sound.KEY
         var url = path.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
@@ -15,7 +15,14 @@ public sealed class SoundService(IApplicationBus bus) : ISoundService
                   path.StartsWith("asset://", StringComparison.OrdinalIgnoreCase)
             ? path
             : $"asset://sound.{path}";
-        _bus.Publish(new AppSoundPlayAsset(url));
+
+        var result = _bus.CommandAsync<AppSoundPlayAsset, AppSoundPlayAssetResult>(
+            id => new AppSoundPlayAsset(id, url))
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
+
+        return result.Success ? null : result.Error;
     }
 
     public void PlayPcm(float[] samples, int sampleRate) =>
