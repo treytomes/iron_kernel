@@ -9,15 +9,8 @@ public sealed class SoundService(IApplicationBus bus) : ISoundService
 
     public string? PlayAsset(string path)
     {
-        // sys:// and file:// paths pass through; bare keys get wrapped as asset://sound.KEY
-        var url = path.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
-                  path.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ||
-                  path.StartsWith("asset://", StringComparison.OrdinalIgnoreCase)
-            ? path
-            : $"asset://sound.{path}";
-
         var result = _bus.CommandAsync<AppSoundPlayAsset, AppSoundPlayAssetResult>(
-            id => new AppSoundPlayAsset(id, url))
+            id => new AppSoundPlayAsset(id, path))
             .ConfigureAwait(false)
             .GetAwaiter()
             .GetResult();

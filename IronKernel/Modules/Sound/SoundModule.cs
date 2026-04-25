@@ -148,38 +148,11 @@ internal sealed class SoundModule(
     {
         if (!_available) return null;
 
-        string? diskPath = null;
-
-        if (url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
-            url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        string? diskPath = ResolveAudioPath(url);
+        if (diskPath == null)
         {
-            if (!VfsPath.TryResolve(url, _userRoot, _sysRoot, out var resolved, out var err))
-            {
-                _logger.LogWarning("SoundModule: path resolution failed for {Url}: {Err}", url, err);
-                return err ?? $"Path resolution failed: {url}";
-            }
-            diskPath = resolved;
-        }
-        else if (url.StartsWith("asset://sound.", StringComparison.OrdinalIgnoreCase))
-        {
-            var key = url["asset://sound.".Length..].Trim().ToLowerInvariant();
-            if (!_settings.Assets.Sound.TryGetValue(key, out var rel))
-            {
-                _logger.LogWarning("SoundModule: unknown sound asset key '{Key}'", key);
-                return $"Unknown sound asset key: {key}";
-            }
-            diskPath = rel;
-        }
-        else
-        {
-            _logger.LogWarning("SoundModule: unsupported asset URL scheme: {Url}", url);
-            return $"Unsupported sound URL scheme: {url}";
-        }
-
-        if (!File.Exists(diskPath))
-        {
-            _logger.LogWarning("SoundModule: sound file not found: {Path}", diskPath);
-            return $"Sound file not found: {diskPath}";
+            _logger.LogWarning("SoundModule: could not resolve audio path: {Url}", url);
+            return $"Sound file not found: {url}";
         }
 
         try
@@ -194,6 +167,37 @@ internal sealed class SoundModule(
             _logger.LogWarning(ex, "SoundModule: failed to play asset {Url}", url);
             return ex.Message;
         }
+    }
+
+    /// <summary>
+    /// Resolves an audio URL or bare filename to a disk path.
+    /// Explicit sys:// and file:// URLs resolve directly.
+    /// Bare filenames (no scheme) try file:// first, then sys://, so user
+    /// files shadow system sounds.
+    /// </summary>
+    private string? ResolveAudioPath(string url)
+    {
+        if (url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!VfsPath.TryResolve(url, _userRoot, _sysRoot, out var resolved, out var err))
+            {
+                _logger.LogWarning("SoundModule: path resolution failed for {Url}: {Err}", url, err);
+                return null;
+            }
+            return File.Exists(resolved) ? resolved : null;
+        }
+
+        // Bare path: try user root first, then sys root.
+        var normalized = url.Replace('/', Path.DirectorySeparatorChar)
+                            .TrimStart(Path.DirectorySeparatorChar);
+        var userPath = Path.GetFullPath(Path.Combine(_userRoot, normalized));
+        if (File.Exists(userPath)) return userPath;
+
+        var sysPath = Path.GetFullPath(Path.Combine(_sysRoot, normalized));
+        if (File.Exists(sysPath)) return sysPath;
+
+        return null;
     }
 
     private void PlayPcm(float[] samples, int sampleRate)

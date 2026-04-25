@@ -12,7 +12,6 @@ internal sealed class AppSettings
 	internal sealed class AssetDirectory
 	{
 		public required IReadOnlyDictionary<string, string> Image { get; init; }
-		public IReadOnlyDictionary<string, string> Sound { get; init; } = new Dictionary<string, string>();
 	}
 
 	/// <summary>  

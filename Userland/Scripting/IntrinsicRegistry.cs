@@ -27,9 +27,9 @@ public static class IntrinsicRegistry
 		IronKernel MiniScript environment
 
 		FILE PROTOCOLS
-		  file://path       User storage (read/write).  e.g. file://notes.txt
-		  sys://path        System assets (read-only).  e.g. sys://sounds/blipA4.wav
-		  asset://kind.key  Named asset.               e.g. asset://sound.blipa4
+		  file://path  User storage (read/write).  e.g. file://notes.txt
+		  sys://path   System assets (read-only).  e.g. sys://sounds/blipA4.wav
+		  asset://k.n  Engine asset by kind+name.  e.g. asset://image.mouse_cursor
 
 		FILESYSTEM
 		  dir [path]        List directory
@@ -43,7 +43,8 @@ public static class IntrinsicRegistry
 		  import name       Import a module
 
 		SOUND
-		  Sound.playAsset path   Play a WAV (sys://, file://, or bare key)
+		  Sound.playAsset path   Play a WAV: sys://, file://, or bare relative path
+		                         Bare paths check file:// first, then sys://.
 		  s = new Sound          Create a synthesizer voice
 		  s.init wf, freq, dur   Configure waveform/frequency/duration
 		  s.play                 Generate and play
