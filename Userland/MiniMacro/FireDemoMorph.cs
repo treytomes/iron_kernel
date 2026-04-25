@@ -46,8 +46,11 @@ public class FireDemoMorph : Morph
 	protected override void UpdateLayout()
 	{
 		base.UpdateLayout();
-		_fire = new byte[Size.Height, Size.Width];
-		SeedBottomRow();
+		if (_fire.GetLength(0) != Size.Height || _fire.GetLength(1) != Size.Width)
+		{
+			_fire = new byte[Size.Height, Size.Width];
+			SeedBottomRow();
+		}
 	}
 
 	protected override void DrawSelf(IRenderingContext rc)
