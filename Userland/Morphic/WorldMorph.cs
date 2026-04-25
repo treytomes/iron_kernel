@@ -54,6 +54,12 @@ public sealed class WorldMorph : Morph
 
 	public Color BackgroundColor { get; set; } = new Color(4 / 5f, 4 / 5f, 3 / 5f);
 
+	/// <summary>
+	/// Discrete intensity levels per RGB channel in the kernel palette.
+	/// Set once after the rendering context initializes.
+	/// </summary>
+	public int ColorDepth { get; set; } = 6;
+
 	public WorldCommandManager Commands => _commandManager;
 	public IAssetService Assets { get; }
 	public new MorphicStyle Style { get; } = MorphicStyles.Default;

@@ -99,7 +99,7 @@ public sealed class WindowService : IWindowService
 
 		_world.ClearSelection();
 
-		var inspector = new InspectorMorph(target);
+		var inspector = new InspectorMorph(target, _world.ColorDepth);
 		_world.AddMorph(inspector);
 		inspector.CenterOnOwner();
 	}

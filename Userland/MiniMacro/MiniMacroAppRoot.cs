@@ -65,6 +65,7 @@ public sealed class MiniMacroRoot
 		await _rc.InitializeAsync();
 
 		var world = _services.GetRequiredService<WorldMorph>();
+		world.ColorDepth = _rc.ColorDepth;
 
 		// ------------------------------------------------------------------
 		// UI setup

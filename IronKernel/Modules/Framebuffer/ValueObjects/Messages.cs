@@ -19,5 +19,5 @@ public sealed record FbFrameReady(ulong FrameId);
 
 // Output
 
-public sealed record FbInfoResponse(Guid CorrelationID, Size Size) : Response(CorrelationID);
+public sealed record FbInfoResponse(Guid CorrelationID, Size Size, int ColorDepth) : Response(CorrelationID);
 public sealed record FbInfoQuery(Guid CorrelationID) : Query(CorrelationID);

@@ -8,10 +8,12 @@ namespace Userland.Morphic.Inspector;
 public class InspectorFactory : IInspectorFactory
 {
 	private readonly Action<object>? _navigate;
+	private readonly int _colorDepth;
 
-	public InspectorFactory(Action<object>? navigate = null)
+	public InspectorFactory(Action<object>? navigate = null, int colorDepth = 6)
 	{
 		_navigate = navigate;
+		_colorDepth = colorDepth;
 	}
 
 	public Morph GetInspectorFor(
@@ -62,7 +64,7 @@ public class InspectorFactory : IInspectorFactory
 		// --- Color ---
 		if (declaredType == typeof(Color) || declaredType == typeof(Color?))
 		{
-			return new ColorSliderValueMorph(c => setter?.Invoke(c));
+			return new ColorSliderValueMorph(c => setter?.Invoke(c), _colorDepth);
 		}
 
 		// --- String ---

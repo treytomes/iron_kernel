@@ -20,10 +20,13 @@ public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 	private readonly VerticalStackMorph _sliderStack;
 	#endregion
 
+	private readonly int _steps; // colorDepth - 1
+
 	#region Construction
-	public ColorSliderValueMorph(Action<Color?>? setter)
+	public ColorSliderValueMorph(Action<Color?>? setter, int colorDepth = 6)
 	{
 		_setter = setter;
+		_steps = Math.Max(1, colorDepth - 1);
 		IsSelectable = false;
 
 		_root = new HorizontalStackMorph
@@ -76,12 +79,12 @@ public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 	#endregion
 
 	#region Helpers
-	private static SliderWithEditorMorph CreateChannelSlider(string labelText, Action<float> setter)
+	private SliderWithEditorMorph CreateChannelSlider(string labelText, Action<float> setter)
 	{
 		return new SliderWithEditorMorph(labelText, 0, setter)
 		{
 			Min = 0,
-			Max = 5,
+			Max = _steps,
 			Step = 1
 		};
 	}
@@ -109,9 +112,9 @@ public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 
 		if (_color != null)
 		{
-			_r.Value = MathF.Round(_color.Value.R * 5f);
-			_g.Value = MathF.Round(_color.Value.G * 5f);
-			_b.Value = MathF.Round(_color.Value.B * 5f);
+			_r.Value = MathF.Round(_color.Value.R * _steps);
+			_g.Value = MathF.Round(_color.Value.G * _steps);
+			_b.Value = MathF.Round(_color.Value.B * _steps);
 		}
 		else
 		{
@@ -133,7 +136,7 @@ public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 		if (_color == null)
 			return;
 
-		float v = value / 5f;
+		float v = value / _steps;
 
 		var newColor = channel switch
 		{
@@ -172,9 +175,9 @@ public sealed class ColorSliderValueMorph : Morph, IValueContentMorph
 		// Force sliders to sync when becoming visible
 		if (_color != null)
 		{
-			_r.Value = MathF.Round(_color.Value.R * 5f);
-			_g.Value = MathF.Round(_color.Value.G * 5f);
-			_b.Value = MathF.Round(_color.Value.B * 5f);
+			_r.Value = MathF.Round(_color.Value.R * _steps);
+			_g.Value = MathF.Round(_color.Value.G * _steps);
+			_b.Value = MathF.Round(_color.Value.B * _steps);
 		}
 
 		InvalidateLayout();

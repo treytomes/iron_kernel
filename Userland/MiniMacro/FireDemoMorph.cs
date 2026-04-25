@@ -1,4 +1,3 @@
-using IronKernel.Common.ValueObjects;
 using System.Drawing;
 using Userland.Gfx;
 using Userland.Morphic;
@@ -12,7 +11,10 @@ public class FireDemoMorph : Morph
 
 	private const int DEFAULT_WIDTH = 320;
 	private const int DEFAULT_HEIGHT = 240;
-	private const int PALETTE_SIZE = 256;
+
+	// Canonical Doom-fire palette size: 36 heat levels (0 = cold, 35 = max).
+	private const int HEAT_MAX = 35;
+	private const int PALETTE_SIZE = HEAT_MAX + 1;
 
 	#endregion
 
@@ -30,41 +32,12 @@ public class FireDemoMorph : Morph
 	public FireDemoMorph()
 		: base()
 	{
-		// ShouldClipToBounds = true;
-
 		Size = new Size(DEFAULT_WIDTH, DEFAULT_HEIGHT);
 		_fire = new byte[Size.Height, Size.Width];
-		Array.Clear(_fire);
 
-		// Fire gradient: black → red → orange → yellow → white.
-		// Stops are biased so the typical simulation output range (intensity
-		// 80–140, t≈0.31–0.55) maps to vivid orange rather than dark red.
-		var stops = new (float t, Color c)[]
-		{
-			(0f,    Color.Black),
-			(0.1f,  new Color(1f, 0f,   0f)),   // red
-			(0.4f,  new Color(1f, 0.6f, 0f)),   // orange
-			(0.65f, new Color(1f, 1f,   0f)),   // yellow
-			(1f,    Color.White),
-		};
-		for (var x = 0; x < PALETTE_SIZE; x++)
-		{
-			var t = x / (PALETTE_SIZE - 1f);
-			// Find the two stops that bracket t.
-			int i = 0;
-			while (i < stops.Length - 2 && t > stops[i + 1].t) i++;
-			var lo = stops[i];
-			var hi = stops[i + 1];
-			var u = (t - lo.t) / (hi.t - lo.t);
-			_palette[x] = lo.c.Lerp(hi.c, u);
-		}
+		BuildPalette();
+		SeedBottomRow();
 	}
-
-	#endregion
-
-	#region Properties
-
-	public float BlendFactor { get; set; } = 32f / 129f;
 
 	#endregion
 
@@ -74,29 +47,22 @@ public class FireDemoMorph : Morph
 	{
 		base.UpdateLayout();
 		_fire = new byte[Size.Height, Size.Width];
-		Array.Clear(_fire);
+		SeedBottomRow();
 	}
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
-		rc.RenderFilledRect(new Rectangle(Point.Empty, Size), Color.Black);
-
-		// Randomize the bottom row of the fire buffer.
-		for (var x = 0; x < Size.Width; x++)
-		{
-			SetFire(x, Size.Height - 1, (byte)(Math.Abs(32768 + _random.Next()) % 256));
-		}
-
-		// Do the fire calculations for every pixel, from top to bottom.
+		// Propagate fire upward: each pixel cools toward the heat of the pixel below it.
 		for (var y = 0; y < Size.Height - 1; y++)
 		{
 			for (var x = 0; x < Size.Width; x++)
 			{
-				var southWest = GetFire((x - 1 + Size.Width) % Size.Width, (y + 1) % Size.Height);
-				var south = GetFire(x % Size.Width, (y + 1) % Size.Height);
-				var southEast = GetFire((x + 1) % Size.Width, (y + 1) % Size.Height);
-				var southSouth = GetFire(x % Size.Width, (y + 2) % Size.Height);
-				SetFire(x, y, (byte)((southWest + south + southEast + southSouth) * BlendFactor));
+				var below = _fire[y + 1, x];
+				var decay = _random.Next(0, 3);
+				var heat = Math.Max(0, below - decay);
+				// Spread left by 0 or 1 pixels randomly for turbulence.
+				var dst = (x - _random.Next(0, 2) + Size.Width) % Size.Width;
+				_fire[y, dst] = (byte)heat;
 			}
 		}
 
@@ -108,23 +74,44 @@ public class FireDemoMorph : Morph
 		{
 			for (var x = 0; x < Size.Width; x++)
 			{
-				var f = GetFire(x, y);
-				_rowBuffer[x] = (uint)f < (uint)_palette.Length ? _palette[f] : Color.Black;
+				var heat = _fire[y, x];
+				_rowBuffer[x] = heat < PALETTE_SIZE ? _palette[heat] : Color.White;
 			}
 			rc.RenderSpan(0, y, _rowBuffer);
 		}
 	}
 
-	private byte GetFire(int x, int y)
+	// Bottom row stays at maximum heat — it is the perpetual fire source.
+	private void SeedBottomRow()
 	{
-		if (y < 0 || y >= _fire.GetLength(0) || x < 0 || x >= _fire.GetLength(1)) return 0;
-		return _fire[y, x];
+		var lastRow = Size.Height - 1;
+		for (var x = 0; x < Size.Width; x++)
+			_fire[lastRow, x] = HEAT_MAX;
 	}
 
-	private void SetFire(int x, int y, byte value)
+	// Classic Doom-fire gradient: black → dark red → red → orange → yellow → white.
+	private void BuildPalette()
 	{
-		if (y < 0 || y >= _fire.GetLength(0) || x < 0 || x >= _fire.GetLength(1)) return;
-		_fire[y, x] = value;
+		var stops = new (float t, Color c)[]
+		{
+			(0f,    Color.Black),
+			(0.25f, new Color(0.5f,  0f,    0f)),   // dark red
+			(0.45f, new Color(1f,    0f,    0f)),   // red
+			(0.65f, new Color(1f,    0.5f,  0f)),   // orange
+			(0.85f, new Color(1f,    1f,    0f)),   // yellow
+			(1f,    Color.White),
+		};
+
+		for (var i = 0; i < PALETTE_SIZE; i++)
+		{
+			var t = i / (float)(PALETTE_SIZE - 1);
+			var s = 0;
+			while (s < stops.Length - 2 && t > stops[s + 1].t) s++;
+			var lo = stops[s];
+			var hi = stops[s + 1];
+			var u = (t - lo.t) / (hi.t - lo.t);
+			_palette[i] = lo.c.Lerp(hi.c, u);
+		}
 	}
 
 	#endregion

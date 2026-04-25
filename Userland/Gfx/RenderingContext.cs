@@ -31,6 +31,12 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 	/// <inheritdoc/>
 	public Rectangle Bounds => new(new Point(0, 0), Size);
 
+	/// <summary>
+	/// Discrete intensity levels per RGB channel in the kernel palette (e.g. 6 or 16).
+	/// Use this to build colour editors that snap to palette-representable values.
+	/// </summary>
+	public int ColorDepth { get; private set; } = 6;
+
 	#endregion
 
 	#region Methods
@@ -93,6 +99,7 @@ public sealed class RenderingContext(IApplicationBus bus) : IRenderingContext
 
 		var response = await _bus.QueryAsync<AppFbInfoQuery, AppFbInfoResponse>(id => new AppFbInfoQuery(id));
 		Size = response.Size;
+		ColorDepth = response.ColorDepth;
 		_data = new Color[Size.Width * Size.Height];
 		Array.Fill(_data, Color.Black);
 	}

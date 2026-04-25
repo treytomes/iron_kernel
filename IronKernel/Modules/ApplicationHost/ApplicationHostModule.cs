@@ -171,7 +171,7 @@ internal sealed class ApplicationHostModule(
 
 		_bridge.Forward<FbInfoResponse, AppFbInfoResponse>(
 			"FbInfoHandler",
-			(e, ct) => new(e.CorrelationID, e.Size)
+			(e, ct) => new(e.CorrelationID, e.Size, e.ColorDepth)
 		);
 
 		_bridge.Request<AppFbInfoQuery, FbInfoQuery>(

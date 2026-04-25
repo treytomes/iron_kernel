@@ -123,7 +123,8 @@ _subscriptions.Add(_bus.SubscribeInline<FbWriteRect>(msg =>
 					foreach (var pending in _pendingInfoQueries)
 						_bus.Publish(new FbInfoResponse(
 							pending.CorrelationID,
-							new Size(_virtualDisplay.Width, _virtualDisplay.Height)));
+							new Size(_virtualDisplay.Width, _virtualDisplay.Height),
+							_virtualDisplay.Palette.ColorDepth));
 					_pendingInfoQueries.Clear();
 				}
 				return Task.CompletedTask;
@@ -145,7 +146,8 @@ _subscriptions.Add(_bus.SubscribeInline<FbWriteRect>(msg =>
 				_bus.Publish(
 					new FbInfoResponse(
 						msg.CorrelationID,
-						new Size(_virtualDisplay.Width, _virtualDisplay.Height)));
+						new Size(_virtualDisplay.Width, _virtualDisplay.Height),
+						_virtualDisplay.Palette.ColorDepth));
 
 				return Task.CompletedTask;
 			}

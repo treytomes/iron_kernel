@@ -14,10 +14,15 @@ public interface IRenderingContext
 	/// </summary>  
 	Size Size { get; }
 
-	/// <summary>  
-	/// Gets a box representing the bounds of the rendering context.  
-	/// </summary>  
+	/// <summary>
+	/// Gets a box representing the bounds of the rendering context.
+	/// </summary>
 	Rectangle Bounds { get; }
+
+	/// <summary>
+	/// Discrete intensity levels per RGB channel in the kernel palette (e.g. 6 or 16).
+	/// </summary>
+	int ColorDepth { get; }
 
 	Task InitializeAsync();
 

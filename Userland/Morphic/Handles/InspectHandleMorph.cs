@@ -20,7 +20,7 @@ public sealed class InspectHandleMorph(Morph target) : HandleMorph(target)
 		if (TryGetWorld(out var world))
 		{
 			world.ClearSelection();
-			var inspector = new InspectorMorph(Target);
+			var inspector = new InspectorMorph(Target, world.ColorDepth);
 			world.AddMorph(inspector);
 			inspector.CenterOnOwner();
 		}

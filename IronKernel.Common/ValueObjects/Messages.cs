@@ -41,7 +41,7 @@ public sealed record AppFbWriteRect(
 public sealed record AppFbSetBorder(Color Color);
 
 public sealed record AppFbInfoQuery(Guid CorrelationID) : Query(CorrelationID);
-public sealed record AppFbInfoResponse(Guid CorrelationID, Size Size) : Response<Size>(CorrelationID, Size);
+public sealed record AppFbInfoResponse(Guid CorrelationID, Size Size, int ColorDepth) : Response<Size>(CorrelationID, Size);
 
 public sealed record AppAssetImageQuery(Guid CorrelationID, string Url) : Query(CorrelationID);
 public sealed record AppAssetImageResponse(Guid CorrelationID, string Url, Image Image) : Response<Image>(CorrelationID, Image);

@@ -17,9 +17,12 @@ public sealed class InspectorMorph : WindowMorph
 
 	#region Constructor
 
-	public InspectorMorph(object target)
+	private readonly int _colorDepth;
+
+	public InspectorMorph(object target, int colorDepth = 6)
 		: base(Point.Empty, new Size(480, 320), target.GetType().Name)
 	{
+		_colorDepth = colorDepth;
 		IsSelectable = true;
 
 		_path.Add(new InspectionContext(target, target.GetType().Name));
@@ -141,10 +144,10 @@ public sealed class InspectorMorph : WindowMorph
 		var factory = new InspectorFactory(
 			navigate: obj =>
 			{
-				// Only navigate into inspectable objects
 				if (obj is Miniscript.ValMap)
 					NavigateForward(obj, "map");
-			}
+			},
+			colorDepth: _colorDepth
 		);
 
 		foreach (var keyValue in map.Keys)
@@ -198,10 +201,8 @@ public sealed class InspectorMorph : WindowMorph
 				}
 
 				var factory = new InspectorFactory(
-					navigate: obj =>
-					{
-						NavigateForward(obj, localProp.Name);
-					}
+					navigate: obj => NavigateForward(obj, localProp.Name),
+					colorDepth: _colorDepth
 				);
 
 				list.AddMorph(new PropertyRowMorph(
@@ -221,7 +222,8 @@ public sealed class InspectorMorph : WindowMorph
 
 			// --- Reference / primitive properties ---
 			var defaultFactory = new InspectorFactory(
-				navigate: obj => NavigateForward(obj, obj.GetType().Name)
+				navigate: obj => NavigateForward(obj, obj.GetType().Name),
+				colorDepth: _colorDepth
 			);
 
 			list.AddMorph(new PropertyRowMorph(
