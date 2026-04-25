@@ -164,7 +164,8 @@ internal sealed class Program
 				Width = appSettings.VirtualDisplay.Width,
 				Height = appSettings.VirtualDisplay.Height,
 				VertexShaderPath = appSettings.VirtualDisplay.VertexShaderPath,
-				FragmentShaderPath = appSettings.VirtualDisplay.FragmentShaderPath
+				FragmentShaderPath = appSettings.VirtualDisplay.FragmentShaderPath,
+				ColorDepth = appSettings.VirtualDisplay.ColorDepth
 			};
 
 			// Create and return the virtual display.
