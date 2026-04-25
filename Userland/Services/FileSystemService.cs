@@ -138,6 +138,9 @@ public sealed class FileSystemService(IApplicationBus bus) : IFileSystem
 				id => new AppDirectoryListQuery(id, url),
 				ct);
 
+		if (response.Error != null)
+			throw new IOException(response.Error);
+
 		return response.Entries;
 	}
 

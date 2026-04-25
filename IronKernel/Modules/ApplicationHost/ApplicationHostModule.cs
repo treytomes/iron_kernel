@@ -281,11 +281,7 @@ internal sealed class ApplicationHostModule(
 
 		_bridge.Forward<DirectoryListResponse, AppDirectoryListResponse>(
 			"AppDirectoryListResponseHandler",
-			(e, ct) => new(
-				e.CorrelationID,
-				e.Url,
-				e.Entries
-			)
+			(e, ct) => new(e.CorrelationID, e.Url, e.Entries, e.Error)
 		);
 
 		// Clipboard
@@ -299,6 +295,12 @@ internal sealed class ApplicationHostModule(
 		_bridge.Forward<ClipboardGetResponse, AppClipboardGetResponse>("ClipboardGetResponseHandler", (e, ct) => new(e.CorrelationID, e.Text));
 
 		// Sound
+		_bridge.Request<AppSoundLoadQuery, SoundLoadQuery>(
+			"AppSoundLoadQueryHandler",
+			(e, ct) => new(e.CorrelationID, e.Url));
+		_bridge.Forward<SoundLoadResponse, AppSoundLoadResponse>(
+			"SoundLoadResponseHandler",
+			(e, ct) => new(e.CorrelationID, e.Samples, e.SampleRate, e.Error));
 		_bridge.Request<AppSoundPlayAsset, SoundPlayAsset>(
 			"AppSoundPlayAssetHandler",
 			(e, ct) => new(e.CorrelationID, e.Url));

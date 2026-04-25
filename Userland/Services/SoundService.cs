@@ -7,6 +7,17 @@ public sealed class SoundService(IApplicationBus bus) : ISoundService
 {
     private readonly IApplicationBus _bus = bus;
 
+    public (float[]? Samples, int SampleRate, string? Error) LoadSound(string url)
+    {
+        var response = _bus.QueryAsync<AppSoundLoadQuery, AppSoundLoadResponse>(
+            id => new AppSoundLoadQuery(id, url))
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
+
+        return (response.Samples, response.SampleRate, response.Error);
+    }
+
     public string? PlayAsset(string path)
     {
         var result = _bus.CommandAsync<AppSoundPlayAsset, AppSoundPlayAssetResult>(

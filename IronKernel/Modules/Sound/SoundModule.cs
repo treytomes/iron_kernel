@@ -51,11 +51,21 @@ internal sealed class SoundModule(
             return Task.CompletedTask;
         }
 
+        _subscriptions.Add(_bus.Subscribe<SoundLoadQuery>(
+            runtime, "SoundLoadQueryHandler",
+            (msg, ct) =>
+            {
+                var (samples, sampleRate, error) = LoadSamples(msg.Url);
+                _bus.Publish(new SoundLoadResponse(msg.CorrelationID, samples, sampleRate, error));
+                return Task.CompletedTask;
+            }));
+
         _subscriptions.Add(_bus.Subscribe<SoundPlayAsset>(
             runtime, "SoundPlayAssetHandler",
             (msg, ct) =>
             {
-                var error = PlayAsset(msg.Url);
+                var (samples, sampleRate, error) = LoadSamples(msg.Url);
+                if (samples != null) PlayShortFromFloat(samples, sampleRate);
                 _bus.Publish(new SoundPlayAssetResult(msg.CorrelationID, error == null, error));
                 return Task.CompletedTask;
             }));
@@ -64,7 +74,7 @@ internal sealed class SoundModule(
             runtime, "SoundPlayPcmHandler",
             (msg, ct) =>
             {
-                PlayPcm(msg.Samples, msg.SampleRate);
+                if (_available) PlayShortFromFloat(msg.Samples, msg.SampleRate);
                 return Task.CompletedTask;
             }));
 
@@ -143,30 +153,41 @@ internal sealed class SoundModule(
 
     #region Playback
 
-    // Returns null on success, an error string on failure.
-    private string? PlayAsset(string url)
+    /// <summary>
+    /// Resolve a URL, read the WAV, and decode it to float PCM.
+    /// Returns (samples, sampleRate, null) on success or (null, 0, errorMessage) on failure.
+    /// </summary>
+    private (float[]? Samples, int SampleRate, string? Error) LoadSamples(string url)
     {
-        if (!_available) return null;
-
-        string? diskPath = ResolveAudioPath(url);
+        var diskPath = ResolveAudioPath(url);
         if (diskPath == null)
         {
             _logger.LogWarning("SoundModule: could not resolve audio path: {Url}", url);
-            return $"Sound file not found: {url}";
+            return (null, 0, $"Sound file not found: {url}");
         }
 
         try
         {
             var bytes = File.ReadAllBytes(diskPath);
             var wav = WavLoader.Load(bytes);
-            PlayShort(wav.Samples, wav.SampleRate, wav.Channels);
-            return null;
+            var floats = new float[wav.Samples.Length];
+            for (var i = 0; i < wav.Samples.Length; i++)
+                floats[i] = wav.Samples[i] / 32768f;
+            return (floats, wav.SampleRate, null);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "SoundModule: failed to play asset {Url}", url);
-            return ex.Message;
+            _logger.LogWarning(ex, "SoundModule: failed to load {Url}", url);
+            return (null, 0, ex.Message);
         }
+    }
+
+    private void PlayShortFromFloat(float[] samples, int sampleRate)
+    {
+        var shorts = new short[samples.Length];
+        for (var i = 0; i < samples.Length; i++)
+            shorts[i] = (short)Math.Clamp((int)(samples[i] * 32767f), short.MinValue, short.MaxValue);
+        PlayShort(shorts, sampleRate, 1);
     }
 
     /// <summary>
@@ -198,18 +219,6 @@ internal sealed class SoundModule(
         if (File.Exists(sysPath)) return sysPath;
 
         return null;
-    }
-
-    private void PlayPcm(float[] samples, int sampleRate)
-    {
-        if (!_available) return;
-
-        // Convert float[-1,1] to short
-        var shorts = new short[samples.Length];
-        for (var i = 0; i < samples.Length; i++)
-            shorts[i] = (short)Math.Clamp((int)(samples[i] * 32767f), short.MinValue, short.MaxValue);
-
-        PlayShort(shorts, sampleRate, 1);
     }
 
     private void PlayShort(short[] samples, int sampleRate, int channels)

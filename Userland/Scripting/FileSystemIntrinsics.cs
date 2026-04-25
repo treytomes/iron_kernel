@@ -16,6 +16,7 @@ public static class FileSystemIntrinsics
 		CreateMoveIntrinsic();
 		CreatePwdIntrinsic();
 		CreateCdIntrinsic();
+		CreateFileMapIntrinsic();
 	}
 
 	// ============================================================
@@ -244,7 +245,15 @@ public static class FileSystemIntrinsics
 				path = ResolvePath(ctx, world, p.ToString());
 			}
 
-			var entries = world.FileSystem.ListDirectory(path);
+			IReadOnlyList<IronKernel.Common.ValueObjects.DirectoryEntry> entries;
+			try
+			{
+				entries = world.FileSystem.ListDirectory(path);
+			}
+			catch (Exception ex)
+			{
+				return Error(ctx, $"dir: {ex.Message}");
+			}
 			bool pretty = ctx.GetVar("prettyPrint")?.BoolValue() ?? true;
 
 			if (pretty)
@@ -451,6 +460,41 @@ public static class FileSystemIntrinsics
 			env["curdir"] = new ValString(path);
 			return Intrinsic.Result.Null;
 		};
+	}
+
+	// ============================================================
+	// file map  (file.loadSound, with room for future file.* methods)
+	// ============================================================
+
+	private static void CreateFileMapIntrinsic()
+	{
+		var fileMap = new ValMap();
+
+		// file.loadSound(path) — load a WAV and return a playable Sound instance
+		var loadSoundIntrinsic = Intrinsic.Create("");
+		loadSoundIntrinsic.AddParam("path", ValString.empty);
+		loadSoundIntrinsic.code = (ctx, partial) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			var path = ctx.GetVar("path")?.ToString() ?? string.Empty;
+			if (string.IsNullOrWhiteSpace(path))
+				return Error(ctx, "file.loadSound: path is required");
+
+			path = SoundIntrinsics.NormalizeSoundPath(path);
+
+			var (samples, sampleRate, error) = world.Sound.LoadSound(path);
+			if (error != null)
+				return Error(ctx, $"file.loadSound: {error}");
+
+			var inst = SoundIntrinsics.BuildSoundInstance(world, samples!, sampleRate);
+			return new Intrinsic.Result(inst);
+		};
+		fileMap["loadSound"] = loadSoundIntrinsic.GetFunc();
+
+		var fileIntrinsic = Intrinsic.Create("file");
+		fileIntrinsic.code = (ctx, partial) => new Intrinsic.Result(fileMap);
 	}
 
 	// ============================================================

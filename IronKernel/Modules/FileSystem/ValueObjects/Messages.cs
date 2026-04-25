@@ -83,5 +83,6 @@ public sealed record DirectoryListQuery(
 public sealed record DirectoryListResponse(
 	Guid CorrelationID,
 	string Url,
-	IReadOnlyList<DirectoryEntry> Entries
+	IReadOnlyList<DirectoryEntry> Entries,
+	string? Error = null
 ) : Response<IReadOnlyList<DirectoryEntry>>(CorrelationID, Entries);

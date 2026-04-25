@@ -269,23 +269,36 @@ internal sealed class FileSystemModule(
 
 	private Task HandleDirectoryListAsync(DirectoryListQuery msg, CancellationToken ct)
 	{
+		// Virtual asset:// directory
+		if (msg.Url.StartsWith("asset://", StringComparison.OrdinalIgnoreCase))
+		{
+			_bus.Publish(new DirectoryListResponse(
+				msg.CorrelationID,
+				msg.Url,
+				ListAssetDirectory(msg.Url)));
+			return Task.CompletedTask;
+		}
+
 		if (!TryResolvePath(msg.Url, out var path, out var error))
 		{
 			_logger.LogWarning("Directory list denied: {Error}", error);
 			_bus.Publish(new DirectoryListResponse(
 				msg.CorrelationID,
 				msg.Url,
-				[]));
+				[],
+				error));
 			return Task.CompletedTask;
 		}
 
 		if (!Directory.Exists(path))
 		{
-			_logger.LogWarning("Directory not found: {Path}", path);
+			var notFound = $"Directory not found: {msg.Url}";
+			_logger.LogWarning("{Msg}", notFound);
 			_bus.Publish(new DirectoryListResponse(
 				msg.CorrelationID,
 				msg.Url,
-				[]));
+				[],
+				notFound));
 			return Task.CompletedTask;
 		}
 
@@ -326,10 +339,32 @@ internal sealed class FileSystemModule(
 			_bus.Publish(new DirectoryListResponse(
 				msg.CorrelationID,
 				msg.Url,
-				[]));
+				[],
+				ex.Message));
 		}
 
 		return Task.CompletedTask;
+	}
+
+	private IReadOnlyList<DirectoryEntry> ListAssetDirectory(string url)
+	{
+		var sub = url["asset://".Length..].Trim('/');
+		var now = DateTime.UtcNow;
+
+		if (string.IsNullOrEmpty(sub))
+		{
+			// Root: enumerate known asset categories as virtual directories
+			return [new DirectoryEntry("image", IsDirectory: true, Size: null, LastModified: now)];
+		}
+
+		if (sub.Equals("image", StringComparison.OrdinalIgnoreCase))
+		{
+			return _settings.Assets.Image
+				.Select(kv => new DirectoryEntry(kv.Key, IsDirectory: false, Size: null, LastModified: now))
+				.ToList();
+		}
+
+		return [];
 	}
 
 	#endregion

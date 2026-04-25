@@ -119,10 +119,16 @@ public sealed record AppDirectoryListQuery(
 public sealed record AppDirectoryListResponse(
 	Guid CorrelationID,
 	string Url,
-	IReadOnlyList<DirectoryEntry> Entries
+	IReadOnlyList<DirectoryEntry> Entries,
+	string? Error = null
 ) : Response<IReadOnlyList<DirectoryEntry>>(CorrelationID, Entries);
 
 // Sound messages
+
+/// <summary>Load a WAV from the VFS and return decoded PCM samples.</summary>
+public sealed record AppSoundLoadQuery(Guid CorrelationID, string Url) : Query(CorrelationID);
+public sealed record AppSoundLoadResponse(Guid CorrelationID, float[]? Samples, int SampleRate, string? Error)
+    : Response<float[]?>(CorrelationID, Samples);
 
 public sealed record AppSoundPlayAsset(Guid CorrelationID, string Url) : Command(CorrelationID);
 public sealed record AppSoundPlayAssetResult(Guid CorrelationID, bool Success, string? Error)
