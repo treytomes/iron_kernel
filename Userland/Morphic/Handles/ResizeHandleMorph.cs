@@ -11,9 +11,11 @@ public sealed class ResizeHandleMorph(Morph target, ResizeHandle kind) : HandleM
 	public ResizeHandle Kind => kind;
 	protected override MorphicStyle.HandleStyle? StyleForHandle => Style?.ResizeHandle;
 	protected override string AssetUrl => "asset://image.resize_icon";
-	protected override RenderImage.RenderFlag RenderFlag => Kind is ResizeHandle.TopLeft or ResizeHandle.BottomRight
-		? RenderImage.RenderFlag.FlipVertical
-		: RenderImage.RenderFlag.None;
+	protected override RenderImage.RenderFlag RenderFlag => Kind switch
+	{
+		ResizeHandle.TopLeft or ResizeHandle.BottomRight => RenderImage.RenderFlag.FlipVertical,
+		_ => RenderImage.RenderFlag.None
+	};
 
 	#endregion
 

@@ -4,7 +4,11 @@ public enum ResizeHandle
 {
 	None,
 	TopLeft,
+	Top,
 	TopRight,
+	Right,
+	BottomRight,
+	Bottom,
 	BottomLeft,
-	BottomRight
+	Left
 }

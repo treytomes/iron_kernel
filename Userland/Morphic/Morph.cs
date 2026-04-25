@@ -640,6 +640,24 @@ public abstract class Morph : ICommandTarget
 			case ResizeHandle.BottomRight:
 				newSize = new Size(Size.Width + command.DeltaX, Size.Height + command.DeltaY);
 				break;
+
+			case ResizeHandle.Top:
+				newSize = new Size(Size.Width, Size.Height - command.DeltaY);
+				newPosition = new Point(Position.X, Position.Y + command.DeltaY);
+				break;
+
+			case ResizeHandle.Bottom:
+				newSize = new Size(Size.Width, Size.Height + command.DeltaY);
+				break;
+
+			case ResizeHandle.Left:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height);
+				newPosition = new Point(Position.X + command.DeltaX, Position.Y);
+				break;
+
+			case ResizeHandle.Right:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height);
+				break;
 		}
 
 		Size = ClampSize(newSize);
@@ -675,6 +693,24 @@ public abstract class Morph : ICommandTarget
 
 			case ResizeHandle.BottomRight:
 				newSize = new Size(Size.Width - command.DeltaX, Size.Height - command.DeltaY);
+				break;
+
+			case ResizeHandle.Top:
+				newSize = new Size(Size.Width, Size.Height + command.DeltaY);
+				newPosition = new Point(Position.X, Position.Y - command.DeltaY);
+				break;
+
+			case ResizeHandle.Bottom:
+				newSize = new Size(Size.Width, Size.Height - command.DeltaY);
+				break;
+
+			case ResizeHandle.Left:
+				newSize = new Size(Size.Width + command.DeltaX, Size.Height);
+				newPosition = new Point(Position.X - command.DeltaX, Position.Y);
+				break;
+
+			case ResizeHandle.Right:
+				newSize = new Size(Size.Width - command.DeltaX, Size.Height);
 				break;
 		}
 

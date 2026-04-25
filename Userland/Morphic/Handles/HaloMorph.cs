@@ -25,9 +25,13 @@ public sealed class HaloMorph : Morph
 		IsSelectable = false;
 
 		// AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopLeft));
+		AddMorph(new ResizeHandleMorph(target, ResizeHandle.Top));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.TopRight));
-		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomLeft));
+		AddMorph(new ResizeHandleMorph(target, ResizeHandle.Right));
 		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomRight));
+		AddMorph(new ResizeHandleMorph(target, ResizeHandle.Bottom));
+		AddMorph(new ResizeHandleMorph(target, ResizeHandle.BottomLeft));
+		AddMorph(new ResizeHandleMorph(target, ResizeHandle.Left));
 
 		AddMorph(new MoveHandleMorph(target));
 		AddMorph(new DeleteHandleMorph(target));
@@ -103,14 +107,26 @@ public sealed class HaloMorph : Morph
 				// ResizeHandle.TopLeft =>
 				// 	new Point(-hs, -hs),
 
-				ResizeHandle.TopRight =>
-					new Point(+Size.Width - hs, -hs),
+				ResizeHandle.Top =>
+					new Point(Size.Width / 2 - hs, -hs),
 
-				ResizeHandle.BottomLeft =>
-					new Point(-hs, +Size.Height - hs),
+				ResizeHandle.TopRight =>
+					new Point(Size.Width - hs, -hs),
+
+				ResizeHandle.Right =>
+					new Point(Size.Width - hs, Size.Height / 2 - hs),
 
 				ResizeHandle.BottomRight =>
-					new Point(+Size.Width - hs, +Size.Height - hs),
+					new Point(Size.Width - hs, Size.Height - hs),
+
+				ResizeHandle.Bottom =>
+					new Point(Size.Width / 2 - hs, Size.Height - hs),
+
+				ResizeHandle.BottomLeft =>
+					new Point(-hs, Size.Height - hs),
+
+				ResizeHandle.Left =>
+					new Point(-hs, Size.Height / 2 - hs),
 
 				_ => m.Position
 			};
