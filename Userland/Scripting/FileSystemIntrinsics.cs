@@ -29,6 +29,10 @@ public static class FileSystemIntrinsics
 	{
 		world.EnsureEnv(ctx);
 
+		// sys:// paths are absolute and read-only — pass through as-is
+		if (path.StartsWith("sys://"))
+			return path;
+
 		// Root shortcut
 		if (path == "/" || path == "file://")
 			return "file://";

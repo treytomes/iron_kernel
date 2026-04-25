@@ -1,0 +1,32 @@
+Attribution for Mini Micro /sys/pics images:
+
+
+Heart.png, Key.png, Gem.png, Rock.png: from Planet Cute art pack by Daniel Cook (Lostgarden.com).
+
+cards, gamePieces: from Kenney's Board Game pack (www.kenney.nl) and OpenClipArt (openclipart.org).
+
+earth_day and earth_night: public domain images from NASA.
+
+SimplePlatformTiles, KP sprites: from Kenney's "Simplified Platformer Pack".
+
+1bitTiles: from Kenney's "1 Bit Pack".  (Yeah, we love Kenney.)
+
+animals:
+	bats based on (bat-32x32 by MoikMellah on OpenGameArt)
+	other animals based on art licensed from FlatIcon.com
+
+germs: pixel artwork by Joe Strout
+
+Mochi.png, Pipe.png, PipeCap.png, Wumpus.png, Spaceship.png, UFO.png: all by Joe Strout
+
+hextiles: adapted from "Pastel Resources Hex Tiles" by qubodup on OpenGameart.org (CC-BY-SA 3 license).
+
+food: commissioned artwork by Karekis on fiverr.com.
+
+maelstrom: artwork from the classic Mac game Maelstrom by Andrew Welch and Ian Gilman, released under the "Attribution" Creative Commons license.
+
+plants: adapted from artwork by ak-blanc on OpenGameArt.org.
+
+vehicles: adapted from artwork by TRBRY and TituroFox on OpenGameArt.org.
+
+textures: mostly from publicdomaintextures.com, except for the "Toon" textures which were commissioned from lucasserapiao on fiverr.com; the Road textures which are by drummyfish on OpenGameArt.org; and the Marble textures adapted from ambientCG.com (CC0 1.0 license).

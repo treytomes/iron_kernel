@@ -21,6 +21,7 @@ internal sealed class FileSystemModule(
 	private readonly ILogger<FileSystemModule> _logger = logger;
 
 	private string _userRoot = null!;
+	private string _sysRoot = null!;
 
 	#endregion
 
@@ -32,10 +33,11 @@ internal sealed class FileSystemModule(
 		CancellationToken stoppingToken)
 	{
 		_userRoot = InitializeUserRoot();
+		_sysRoot = Path.GetFullPath("assets/sys");
 
 		_logger.LogInformation(
-			"FileSystemModule initialized at {UserRoot}",
-			_userRoot);
+			"FileSystemModule initialized. user={UserRoot} sys={SysRoot}",
+			_userRoot, _sysRoot);
 
 		_bus.Subscribe<DirectoryCreateCommand>(
 			runtime,
@@ -163,6 +165,12 @@ internal sealed class FileSystemModule(
 
 	private Task HandleWriteAsync(FileWriteCommand msg, CancellationToken ct)
 	{
+		if (msg.Url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase))
+		{
+			_bus.Publish(new FileWriteResult(msg.CorrelationID, msg.Url, false, "sys:// is read-only."));
+			return Task.CompletedTask;
+		}
+
 		if (!TryResolvePath(msg.Url, out var path, out var error))
 		{
 			_bus.Publish(new FileWriteResult(
@@ -203,6 +211,12 @@ internal sealed class FileSystemModule(
 
 	private Task HandleDeleteAsync(FileDeleteCommand msg, CancellationToken ct)
 	{
+		if (msg.Url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase))
+		{
+			_bus.Publish(new FileDeleteResult(msg.CorrelationID, msg.Url, false, "sys:// is read-only."));
+			return Task.CompletedTask;
+		}
+
 		if (!TryResolvePath(msg.Url, out var path, out var error))
 		{
 			_bus.Publish(new FileDeleteResult(
@@ -340,13 +354,24 @@ internal sealed class FileSystemModule(
 		fullPath = string.Empty;
 		error = null;
 
-		if (!url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+		string scheme, root;
+		if (url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase))
+		{
+			scheme = "sys://";
+			root = _sysRoot;
+		}
+		else if (url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+		{
+			scheme = "file://";
+			root = _userRoot;
+		}
+		else
 		{
 			error = "Unsupported URL scheme.";
 			return false;
 		}
 
-		var relative = url["file://".Length..]
+		var relative = url[scheme.Length..]
 			.Replace('/', Path.DirectorySeparatorChar)
 			.TrimStart(Path.DirectorySeparatorChar);
 
@@ -356,12 +381,11 @@ internal sealed class FileSystemModule(
 			return false;
 		}
 
-		fullPath = Path.GetFullPath(
-			Path.Combine(_userRoot, relative));
+		fullPath = Path.GetFullPath(Path.Combine(root, relative));
 
-		if (!fullPath.StartsWith(_userRoot, StringComparison.Ordinal))
+		if (!fullPath.StartsWith(root, StringComparison.Ordinal))
 		{
-			error = "Resolved path escapes user root.";
+			error = "Resolved path escapes root.";
 			return false;
 		}
 
@@ -378,9 +402,12 @@ internal sealed class FileSystemModule(
 		return ext switch
 		{
 			".txt" => "text/plain",
+			".ms" => "text/plain",
 			".json" => "application/json",
+			".grfon" => "application/json",
 			".png" => "image/png",
 			".jpg" or ".jpeg" => "image/jpeg",
+			".wav" => "audio/wav",
 			".bin" => "application/octet-stream",
 			_ => null
 		};
