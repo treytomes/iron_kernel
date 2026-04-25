@@ -1,6 +1,7 @@
 using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
+using IronKernel.Modules.FileSystem;
 using IronKernel.Modules.Sound.ValueObjects;
 using Microsoft.Extensions.Logging;
 using OpenTK.Audio.OpenAL;
@@ -26,6 +27,9 @@ internal sealed class SoundModule(
     private ALContext _context;
     private bool _available = false;
 
+    private string _userRoot = string.Empty;
+    private string _sysRoot = string.Empty;
+
     #endregion
 
     #region IKernelModule
@@ -33,6 +37,13 @@ internal sealed class SoundModule(
     public Task StartAsync(IKernelState state, IModuleRuntime runtime, CancellationToken stoppingToken)
     {
         _logger.LogInformation("Starting SoundModule.");
+
+        _sysRoot = Path.GetFullPath("assets/sys");
+        _userRoot = Path.GetFullPath(
+            Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                nameof(IronKernel),
+                _settings.UserFileRoot));
 
         if (!TryInitOpenAL())
         {
@@ -135,32 +146,43 @@ internal sealed class SoundModule(
     {
         if (!_available) return;
 
-        // url is "asset://sound.NAME" → look up in settings, then load from disk
-        if (!url.StartsWith("asset://sound.", StringComparison.OrdinalIgnoreCase))
+        string? diskPath = null;
+
+        if (url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
+            url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!VfsPath.TryResolve(url, _userRoot, _sysRoot, out var resolved, out var err))
+            {
+                _logger.LogWarning("SoundModule: path resolution failed for {Url}: {Err}", url, err);
+                return;
+            }
+            diskPath = resolved;
+        }
+        else if (url.StartsWith("asset://sound.", StringComparison.OrdinalIgnoreCase))
+        {
+            var key = url["asset://sound.".Length..].Trim().ToLowerInvariant();
+            if (!_settings.Assets.Sound.TryGetValue(key, out var rel))
+            {
+                _logger.LogWarning("SoundModule: unknown sound asset key '{Key}'", key);
+                return;
+            }
+            diskPath = rel;
+        }
+        else
         {
             _logger.LogWarning("SoundModule: unsupported asset URL scheme: {Url}", url);
             return;
         }
 
-        var key = url["asset://sound.".Length..].Trim().ToLowerInvariant();
-
-        if (!_settings.Assets.Sound.TryGetValue(key, out var relativePath))
+        if (!File.Exists(diskPath))
         {
-            _logger.LogWarning("SoundModule: unknown sound asset key '{Key}'", key);
-            return;
-        }
-
-        // relativePath is already relative to the working directory (publish root),
-        // e.g. "assets/sounds/blipA4.wav" — same convention as AssetLoaderModule.
-        if (!File.Exists(relativePath))
-        {
-            _logger.LogWarning("SoundModule: sound file not found: {Path}", relativePath);
+            _logger.LogWarning("SoundModule: sound file not found: {Path}", diskPath);
             return;
         }
 
         try
         {
-            var bytes = File.ReadAllBytes(relativePath);
+            var bytes = File.ReadAllBytes(diskPath);
             var wav = WavLoader.Load(bytes);
             PlayShort(wav.Samples, wav.SampleRate, wav.Channels);
         }

@@ -7,11 +7,14 @@ public sealed class SoundService(IApplicationBus bus) : ISoundService
 {
     private readonly IApplicationBus _bus = bus;
 
-    public void PlayAsset(string assetKey)
+    public void PlayAsset(string path)
     {
-        var url = assetKey.StartsWith("asset://", StringComparison.OrdinalIgnoreCase)
-            ? assetKey
-            : $"asset://sound.{assetKey}";
+        // sys:// and file:// paths pass through; bare keys get wrapped as asset://sound.KEY
+        var url = path.StartsWith("sys://", StringComparison.OrdinalIgnoreCase) ||
+                  path.StartsWith("file://", StringComparison.OrdinalIgnoreCase) ||
+                  path.StartsWith("asset://", StringComparison.OrdinalIgnoreCase)
+            ? path
+            : $"asset://sound.{path}";
         _bus.Publish(new AppSoundPlayAsset(url));
     }
 
