@@ -7,7 +7,6 @@ namespace IronKernel.Modules.Framebuffer.ValueObjects;
 
 // Input
 
-public sealed record FbWriteSpan(int X, int Y, IReadOnlyList<Color> Data, bool IsComplete);
 public sealed record FbWriteRect(
 	int X,
 	int Y,

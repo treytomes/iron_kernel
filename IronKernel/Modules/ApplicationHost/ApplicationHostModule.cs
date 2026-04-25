@@ -160,10 +160,6 @@ internal sealed class ApplicationHostModule(
 		// 	(e, ct) => new(e.FrameId)
 		// );
 
-		_bridge.RequestInline<AppFbWriteSpan, FbWriteSpan>(
-			e => new(e.X, e.Y, e.Data, e.IsComplete)
-		);
-
 		_bridge.RequestInline<AppFbWriteRect, FbWriteRect>(
 			e => new(e.X, e.Y, e.Width, e.Height, e.Data, e.IsComplete)
 		);

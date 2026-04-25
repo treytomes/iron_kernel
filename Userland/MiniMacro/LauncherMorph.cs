@@ -64,16 +64,20 @@ public sealed class LauncherMorph : WindowMorph
 		// First pass: let buttons size naturally to their labels.
 		base.UpdateLayout();
 
-		// Stack now knows the widest button. Stretch everything to that width
-		// and fit the window to match.
+		// Stretch all children to the widest button width and fit the window.
 		var stackSize = _stack.Size;
 		if (stackSize.Width <= 0 || stackSize.Height <= 0) return;
 
 		var innerWidth = stackSize.Width - _stack.Padding * 2;
 		foreach (var child in _stack.Submorphs)
-			child.Size = new Size(innerWidth, child.Size.Height);
+		{
+			if (child.Size.Width != innerWidth)
+				child.Size = new Size(innerWidth, child.Size.Height);
+		}
 
-		Size = new Size(stackSize.Width, HeaderHeight + stackSize.Height);
+		var targetSize = new Size(stackSize.Width, HeaderHeight + stackSize.Height);
+		if (Size != targetSize)
+			Size = targetSize;
 	}
 
 	#endregion

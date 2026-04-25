@@ -115,7 +115,17 @@ public sealed class ModuleRuntime : IModuleRuntime
 			finally
 			{
 				watchdogCts.Cancel();
+				watchdogCts.Dispose();
 				ModuleContext.CurrentModule.Value = null;
+
+				lock (_tasks)
+				{
+					_tasks.RemoveAll(t =>
+						t.State is ModuleTaskState.Completed or
+						           ModuleTaskState.Cancelled or
+						           ModuleTaskState.Faulted or
+						           ModuleTaskState.Detached);
+				}
 			}
 		}, CancellationToken.None);
 

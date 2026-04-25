@@ -28,6 +28,7 @@ internal sealed class FramebufferModule(
 	private readonly IVirtualDisplay _virtualDisplay =
 		virtualDisplay ?? throw new ArgumentNullException(nameof(virtualDisplay));
 	private readonly List<IDisposable> _subscriptions = new();
+	private readonly List<FbInfoQuery> _pendingInfoQueries = new();
 	private ulong _currentFrameId;
 	private bool _isVideoReady = false;
 
@@ -88,30 +89,7 @@ internal sealed class FramebufferModule(
 			}
 		));
 
-		_subscriptions.Add(_bus.SubscribeInline<FbWriteSpan>(msg =>
-		{
-			var x = msg.X;
-			var y = msg.Y;
-
-			for (var n = 0; n < msg.Data.Count; n++)
-			{
-				_virtualDisplay.SetPixel(x, y, msg.Data[n]);
-				x++;
-
-				if (x >= _virtualDisplay.Width)
-				{
-					x = 0;
-					y++;
-					if (y >= _virtualDisplay.Height)
-						break;
-				}
-			}
-
-			if (msg.IsComplete)
-				_bus.Publish(new FbFrameReady(_currentFrameId));
-		}));
-
-		_subscriptions.Add(_bus.SubscribeInline<FbWriteRect>(msg =>
+_subscriptions.Add(_bus.SubscribeInline<FbWriteRect>(msg =>
 		{
 			_virtualDisplay.SetPixels(
 				msg.X,
@@ -135,6 +113,23 @@ internal sealed class FramebufferModule(
 			}
 		));
 
+		_subscriptions.Add(_bus.Subscribe<HostWindowReady>(
+			runtime,
+			"InfoQueryDrainHandler",
+			(msg, ct) =>
+			{
+				lock (_pendingInfoQueries)
+				{
+					foreach (var pending in _pendingInfoQueries)
+						_bus.Publish(new FbInfoResponse(
+							pending.CorrelationID,
+							new Size(_virtualDisplay.Width, _virtualDisplay.Height)));
+					_pendingInfoQueries.Clear();
+				}
+				return Task.CompletedTask;
+			}
+		));
+
 		_subscriptions.Add(_bus.Subscribe<FbInfoQuery>(
 			runtime,
 			"InfoQueryHandler",
@@ -142,18 +137,15 @@ internal sealed class FramebufferModule(
 			{
 				if (!_isVideoReady)
 				{
-					// Wait a bit and try again.
-					_bus.Publish(msg);
+					lock (_pendingInfoQueries)
+						_pendingInfoQueries.Add(msg);
 					return Task.CompletedTask;
 				}
-
-				var width = _virtualDisplay.Width;
-				var height = _virtualDisplay.Height;
 
 				_bus.Publish(
 					new FbInfoResponse(
 						msg.CorrelationID,
-						new Size(width, height)));
+						new Size(_virtualDisplay.Width, _virtualDisplay.Height)));
 
 				return Task.CompletedTask;
 			}

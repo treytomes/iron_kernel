@@ -31,7 +31,6 @@ public sealed record AppMouseButtonEvent(InputAction Action, MouseButton Button,
 public sealed record AppKeyboardEvent(InputAction Action, KeyModifier Modifiers, Key Key);
 
 
-public sealed record AppFbWriteSpan(int X, int Y, IReadOnlyList<Color> Data, bool IsComplete);
 public sealed record AppFbWriteRect(
 	int X,
 	int Y,

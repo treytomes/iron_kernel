@@ -16,7 +16,7 @@ public class ValueMorph : Morph
 	private readonly Type? _declaredType;
 
 	private object? _lastValue;
-	private object? _pendingCommit; // ✅ optimistic commit buffer
+	private object? _pendingCommit;
 
 	protected Morph _content;
 	#endregion
@@ -56,26 +56,18 @@ public class ValueMorph : Morph
 
 		var current = _valueProvider();
 
-		// ✅ Pending commit reconciliation:
-		// Trust editor until provider agrees.
+		// Trust editor until provider catches up to the committed value.
 		if (_pendingCommit != null)
 		{
 			if (Equals(current, _pendingCommit))
-			{
-				// Provider caught up
 				_pendingCommit = null;
-			}
 			else
-			{
-				// Still waiting — do not overwrite editor
 				return;
-			}
 		}
 
 		var previousType = ResolveType(_lastValue);
 		var currentType = ResolveType(current);
 
-		// If the resolved type changes, rebuild the content morph
 		if (!Equals(previousType, currentType))
 		{
 			RemoveMorph(_content);
@@ -84,7 +76,6 @@ public class ValueMorph : Morph
 			InvalidateLayout();
 		}
 
-		// If the value changes, refresh display
 		if (!Equals(current, _lastValue))
 		{
 			_lastValue = current;
@@ -107,9 +98,7 @@ public class ValueMorph : Morph
 	protected virtual void UpdateDisplay()
 	{
 		if (_content is IValueContentMorph refreshable)
-		{
 			refreshable.Refresh(_lastValue);
-		}
 	}
 	#endregion
 
@@ -123,16 +112,15 @@ public class ValueMorph : Morph
 			_valueProvider,
 			v =>
 			{
-				// ✅ Optimistic commit
 				_valueSetter?.Invoke(v);
 				_lastValue = v;
 				_pendingCommit = v;
+				UpdateDisplay();
 			});
 	}
 
 	private Type? ResolveType(object? value)
 	{
-		// Declared type always wins if present
 		return _declaredType ?? value?.GetType();
 	}
 	#endregion
