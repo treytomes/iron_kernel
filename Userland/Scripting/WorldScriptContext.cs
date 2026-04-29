@@ -46,6 +46,9 @@ public sealed class WorldScriptContext : IScriptHost
 	public WorldCommandManager Commands => _world.Commands;
 	public ScriptOutputHub Output => _world.ScriptOutput;
 	public KeyboardState Keyboard { get; } = new();
+	public double TotalTime { get; set; }
+	public bool IsMouseButtonDown => _world.IsMouseButtonDown;
+	public System.Drawing.Point MousePosition => _world.Hand.Position;
 
 	#endregion
 

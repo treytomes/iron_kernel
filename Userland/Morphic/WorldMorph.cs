@@ -68,6 +68,7 @@ public sealed class WorldMorph : Morph
 	public Morph? SelectedMorph { get; private set; }
 	public Morph? PointerCapture { get; private set; }
 	public Morph? HoveredMorph { get; private set; }
+	public bool IsMouseButtonDown { get; private set; }
 
 	#endregion
 
@@ -159,6 +160,9 @@ public sealed class WorldMorph : Morph
 
 	public void PointerButton(MouseButton button, InputAction action, KeyModifier modifiers)
 	{
+		if (button == MouseButton.Left)
+			IsMouseButtonDown = action == InputAction.Press;
+
 		var position = Hand.Position;
 		var target = FindMorphAt(position) ?? this;
 

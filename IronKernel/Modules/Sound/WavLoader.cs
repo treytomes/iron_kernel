@@ -1,7 +1,7 @@
 namespace IronKernel.Modules.Sound;
 
 /// <summary>
-/// Minimal WAV loader — supports 16-bit PCM, mono and stereo, any sample rate.
+/// Minimal WAV loader — supports 16-bit and 24-bit PCM, mono and stereo, any sample rate.
 /// Returns interleaved 16-bit samples as a short[].
 /// </summary>
 internal static class WavLoader
@@ -23,7 +23,7 @@ internal static class WavLoader
         int sampleRate = 0, channels = 0, bitsPerSample = 0;
         short[]? samples = null;
 
-        while (ms.Position < ms.Length)
+        while (ms.Length - ms.Position >= 8)
         {
             var chunkId = new string(br.ReadChars(4));
             var chunkSize = br.ReadInt32();
@@ -39,15 +39,31 @@ internal static class WavLoader
                 br.ReadInt32(); // byte rate
                 br.ReadInt16(); // block align
                 bitsPerSample = br.ReadInt16();
-                if (bitsPerSample != 16)
-                    throw new NotSupportedException($"Only 16-bit WAV is supported (got {bitsPerSample}-bit).");
+                if (bitsPerSample != 16 && bitsPerSample != 24)
+                    throw new NotSupportedException($"Only 16-bit and 24-bit PCM WAV are supported (got {bitsPerSample}-bit).");
             }
             else if (chunkId == "data")
             {
-                var sampleCount = chunkSize / 2;
+                var bytesPerSample = bitsPerSample / 8;
+                var sampleCount = chunkSize / bytesPerSample;
                 samples = new short[sampleCount];
-                for (var i = 0; i < sampleCount; i++)
-                    samples[i] = br.ReadInt16();
+                if (bitsPerSample == 16)
+                {
+                    for (var i = 0; i < sampleCount; i++)
+                        samples[i] = br.ReadInt16();
+                }
+                else // 24-bit: read 3 bytes, take high 16 bits
+                {
+                    for (var i = 0; i < sampleCount; i++)
+                    {
+                        var b0 = br.ReadByte();
+                        var b1 = br.ReadByte();
+                        var b2 = br.ReadByte();
+                        var val24 = (int)(b0 | ((uint)b1 << 8) | ((uint)b2 << 16));
+                        if ((val24 & 0x800000) != 0) val24 |= unchecked((int)0xFF000000); // sign-extend
+                        samples[i] = (short)(val24 >> 8);
+                    }
+                }
             }
 
             // Seek to next chunk (handles extra bytes in fmt chunk, etc.)

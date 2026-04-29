@@ -96,6 +96,23 @@ Scripts can:
 
 ---
 
+### Audio System
+
+IronKernel includes a **WAV playback and software synthesis** audio layer.
+
+Key characteristics:
+- WAV files are played via `Sound.playAsset` — bare relative paths, `sys://`, or `file://`
+- Synthesized voices are created with `new Sound`, configured via `s.init`, and played via `s.play`
+- Five waveforms: Sine, Triangle, Sawtooth, Square, Noise
+- Full ADSR envelope control (attack, decay, sustain, release)
+- `noteFreq(midiNote)` helper converts MIDI note numbers to Hz
+- `file.loadSound(path)` pre-loads a WAV into a playable Sound instance
+- Master volume control via `Sound.setVolume`
+
+The system disk (`sys://sounds/`) bundles the MiniMicro sound library (~50 WAV files) for use in scripts.
+
+---
+
 ### World‑Centric Architecture
 
 IronKernel is built around the concept of a **World**:

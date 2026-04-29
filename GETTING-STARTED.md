@@ -82,5 +82,5 @@ The framebuffer is **960×480 pixels** with a fixed 256-color palette (6 discret
 2. Click **Apps** in the toolbar to open the launcher
 3. Open the **MiniScript REPL** and try `print "hello"`
 4. Open the **Text Editor**, write a script, and save it to `file://hello.ms`
-5. In the REPL, run `load "file://hello.ms"` to execute it
+5. In the REPL, run `run "file://hello.ms"` to execute it
 6. Ctrl+Right-click any morph to open the **Halo** and inspect it live

@@ -1,9 +1,8 @@
 # Test Plan
 
 This document covers the features added and changed in the session that introduced
-audio infrastructure, the sys:// filesystem protocol, and the software synthesizer.
-Work items: #161 (SoundModule), #162 (synthesizer), #163 (MiniScript Sound class),
-#165 (bundle sysdisk), #166 (sys:// protocol).
+audio infrastructure, the `sys://` filesystem protocol, and the software synthesizer
+(SoundModule, software synthesizer, MiniScript Sound class, sysdisk bundle, `sys://` protocol).
 
 ---
 
@@ -31,6 +30,10 @@ Expected: lists the ~50 WAV files from minimicro-sysdisk.
 
 ### 1.2 File existence check
 
+`exists` and `readText` are **not currently exposed as MiniScript intrinsics** — they are internal C# extension methods on `IFileSystem`. These test cases require those intrinsics to be added before they can be run from the REPL.
+
+When implemented, the expected behavior is:
+
 ```miniscript
 // These should both return truthy without error
 print exists("sys://sounds/blipA4.wav")
@@ -38,6 +41,8 @@ print exists("sys://lib/listUtil.ms")
 ```
 
 ### 1.3 Read a sys:// file
+
+Requires a `readText` intrinsic (not yet exposed). When implemented:
 
 ```miniscript
 src = readText("sys://lib/listUtil.ms")
@@ -48,11 +53,7 @@ Expected: prints the first 80 characters of `listUtil.ms`.
 
 ### 1.4 sys:// is read-only
 
-```miniscript
-writeText "sys://sounds/test.wav", "oops"
-```
-
-Expected: error output — `sys:// is read-only.`
+`writeText` is **not currently a MiniScript intrinsic**. Use `del` to verify write rejection:
 
 ```miniscript
 del "sys://sounds/blipA4.wav"
@@ -69,6 +70,8 @@ dir "sys://../etc"
 Expected: error output containing `traversal`.
 
 ### 1.6 file:// round-trip
+
+`readText` and `writeText` are not currently MiniScript intrinsics. This test requires them to be added. When implemented:
 
 ```miniscript
 writeText "file://hello.txt", "hello world"
@@ -333,7 +336,7 @@ dir "file://"            // testdir should be gone
 ```
 
 ```miniscript
-// Copy and move
+// Copy and move — requires readText/writeText/exists intrinsics (not yet exposed)
 writeText "file://a.txt", "content"
 copy "file://a.txt", "file://b.txt"
 print readText("file://b.txt")   // content

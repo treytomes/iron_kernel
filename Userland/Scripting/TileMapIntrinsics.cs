@@ -11,6 +11,9 @@ public static class TileMapIntrinsics
 		CreateTileMapIntrinsics();
 		CreateTileMapNamespace();
 		CreateTileMapGetTileIntrinsic();
+		CreateTileMapSetCellIntrinsic();
+		CreateTileMapCellIntrinsic();
+		CreateTileMapFillIntrinsic();
 		CreateTileGetIntrinsic();
 		CreateTileSetIntrinsic();
 	}
@@ -76,9 +79,15 @@ public static class TileMapIntrinsics
 				// properties
 				handle["props"] = mapMorph.ScriptObject;
 
-				// TileMap-specific method
+				// TileMap-specific methods
 				handle["getTile"] =
 					Intrinsic.GetByName("tilemap_getTile")!.GetFunc().BindAndCopy(handle);
+				handle["setCell"] =
+					Intrinsic.GetByName("tilemap_setCell")!.GetFunc().BindAndCopy(handle);
+				handle["cell"] =
+					Intrinsic.GetByName("tilemap_cell")!.GetFunc().BindAndCopy(handle);
+				handle["fill"] =
+					Intrinsic.GetByName("tilemap_fill")!.GetFunc().BindAndCopy(handle);
 
 				return new Intrinsic.Result(handle);
 			}
@@ -115,6 +124,78 @@ public static class TileMapIntrinsics
 				return Intrinsic.Result.Null;
 
 			return new Intrinsic.Result(info.ScriptObject);
+		};
+	}
+
+	private static void CreateTileMapSetCellIntrinsic()
+	{
+		var fn = Intrinsic.Create("tilemap_setCell");
+		fn.AddParam("x");
+		fn.AddParam("y");
+		fn.AddParam("index");
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			if (world.Handles.ResolveAlive(ctx.self) is not TileMapMorph map)
+				return Intrinsic.Result.Null;
+
+			var x = ctx.GetVar("x").IntValue();
+			var y = ctx.GetVar("y").IntValue();
+			var index = ctx.GetVar("index").IntValue();
+
+			var tile = map.GetTile(x, y);
+			if (tile != null)
+				tile.TileIndex = index;
+
+			return Intrinsic.Result.Null;
+		};
+	}
+
+	private static void CreateTileMapCellIntrinsic()
+	{
+		var fn = Intrinsic.Create("tilemap_cell");
+		fn.AddParam("x");
+		fn.AddParam("y");
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			if (world.Handles.ResolveAlive(ctx.self) is not TileMapMorph map)
+				return Intrinsic.Result.Null;
+
+			var x = ctx.GetVar("x").IntValue();
+			var y = ctx.GetVar("y").IntValue();
+
+			var tile = map.GetTile(x, y);
+			if (tile == null)
+				return Intrinsic.Result.Null;
+
+			return new Intrinsic.Result(tile.TileIndex);
+		};
+	}
+
+	private static void CreateTileMapFillIntrinsic()
+	{
+		var fn = Intrinsic.Create("tilemap_fill");
+		fn.AddParam("index", ValNumber.zero);
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not WorldScriptContext world)
+				return Intrinsic.Result.Null;
+
+			if (world.Handles.ResolveAlive(ctx.self) is not TileMapMorph map)
+				return Intrinsic.Result.Null;
+
+			var index = ctx.GetVar("index").IntValue();
+			map.Fill(index);
+
+			return Intrinsic.Result.Null;
 		};
 	}
 

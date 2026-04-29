@@ -32,47 +32,60 @@ public static class ValueExtensions
 		return color;
 	}
 
-	public static bool IsPoint(this ValMap? @this)
+	// Point: accepts [x, y] list or {x, y} map.
+
+	public static bool IsPoint(this Value? v) => v switch
 	{
-		return @this != null
-			&& @this["x"] != null
-			&& @this["y"] != null;
+		ValList l => l.values.Count == 2,
+		ValMap m  => m["x"] != null && m["y"] != null,
+		_         => false
+	};
+
+	// Keep the old ValMap overload so callers that already cast don't break.
+	public static bool IsPoint(this ValMap? @this) => IsPoint((Value?)@this);
+
+	public static Point ToPoint(this Value v) => v switch
+	{
+		ValList l => new Point(l.values[0].IntValue(), l.values[1].IntValue()),
+		ValMap m  => new Point(m["x"].IntValue(), m["y"].IntValue()),
+		_         => Point.Empty
+	};
+
+	public static Point ToPoint(this ValMap @this) => ToPoint((Value)@this);
+
+	public static ValList ToMiniScriptValue(this Point @this)
+	{
+		var list = new ValList();
+		list.values.Add(new ValNumber(@this.X));
+		list.values.Add(new ValNumber(@this.Y));
+		return list;
 	}
 
-	public static Point ToPoint(this ValMap @this)
-	{
-		var x = @this["x"].IntValue();
-		var y = @this["y"].IntValue();
-		return new Point(x, y);
-	}
+	// Size: accepts [w, h] list or {w, h} map.
 
-	public static ValMap ToMiniScriptValue(this Point @this)
+	public static bool IsSize(this Value? v) => v switch
 	{
-		var point = new ValMap();
-		point["x"] = new ValNumber(@this.X);
-		point["y"] = new ValNumber(@this.Y);
-		return point;
-	}
+		ValList l => l.values.Count == 2,
+		ValMap m  => m["w"] != null && m["h"] != null,
+		_         => false
+	};
 
-	public static bool IsSize(this ValMap? @this)
-	{
-		return @this != null
-			&& @this["w"] != null
-			&& @this["h"] != null;
-	}
+	public static bool IsSize(this ValMap? @this) => IsSize((Value?)@this);
 
-	public static Size ToSize(this ValMap @this)
+	public static Size ToSize(this Value v) => v switch
 	{
-		var w = @this["w"].IntValue();
-		var h = @this["h"].IntValue();
-		return new Size(w, h);
-	}
+		ValList l => new Size(l.values[0].IntValue(), l.values[1].IntValue()),
+		ValMap m  => new Size(m["w"].IntValue(), m["h"].IntValue()),
+		_         => Size.Empty
+	};
 
-	public static ValMap ToMiniScriptValue(this Size @this)
+	public static Size ToSize(this ValMap @this) => ToSize((Value)@this);
+
+	public static ValList ToMiniScriptValue(this Size @this)
 	{
-		var size = new ValMap();
-		size["w"] = new ValNumber(@this.Width);
-		size["h"] = new ValNumber(@this.Height);
-		return size;
+		var list = new ValList();
+		list.values.Add(new ValNumber(@this.Width));
+		list.values.Add(new ValNumber(@this.Height));
+		return list;
 	}
 }

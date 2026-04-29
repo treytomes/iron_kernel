@@ -3,6 +3,7 @@ using IronKernel.Kernel;
 using IronKernel.Kernel.Bus;
 using IronKernel.Kernel.State;
 using IronKernel.Modules.AssetLoader.ValueObjects;
+using IronKernel.Modules.FileSystem;
 using Microsoft.Extensions.Logging;
 
 namespace IronKernel.Modules.AssetLoader;
@@ -20,6 +21,7 @@ internal sealed class AssetLoaderModule(
 	private readonly IMessageBus _bus = bus;
 	private readonly ILogger<AssetLoaderModule> _logger = logger;
 	private readonly IResourceManager _resourceManager = resourceManager;
+	private readonly string _sysRoot = Path.GetFullPath("assets/sys");
 
 	#endregion
 
@@ -47,6 +49,14 @@ internal sealed class AssetLoaderModule(
 
 	public string? GetPathFromUrl(string url)
 	{
+		if (url.StartsWith("sys://", StringComparison.OrdinalIgnoreCase))
+		{
+			if (VfsPath.TryResolve(url, string.Empty, _sysRoot, out var fullPath, out _))
+				return fullPath;
+			_logger.LogError("Asset url could not be resolved: {Url}", url);
+			return null;
+		}
+
 		if (!url.StartsWith("asset://")) return null;
 
 		var assetId = url["asset://".Length..];
@@ -56,7 +66,7 @@ internal sealed class AssetLoaderModule(
 			return _assetDirectory.Image[pieces[1].Trim()];
 		}
 
-		_logger.LogError($"Asset url is undefined: {url}");
+		_logger.LogError("Asset url is undefined: {Url}", url);
 		return null;
 	}
 

@@ -781,11 +781,11 @@ public abstract class Morph : ICommandTarget
 	{
 		if (ScriptObject == null) return;
 
-		var position = ScriptObject["position"] as ValMap;
-		if (position != null && position.IsPoint()) Position = position.ToPoint();
+		var position = ScriptObject["position"];
+		if (position.IsPoint()) Position = position.ToPoint();
 
-		var size = ScriptObject["size"] as ValMap;
-		if (size != null && size.IsSize()) Size = size.ToSize();
+		var size = ScriptObject["size"];
+		if (size.IsSize()) Size = size.ToSize();
 	}
 
 	public void ApplyScriptEdits()

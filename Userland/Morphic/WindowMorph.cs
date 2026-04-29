@@ -45,7 +45,7 @@ public class WindowMorph : Morph
 		// Header layout: title (Fill) + close button (Right)
 		_header = new WindowTitleBarMorph(this)
 		{
-			Size = new Size(size.Width, HeaderHeight) // semantic invariant
+			Size = new Size(size.Width, HeaderHeight)
 		};
 
 		_titleLabel = new LabelMorph
@@ -57,7 +57,7 @@ public class WindowMorph : Morph
 
 		_closeButton = new ButtonMorph(
 			Point.Empty,
-			new Size(10, 10),
+			new Size(HeaderHeight, HeaderHeight),
 			"X")
 		{
 			IsSelectable = false,
@@ -115,7 +115,7 @@ public class WindowMorph : Morph
 	private bool IsSelected => GetWorld()?.SelectedMorph == this;
 
 	protected int Padding => 4;
-	protected int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;
+	public int HeaderHeight => (Style?.DefaultFontStyle.TileSize.Height ?? 0) + Padding * 2;
 
 	#endregion
 
@@ -133,7 +133,7 @@ public class WindowMorph : Morph
 		_rootLayout.Position = Point.Empty;
 		_rootLayout.Size = Size;
 
-		_header.Size = new Size(_header.Size.Width, HeaderHeight);
+		_header.Size = new Size(Size.Width, HeaderHeight);
 
 		base.UpdateLayout();
 	}

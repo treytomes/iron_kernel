@@ -47,6 +47,39 @@ public sealed class RenderImage
 		}
 	}
 
+	/// <summary>
+	/// Render with per-pixel tinting: opaque pixels are multiplied by fgColor, transparent pixels use bgColor.
+	/// fgColor=White (default) reproduces the original image colors unchanged.
+	/// </summary>
+	public void Render(IRenderingContext rc, Point position, Color? fgColor, Color? bgColor)
+	{
+		_rowBuffer ??= new Color?[Size.Width];
+		var buf = _rowBuffer;
+		var w = Size.Width;
+
+		for (var dy = 0; dy < Size.Height; dy++)
+		{
+			var srcRow = Data.AsSpan(dy * w, w);
+			for (var dx = 0; dx < w; dx++)
+			{
+				var src = srcRow[dx];
+				if (src.HasValue)
+				{
+					buf[dx] = fgColor.HasValue
+						? new Color(src.Value.R * fgColor.Value.R,
+						            src.Value.G * fgColor.Value.G,
+						            src.Value.B * fgColor.Value.B)
+						: src;
+				}
+				else
+				{
+					buf[dx] = bgColor;
+				}
+			}
+			rc.RenderSpan(position.X, position.Y + dy, buf);
+		}
+	}
+
 	RenderImage IImage<RenderImage>.Crop(int x, int y, int width, int height)
 	{
 		return new RenderImage(Crop(x, y, width, height));

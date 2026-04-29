@@ -69,7 +69,7 @@ Everything visible is a **Morph** — a live object with position (local to owne
 
 Scripts run in a `WorldScriptContext` and interact with engine objects only through **handles** — MiniScript maps that proxy real objects. Scripts never hold direct C# references. Property changes are **buffered** and committed at a defined boundary to keep rendering deterministic.
 
-File URLs use the scheme `file://` and asset URLs use `asset://`.
+File URLs use the scheme `file://`, system asset URLs use `sys://` (read-only, maps to `assets/sys/`), and engine asset URLs use `asset://`.
 
 ---
 

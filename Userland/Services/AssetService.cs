@@ -11,6 +11,7 @@ internal class AssetService(IApplicationBus bus) : IAssetService
 	private readonly IApplicationBus _bus = bus;
 	private readonly ConcurrentDictionary<string, Font> _fontCache = new();
 	private readonly ConcurrentDictionary<string, GlyphSet<Bitmap>> _glyphSetCache = new();
+	private readonly ConcurrentDictionary<string, GlyphSet<RenderImage>> _colorGlyphSetCache = new();
 	private readonly ConcurrentDictionary<string, RenderImage> _imageCache = new();
 
 	public async Task<Font> LoadFontAsync(string url, Size tileSize, int glyphOffset)
@@ -34,6 +35,18 @@ internal class AssetService(IApplicationBus bus) : IAssetService
 			_glyphSetCache[url] = glyphs;
 		}
 		return _glyphSetCache[url];
+	}
+
+	public async Task<GlyphSet<RenderImage>> LoadColorGlyphSetAsync(string url, Size tileSize)
+	{
+		var key = $"{url}@{tileSize.Width}x{tileSize.Height}";
+		if (!_colorGlyphSetCache.ContainsKey(key))
+		{
+			var image = await LoadImageAsync(url);
+			var glyphs = new GlyphSet<RenderImage>(image, tileSize.Width, tileSize.Height);
+			_colorGlyphSetCache[key] = glyphs;
+		}
+		return _colorGlyphSetCache[key];
 	}
 
 	public async Task<RenderImage> LoadImageAsync(string url)

@@ -67,7 +67,7 @@ This guarantees correctness across line wrapping and resizing.
 
 ## Word Navigation
 
-Word navigation is enabled using Control-modified arrow keys.
+Word navigation uses Control-modified arrow keys. These are defined by the model but **not yet wired up in `TextConsoleMorph`**. `TextEditingCore` provides `MoveWordLeft` / `MoveWordRight` — connecting them is a planned low-priority item.
 
 ### Definition of a Word
 A word character is:
@@ -77,10 +77,10 @@ A word character is:
 
 All other characters are considered separators.
 
-### Ctrl + Left
+### Ctrl + Left *(planned)*
 - Move cursor to the **start of the previous word**
 
-### Ctrl + Right
+### Ctrl + Right *(planned)*
 - Move cursor to the **start of the next word**
 
 Word navigation operates purely on the buffer index and is independent of line wrapping.
@@ -105,11 +105,13 @@ Word navigation operates purely on the buffer index and is independent of line w
 
 ## Word Deletion
 
-### Ctrl + Backspace
+These are defined by the model but **not yet wired up in `TextConsoleMorph`**. `TextEditingCore` provides `DeleteWordLeft` / `DeleteWordRight` — connecting them is a planned low-priority item.
+
+### Ctrl + Backspace *(planned)*
 - Deletes the **previous word**
 - Cursor moves to the start of the deleted word
 
-### Ctrl + Delete
+### Ctrl + Delete *(planned)*
 - Deletes the **next word**
 - Cursor remains in place
 

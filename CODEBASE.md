@@ -74,9 +74,12 @@ Quick reference for locating key files. See `CLAUDE.md` for architecture; see `T
 
 | File | Purpose |
 |------|---------|
-| `FileSystemIntrinsics.cs` | `dir`, `mkdir`, `del`, `copy`, `move`, `cd`, `pwd`, `import`, `run`, `edit`; `ResolvePath` collapses `.`/`..` before sending `file://` URLs to kernel |
+| `FileSystemIntrinsics.cs` | `dir`, `mkdir`, `del`, `copy`, `move`, `cd`, `pwd`, `import`, `run`, `edit`, `file.loadSound`; `ResolvePath` collapses `.`/`..` before sending `file://` / `sys://` URLs to kernel |
+| `SoundIntrinsics.cs` | `Sound` constructor + static API (`playAsset`, `setVolume`, waveform constants), `s.init`/`s.play`/`s.stop`, `noteFreq` |
+| `IntrinsicRegistry.cs` | Top-level registration; wires all intrinsic modules; owns `help`, `decompile`, `cls` |
 | `MorphIntrinsics.cs` | MiniScript intrinsics for creating/manipulating morphs |
 | `WorldScriptContext.cs` | Bridges `WorldMorph` ↔ MiniScript interpreter; owns `PendingRunSource` |
+| `IScriptHost.cs` | Minimal interface for the scripting host; implemented by `WorldScriptContext` and `ScriptConsole` harness |
 
 ---
 
@@ -87,6 +90,18 @@ Quick reference for locating key files. See `CLAUDE.md` for architecture; see `T
 | `FileSystemService.cs` | Implements `IFileSystem`; wraps app-bus file messages |
 | `WindowService.cs` | Implements `IWindowService`; creates alert/prompt/confirm windows |
 | `ClipboardService.cs` | Implements `IClipboardService`; wraps app-bus clipboard messages |
+
+---
+
+## ScriptConsole (`ScriptConsole/`)
+
+Headless MiniScript host for testing scripts outside the UI.
+
+| File | Purpose |
+|------|---------|
+| `Program.cs` | Entry point; bootstraps the interpreter with an in-memory filesystem |
+| `ConsoleScriptHost.cs` | `IScriptHost` implementation backed by stdin/stdout |
+| `InMemoryFileSystem.cs` | `IFileSystem` implementation for testing |
 
 ---
 

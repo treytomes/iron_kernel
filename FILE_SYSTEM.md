@@ -46,9 +46,11 @@ Files are addressed using **logical URLs**, not host paths.
 ### Supported Schemes
 
 - `file://…`  
-  Refers to user‑accessible persistent storage.
+  Refers to user‑accessible persistent storage (read/write).
+- `sys://…`  
+  Refers to the read-only system disk bundled with the kernel. Maps to `IronKernel/assets/sys/` at build time. Path traversal is rejected by the kernel. Scripts cannot write or delete `sys://` paths.
 - `asset://…`  
-  Refers to packaged, read‑only assets handled by the AssetLoaderModule (not the file system).
+  Refers to packaged, read‑only engine assets handled by the `AssetLoaderModule` (not the file system). Used for images, fonts, and other binary resources identified by kind and name (e.g. `asset://image.mouse_cursor`).
 
 Userland code never sees real filesystem paths such as `C:\…` or `/home/…`.
 
@@ -173,8 +175,10 @@ This aligns with IronKernel’s overall philosophy of explicit, message‑driven
 
 - Userland never accesses the host filesystem directly.
 - All file I/O flows through the application bus and kernel bus.
-- Files are confined to a sandboxed `user/` directory under the app’s user data root.
-- URLs (`file://…`) abstract away physical paths.
+- `file://` paths are confined to a sandboxed `user/` directory under the app’s user data root.
+- `sys://` paths map to the read-only bundled system disk; writes and deletes are rejected.
+- `asset://` paths are handled by the `AssetLoaderModule` and are never routed to the file system.
+- URLs abstract away physical paths entirely.
 - The design scales cleanly to text files, binary assets, and future storage backends.
 
 This file system model supports IronKernel’s goals of safety, inspectability, and a living, evolvable userland environment built on Morphic principles.

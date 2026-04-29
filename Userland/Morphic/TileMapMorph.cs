@@ -12,7 +12,7 @@ public sealed class TileMapMorph : Morph
 	#region Fields
 
 	private readonly TileInfo[,] _tiles;
-	private GlyphSet<Bitmap>? _glyphs;
+	private GlyphSet<RenderImage>? _glyphs;
 
 	private Point _scrollOffset;
 	private TileSetInfo _tileSetInfo;
@@ -71,7 +71,7 @@ public sealed class TileMapMorph : Morph
 
 	protected override async void OnLoad(IAssetService assets)
 	{
-		_glyphs = await assets.LoadGlyphSetAsync(
+		_glyphs = await assets.LoadColorGlyphSetAsync(
 			_tileSetInfo.Url,
 			_tileSetInfo.TileSize
 		);
@@ -83,6 +83,14 @@ public sealed class TileMapMorph : Morph
 
 	public TileInfo? GetTile(int x, int y)
 		=> InBounds(x, y) ? _tiles[x, y] : null;
+
+	public void Fill(int tileIndex)
+	{
+		for (var y = 0; y < MapSize.Height; y++)
+			for (var x = 0; x < MapSize.Width; x++)
+				_tiles[x, y].TileIndex = tileIndex;
+		Invalidate();
+	}
 
 	protected override void DrawSelf(IRenderingContext rc)
 	{
@@ -119,12 +127,7 @@ public sealed class TileMapMorph : Morph
 				var px = x * _glyphs.TileWidth;
 				var py = y * _glyphs.TileHeight;
 
-				glyph.Render(
-					rc,
-					new Point(px, py),
-					tile.ForegroundColor,
-					tile.BackgroundColor
-				);
+				glyph.Render(rc, new Point(px, py), tile.ForegroundColor, tile.BackgroundColor);
 			}
 		}
 

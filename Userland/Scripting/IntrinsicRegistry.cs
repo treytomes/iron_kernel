@@ -11,12 +11,14 @@ public static class IntrinsicRegistry
 		CanvasIntrinsics.Register();
 		ColorIntrinsics.Register();
 		DialogIntrinsics.Register();
+		DrumCellIntrinsics.Register();
 		FileSystemIntrinsics.Register();
 		KeyboardIntrinsics.Register();
 		MorphIntrinsics.Register();
 		SoundIntrinsics.Register();
 		SpriteDisplayIntrinsics.Register();
 		TileMapIntrinsics.Register();
+		TimeIntrinsics.Register();
 
 		CreateHelpIntrinsic();
 		CreateDecompileIntrinsic();
@@ -32,15 +34,18 @@ public static class IntrinsicRegistry
 		  asset://k.n  Engine asset by kind+name.  e.g. asset://image.mouse_cursor
 
 		FILESYSTEM
-		  dir [path]        List directory
-		  cd [path]         Change directory
-		  pwd               Print working directory
-		  mkdir path        Create directory
-		  del path          Delete file or directory
-		  copy from, to     Copy file
-		  move from, to     Move/rename file
-		  run filename      Run a .ms script
-		  import name       Import a module
+		  dir [path]              List directory
+		  cd [path]               Change directory
+		  pwd                     Print working directory
+		  mkdir path              Create directory
+		  del path                Delete file or directory
+		  copy from, to           Copy file
+		  move from, to           Move/rename file
+		  readText path           Read file as string
+		  writeText path, text    Write string to file://
+		  exists path             1 if path exists, else 0
+		  run filename            Run a .ms script
+		  import name             Import a module
 
 		SOUND
 		  Sound.playAsset path   Play a WAV: sys://, file://, or bare relative path
@@ -53,6 +58,13 @@ public static class IntrinsicRegistry
 
 		DISPLAY
 		  Canvas — pixel drawing   TileMap — tile grid   Sprite — sprites
+
+		INPUT & TIMING
+		  time               Seconds since startup (float)
+		  wait [seconds]     Suspend script without blocking engine
+		  mouse.x / .y       Current pointer position
+		  mouse.button       1 if primary button held, else 0
+		  Keyboard.isDown k  True if key is held
 
 		OTHER
 		  help [fn]          Show this help, or docstring for a function

@@ -16,6 +16,9 @@ public static class FileSystemIntrinsics
 		CreateMoveIntrinsic();
 		CreatePwdIntrinsic();
 		CreateCdIntrinsic();
+		CreateReadTextIntrinsic();
+		CreateWriteTextIntrinsic();
+		CreateExistsIntrinsic();
 		CreateFileMapIntrinsic();
 	}
 
@@ -459,6 +462,98 @@ public static class FileSystemIntrinsics
 
 			env["curdir"] = new ValString(path);
 			return Intrinsic.Result.Null;
+		};
+	}
+
+	// ============================================================
+	// readText(path)
+	// ============================================================
+
+	private static void CreateReadTextIntrinsic()
+	{
+		var fn = Intrinsic.Create("readText");
+		fn.AddParam("path");
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not IScriptHost world)
+				return Intrinsic.Result.Null;
+
+			var raw = ctx.GetVar("path")?.ToString();
+			if (string.IsNullOrWhiteSpace(raw))
+				return Error(ctx, "readText: path is required");
+
+			var path = ResolvePath(ctx, world, raw);
+			try
+			{
+				var text = world.FileSystem.ReadText(path);
+				return new Intrinsic.Result(new ValString(text));
+			}
+			catch (Exception ex)
+			{
+				return Error(ctx, $"readText: {ex.Message}");
+			}
+		};
+	}
+
+	// ============================================================
+	// writeText(path, content)
+	// ============================================================
+
+	private static void CreateWriteTextIntrinsic()
+	{
+		var fn = Intrinsic.Create("writeText");
+		fn.AddParam("path");
+		fn.AddParam("content", new ValString(""));
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not IScriptHost world)
+				return Intrinsic.Result.Null;
+
+			var raw = ctx.GetVar("path")?.ToString();
+			if (string.IsNullOrWhiteSpace(raw))
+				return Error(ctx, "writeText: path is required");
+
+			var path = ResolvePath(ctx, world, raw);
+			if (path.StartsWith("sys://"))
+				return Error(ctx, "writeText: sys:// is read-only");
+
+			var content = ctx.GetVar("content")?.ToString() ?? "";
+			try
+			{
+				world.FileSystem.WriteText(path, content);
+				return Intrinsic.Result.Null;
+			}
+			catch (Exception ex)
+			{
+				return Error(ctx, $"writeText: {ex.Message}");
+			}
+		};
+	}
+
+	// ============================================================
+	// exists(path)
+	// ============================================================
+
+	private static void CreateExistsIntrinsic()
+	{
+		var fn = Intrinsic.Create("exists");
+		fn.AddParam("path");
+
+		fn.code = (ctx, _) =>
+		{
+			if (ctx.interpreter.hostData is not IScriptHost world)
+				return Intrinsic.Result.False;
+
+			var raw = ctx.GetVar("path")?.ToString();
+			if (string.IsNullOrWhiteSpace(raw))
+				return Intrinsic.Result.False;
+
+			var path = ResolvePath(ctx, world, raw);
+			return world.FileSystem.Exists(path)
+				? Intrinsic.Result.True
+				: Intrinsic.Result.False;
 		};
 	}
 

@@ -3,6 +3,7 @@ using System.Drawing;
 using IronKernel.Common;
 using IronKernel.Common.ValueObjects;
 using Color = IronKernel.Common.ValueObjects.Color;
+using Userland;
 using Userland.Gfx;
 using Userland.Morphic;
 using Userland.Morphic.Commands;
@@ -96,6 +97,14 @@ public sealed class MiniMacroRoot
 				launcher.AddApp<TextEditorWindowMorph>("Text Editor");
 				launcher.AddApp<FireDemoMorph>("Fire Demo");
 				launcher.AddApp<ColorGridMorph>("Color Grid");
+				launcher.AddAction("Drum Machine", () =>
+				{
+					var ctx = world.ScriptContext;
+					var source = ctx.FileSystem.ReadText("sys://demo/drumMachine.ms");
+					if (source == null) return;
+					var runner = new ScriptRunnerMorph(ctx, source);
+					world.AddMorph(runner);
+				});
 				launcher.AddAction("Toast Test", () =>
 				{
 					world.ShowToast("This is an info toast", ToastSeverity.Info);
@@ -188,6 +197,7 @@ public sealed class MiniMacroRoot
 			{
 				lock (_updateLock)
 				{
+					world.ScriptContext.TotalTime = e.TotalTime;
 					while (_keyQueue.TryDequeue(out var key))
 						world.KeyPress(key.Action, key.Modifiers, key.Key);
 					world.Update(e.ElapsedTime);
