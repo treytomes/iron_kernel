@@ -54,6 +54,10 @@ public sealed class ModuleRuntime : IModuleRuntime
 		var startedAt = DateTime.UtcNow;
 		var watchdogCts = CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
 
+		// Capture the token as a struct before Task.Run — the CTS may be disposed
+		// by the task's finally block before we reach the WatchdogAsync call below.
+		var watchdogToken = watchdogCts.Token;
+
 		// Create entry FIRST
 		var entry = new ModuleTask(
 			name,
@@ -141,7 +145,7 @@ public sealed class ModuleRuntime : IModuleRuntime
 			_ = WatchdogAsync(
 				entry,
 				startedAt,
-				watchdogCts.Token);
+				watchdogToken);
 		}
 
 		return task;
