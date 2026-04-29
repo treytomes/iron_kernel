@@ -8,10 +8,10 @@ public static class IntrinsicRegistry
 {
 	public static void Register()
 	{
+		BoxIntrinsics.Register();
 		CanvasIntrinsics.Register();
 		ColorIntrinsics.Register();
 		DialogIntrinsics.Register();
-		DrumCellIntrinsics.Register();
 		FileSystemIntrinsics.Register();
 		KeyboardIntrinsics.Register();
 		MorphIntrinsics.Register();
@@ -58,6 +58,10 @@ public static class IntrinsicRegistry
 
 		DISPLAY
 		  Canvas — pixel drawing   TileMap — tile grid   Sprite — sprites
+		  Box.create [x,y],[w,h]   Colored rectangle morph with click detection
+		    b.setColor [r,g,b]     Set fill color (0..1 floats)
+		    b.setBorderColor [r,g,b]
+		    b.consumeClick         Returns true once per click, then clears flag
 
 		INPUT & TIMING
 		  time               Seconds since startup (float)

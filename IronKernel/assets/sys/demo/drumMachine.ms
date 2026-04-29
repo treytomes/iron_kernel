@@ -1,41 +1,85 @@
-// Drum Machine — IronKernel port of the MiniMicro sysdisk demo
+// Drum Machine — IronKernel MiniScript step sequencer
 
 // ---------------------------------------------------------------
 // Layout
 // ---------------------------------------------------------------
-rows    = 12
-columns = 16
-cellW   = 48
-cellH   = 32
-padX    = 8
-padY    = 8
-labelH  = 20
+rows       = 12
+columns    = 16
+cellW      = 48
+cellH      = 32
+padX       = 8
+padY       = 8
+labelH     = 20
 measureGap = 4
-vpW     = columns * cellW + 3 * measureGap
-vpH     = rows    * cellH
+vpW        = columns * cellW + 3 * measureGap
+vpH        = rows * cellH
 
-// winH: content area needs padY+labelH+vpH+padY; add 30 for title bar + dock chrome overhead
 winH = padY + labelH + vpH + padY + 30
-win = Window.create([8, 8], [padX*2 + vpW, winH], "DRUM MACHINE")
+win  = Window.create([8, 8], [padX*2 + vpW, winH], "DRUM MACHINE")
 
 title = Label.create([padX, padY], "Click cells to toggle  |  Escape to exit")
 win.addMorph title
 
 // ---------------------------------------------------------------
+// Colors  (r, g, b as 0..1 floats)
+// ---------------------------------------------------------------
+// dim group (columns 0-3, 8-11)
+COff      = [0.35, 0.35, 0.35]
+COn       = [0.00, 0.33, 0.58]
+CIndOff   = [0.45, 0.10, 0.10]
+CIndOn    = [1.00, 0.40, 0.40]
+// bright group (columns 4-7, 12-15)
+COffB     = [0.45, 0.45, 0.45]
+COnB      = [0.00, 0.42, 0.72]
+CIndOffB  = [0.55, 0.15, 0.15]
+CIndOnB   = [1.00, 0.55, 0.55]
+CBorder   = [0.20, 0.20, 0.20]
+
+cellColor = function(lit, highlighted, brightGroup)
+    if highlighted then
+        if lit then
+            if brightGroup then return globals.CIndOnB else return globals.CIndOn
+        else
+            if brightGroup then return globals.CIndOffB else return globals.CIndOff
+        end if
+    else
+        if lit then
+            if brightGroup then return globals.COnB else return globals.COn
+        else
+            if brightGroup then return globals.COffB else return globals.COff
+        end if
+    end if
+end function
+
+// ---------------------------------------------------------------
 // Build cell grid
 // ---------------------------------------------------------------
-// cells[row][col] — DrumCellMorph handles
-cells = []
+// cells[row][col]  — Box handles
+// litState[row][col] — bool
+// bright[col]      — bool  (alternating measure groups)
+cells    = []
+litState = []
+bright   = []
+
+for c in range(0, columns - 1)
+    bright.push (floor(c / 4) % 2 == 1)
+end for
+
 for r in range(0, rows - 1)
-    row = []
+    row     = []
+    rowLit  = []
     for c in range(0, columns - 1)
-        cx = padX + c * cellW + floor(c / 4) * measureGap
-        cy = padY + labelH + r * cellH
-        cell = DrumCell.create([cx, cy], [cellW - 1, cellH - 1], c)
+        cx   = padX + c * cellW + floor(c / 4) * measureGap
+        cy   = padY + labelH + r * cellH
+        cell = Box.create([cx, cy], [cellW - 1, cellH - 1])
+        cell.setBorderColor CBorder
+        cell.setColor cellColor(false, false, bright[c])
         win.addMorph cell
         row.push cell
+        rowLit.push false
     end for
     cells.push row
+    litState.push rowLit
 end for
 
 // ---------------------------------------------------------------
@@ -73,8 +117,10 @@ lightColumn = function(col)
     prevCol = globals.litCol
     globals.litCol = col
     for r in range(0, globals.rows - 1)
-        if prevCol >= 0 then globals.cells[r][prevCol].setHighlighted false
-        globals.cells[r][col].setHighlighted true
+        if prevCol >= 0 then
+            globals.cells[r][prevCol].setColor cellColor(globals.litState[r][prevCol], false, globals.bright[prevCol])
+        end if
+        globals.cells[r][col].setColor cellColor(globals.litState[r][col], true, globals.bright[col])
     end for
 end function
 
@@ -96,13 +142,25 @@ bpm      = 90
 next16th = time
 
 while win.isAlive and not Keyboard.isDown("Escape")
+    // Advance playback column
     if time >= next16th then
         lightColumn (litCol + 1) % columns
         for r in range(0, rows - 1)
-            if cells[r][litCol].isLit then playSound r, litCol
+            if litState[r][litCol] then playSound r, litCol
         end for
         next16th = next16th + 15 / bpm
     end if
+
+    // Poll clicks and toggle state
+    for r in range(0, rows - 1)
+        for c in range(0, columns - 1)
+            if cells[r][c].consumeClick then
+                litState[r][c] = not litState[r][c]
+                cells[r][c].setColor cellColor(litState[r][c], litCol == c, bright[c])
+            end if
+        end for
+    end for
+
     wait 0
 end while
 
